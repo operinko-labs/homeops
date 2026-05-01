@@ -159,7 +159,7 @@ spec:
           runner:
             image:
               repository: n8nio/runners
-              tag: 2.19.0
+              tag: 2.19.2
             env:
               TZ: Europe/Helsinki
               # Connect to n8n task broker
