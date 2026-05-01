@@ -36,7 +36,7 @@ spec:
           app:
             image:
               repository: n8nio/n8n
-              tag: 2.19.0
+              tag: 2.19.2
             env:
               TZ: Europe/Helsinki
               GENERIC_TIMEZONE: Europe/Helsinki
