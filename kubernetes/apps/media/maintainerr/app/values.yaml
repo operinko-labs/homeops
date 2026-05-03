@@ -8,7 +8,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/maintainerr/maintainerr
-          tag: 3.9.0
+          tag: 3.10.1
         env:
           TZ: Europe/Helsinki
           UI_PORT: &port 80
