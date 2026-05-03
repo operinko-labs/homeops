@@ -52,7 +52,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: cleanup
-              image: docker.io/alpine/k8s:1.35.4
+              image: docker.io/alpine/k8s:1.36.0
               imagePullPolicy: IfNotPresent
               command:
                 - /bin/sh
