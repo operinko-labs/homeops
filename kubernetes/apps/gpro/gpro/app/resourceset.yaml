@@ -21,7 +21,7 @@ spec:
         namespace: gpro
       spec:
         interval: 1m
-        url: https://github.com/operinko/gpro
+        url: https://github.com/operinko-labs/gpro
         ref:
           branch: << inputs.branch >>
         secretRef:

@@ -10,7 +10,7 @@ metadata:
     fluxcd.controlplane.io/reconcileEvery: "1m"
 spec:
   type: GitHubBranch
-  url: https://github.com/operinko/gpro
+  url: https://github.com/operinko-labs/gpro
   filter:
     includeBranch: "^(main|production)$"
   secretRef:
