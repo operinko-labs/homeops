@@ -1,12 +1,15 @@
 machine:
   type: worker
+  sysfs:
+    block.vda.queue.scheduler: bfq
   kernel:
     modules:
       - name: iscsi_tcp
   network:
     interfaces:
       - deviceSelector:
-          hardwareAddr: bc:24:11:*
+          hardwareAddr: bc:24:11:5a:2b:f0
+        dhcp: false
         mtu: 9000
         addresses:
           - 192.168.7.27/24
@@ -15,6 +18,12 @@ machine:
             gateway: 192.168.7.1
           - network: 192.168.0.0/16
             gateway: 192.168.7.1
+      - deviceSelector:
+          hardwareAddr: 00:a0:98:2b:ec:e2
+        dhcp: false
+        mtu: 9000
+        addresses:
+          - 192.168.20.27/24
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
@@ -28,3 +37,4 @@ provisioning:
   diskSelector:
     match: '!system_disk'
   minSize: 32GB
+

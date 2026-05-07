@@ -14,7 +14,7 @@ machine:
     - localhost
     - talos.vaderrp.com
   features:
-    diskQuotaSupport: true
+    diskQuotaSupport: false
     hostDNS:
       enabled: true
       forwardKubeDNSToHost: false
@@ -42,7 +42,7 @@ machine:
         noatime: True
   install:
     disk: /dev/sda
-    image: factory.talos.dev/installer/c0ffd3f955ccbf8853e2905290e152aa377a6c6393b527d90050067986f98d3e:v1.12.7
+    image: factory.talos.dev/installer/c0ffd3f955ccbf8853e2905290e152aa377a6c6393b527d90050067986f98d3e:v1.13.0
     wipe: false
     grubUseUKICmdline: true
   network:
@@ -59,7 +59,7 @@ machine:
     disableManifestsDirectory: true
     extraArgs:
       node-labels: "topology.kubernetes.io/region=homelab,topology.kubernetes.io/zone=rack"
-    image: ghcr.io/siderolabs/kubelet:v1.35.3
+    image: ghcr.io/siderolabs/kubelet:v1.36.0
   sysctls:
     fs.inotify.max_user_watches: "1048576"
     fs.inotify.max_user_instances: "8192"
@@ -79,6 +79,11 @@ machine:
     sunrpc.tcp_slot_table_entries: "128"
     user.max_user_namespaces: "15000"
     kernel.io_uring_disabled: "0"
+    vm.dirty_background_ratio: "5"
+    vm.dirty_ratio: "15"
+    vm.dirty_expire_centisecs: "1500"
+    vm.dirty_writeback_centisecs: "300"
+    vm.swappiness: "0"
 cluster:
   ca:
     crt: {{ cluster_ca_crt }}
@@ -223,3 +228,8 @@ kind: RegistryAuthConfig
 name: harbor.vaderrp.com
 username: robot$cluster-puller
 password: {{ harbor_robot_secret }}
+---
+apiVersion: v1alpha1
+kind: WatchdogTimerConfig
+device: /dev/watchdog0
+timeout: 5m

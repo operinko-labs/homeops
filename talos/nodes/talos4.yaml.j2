@@ -1,9 +1,12 @@
 machine:
   type: worker
+  sysfs:
+    block.sda.queue.scheduler: mq-deadline
   network:
     interfaces:
       - deviceSelector:
-          hardwareAddr: bc:24:11:*
+          hardwareAddr: bc:24:11:b0:17:db
+        dhcp: false
         mtu: 9000
         addresses:
           - 192.168.7.24/24
