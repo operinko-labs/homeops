@@ -98,7 +98,5 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /var/lib/stalwart
-      config:
-        type: emptyDir
-        globalMounts:
           - path: /etc/stalwart
+            subPath: etc
