@@ -1,0 +1,44 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: shadowmorph-dns
+  namespace: network
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: cloudflare-dns
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    provider: cloudflare
+    env:
+      - name: CF_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: external-dns-secret
+            key: shadowmorph-api-token
+    extraArgs:
+      - --cloudflare-dns-records-per-page=1000
+      - --cloudflare-proxied
+      - --crd-source-apiversion=externaldns.k8s.io/v1alpha1
+      - --crd-source-kind=DNSEndpoint
+      - --gateway-name=gateway-public
+      - --label-filter=route.scope=external
+    triggerLoopOnEvent: true
+    policy: sync
+    sources: ["crd", "gateway-httproute"]
+    txtPrefix: k8s.
+    txtOwnerId: default
+    domainFilters: ["shadowmorph.info"]
+    serviceMonitor:
+      enabled: true
+    podAnnotations:
+      secret.reloader.stakater.com/reload: external-dns-secret

@@ -17,4 +17,11 @@ spec:
               key: apitoken
         selector:
           dnsZones: ["vaderrp.com"]
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cert-manager-secret
+              key: shadowmorph-api-token
+        selector:
+          dnsZones: ["shadowmorph.info"]
 

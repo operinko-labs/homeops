@@ -32,3 +32,15 @@ spec:
         certificateRefs:
           - kind: Secret
             name: vaderrp-com-production-tls
+    - name: https-shadowmorph
+      protocol: HTTPS
+      port: 443
+      hostname: "*.shadowmorph.info"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: shadowmorph-info-production-tls

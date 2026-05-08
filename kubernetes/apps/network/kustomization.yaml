@@ -8,6 +8,7 @@ resources:
   - ./cloudflare-tunnel/ks.yaml
   - ./gateways/ks.yaml
   - ./internal-dns/ks.yaml
+  - ./shadowmorph-dns/ks.yaml
   - ./cluster-dns/ks.yaml
   - ./technitium/ks.yaml
   - ./traefik/ks.yaml
