@@ -1,0 +1,102 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: stalwart
+  namespace: mail
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: stalwart
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      stalwart:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/stalwartlabs/stalwart
+              tag: v0.16.4
+            env:
+              TZ: Europe/Helsinki
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz/live
+                    port: &http-port 8080
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+    service:
+      app:
+        controller: stalwart
+        ports:
+          http:
+            port: *http-port
+      mail:
+        controller: stalwart
+        ports:
+          smtp:
+            port: 25
+            protocol: TCP
+          submission:
+            port: 587
+            protocol: TCP
+          submissions:
+            port: 465
+            protocol: TCP
+          imap:
+            port: 143
+            protocol: TCP
+          imaps:
+            port: 993
+            protocol: TCP
+          sieve:
+            port: 4190
+            protocol: TCP
+    persistence:
+      data:
+        existingClaim: "{{ .Release.Name }}"
+        globalMounts:
+          - path: /var/lib/stalwart
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /etc/stalwart
