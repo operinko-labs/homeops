@@ -12,5 +12,6 @@ resources:
   - ./cluster-dns/ks.yaml
   - ./technitium/ks.yaml
   - ./traefik/ks.yaml
+  - ./wg-easy/ks.yaml
 components:
   - ../../components/common
