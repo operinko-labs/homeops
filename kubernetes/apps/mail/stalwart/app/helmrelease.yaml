@@ -79,27 +79,21 @@ spec:
         ports:
           smtp:
             port: 25
-            hostPort: 25
             protocol: TCP
           submission:
             port: 587
-            hostPort: 587
             protocol: TCP
           submissions:
             port: 465
-            hostPort: 465
             protocol: TCP
           imap:
             port: 143
-            hostPort: 143
             protocol: TCP
           imaps:
             port: 993
-            hostPort: 993
             protocol: TCP
           sieve:
             port: 4190
-            hostPort: 4190
             protocol: TCP
     persistence:
       data:
