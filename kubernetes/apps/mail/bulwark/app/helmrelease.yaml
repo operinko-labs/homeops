@@ -28,8 +28,7 @@ spec:
               tag: v1.6.3@sha256:6d5e84def6d7b1067497ee0df967442f6330268658bc91cf29f9e69bbb867a9c
             env:
               TZ: Europe/Helsinki
-              JMAP_SERVER_URL: "https://stalwart-mail.mail.svc.cluster.local"
-              NODE_TLS_REJECT_UNAUTHORIZED: "0"
+              JMAP_SERVER_URL: "https://mail.vaderrp.com"
               APP_NAME: "Vaderrp Mail"
               LOG_FORMAT: json
             probes:
