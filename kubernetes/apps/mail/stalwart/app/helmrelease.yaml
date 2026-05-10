@@ -74,6 +74,8 @@ spec:
             port: *http-port
       mail:
         controller: stalwart
+        type: ClusterIP
+        externalIPs: ["172.16.8.10"]
         ports:
           smtp:
             port: 25

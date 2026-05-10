@@ -5,6 +5,10 @@ machine:
   kernel:
     modules:
       - name: iscsi_tcp
+  kubelet:
+    nodeIP:
+      validSubnets:
+        - 192.168.7.0/24
   network:
     interfaces:
       - deviceSelector:
@@ -24,6 +28,19 @@ machine:
         mtu: 9000
         addresses:
           - 192.168.20.27/24
+      - interface: wg0
+        mtu: 1420
+        addresses:
+          - 172.16.8.1/24
+          - 172.16.8.10/32
+        wireguard:
+          privateKey: iBDlQmWU0qtWFI21ch3NeoWHALoCF6nhEq86Il+83ns=
+          listenPort: 51820
+          peers:
+            - publicKey: PgiKvgszPybBoirZg0Qa2OVsZ9HCDhb589Ry7iIo7hg=
+              allowedIPs:
+                - 172.16.8.2/32
+              persistentKeepaliveInterval: 25s
 ---
 apiVersion: v1alpha1
 kind: HostnameConfig
