@@ -95,6 +95,9 @@ spec:
           sieve:
             port: 4190
             protocol: TCP
+          https:
+            port: 443
+            protocol: TCP
     persistence:
       data:
         existingClaim: "{{ .Release.Name }}"
