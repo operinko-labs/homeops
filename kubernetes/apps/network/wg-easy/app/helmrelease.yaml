@@ -31,19 +31,8 @@ spec:
               tag: "15.2.2"
             env:
               TZ: Europe/Helsinki
-              # Public hostname/IP of the VPS that clients connect to
-              WG_HOST: "${WG_EASY_HOST}"
-              # WireGuard listen port (UDP)
-              WG_PORT: "51820"
-              # Subnet for WireGuard clients
-              WG_DEFAULT_ADDRESS: "10.13.13.x"
-              WG_DEFAULT_DNS: ""
-              # Only allow traffic to Stalwart mail service (ClusterIP)
-              # This restricts VPN clients to ONLY reach the mail server
-              WG_ALLOWED_IPS: "10.13.13.0/24,${STALWART_CLUSTER_CIDR}"
-            envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
+              # Required for HTTP behind reverse proxy
+              INSECURE: "true"
             probes:
               liveness:
                 enabled: true

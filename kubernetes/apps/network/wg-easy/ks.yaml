@@ -30,8 +30,6 @@ spec:
   postBuild:
     substitute:
       APP: wg-easy
-      WG_EASY_HOST: "212.147.241.182"
-      STALWART_CLUSTER_CIDR: "10.96.0.0/16"
       VOLSYNC_COPYMETHOD: Direct
       VOLSYNC_CAPACITY: 256Mi
       VOLSYNC_STORAGECLASS: local-path
