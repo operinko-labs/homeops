@@ -11,14 +11,14 @@ metadata:
     gatus.home-operations.com/enabled: "true"
     gatus.home-operations.com/endpoint: |
       group: Mail
-      url: "https://mail.vaderrp.com"
+      url: "https://webmail.vaderrp.com"
       conditions:
         - "[STATUS] == 200"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/group: Mail
     gethomepage.dev/name: Stalwart
     gethomepage.dev/icon: stalwart-mail.png
-    gethomepage.dev/href: https://mail.vaderrp.com
+    gethomepage.dev/href: https://webmail.vaderrp.com
     gethomepage.dev/pod-selector: app.kubernetes.io/name=stalwart
 spec:
   parentRefs:
@@ -27,7 +27,7 @@ spec:
       name: gateway-public
       namespace: network
   hostnames:
-    - mail.vaderrp.com
+    - webmail.vaderrp.com
   rules:
     - matches:
         - path:
