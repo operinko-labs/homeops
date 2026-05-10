@@ -33,5 +33,5 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: bulwark-app
+        - name: bulwark
           port: 3000
