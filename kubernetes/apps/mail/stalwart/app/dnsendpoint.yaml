@@ -12,3 +12,6 @@ spec:
     - dnsName: "mail.vaderrp.com"
       recordType: A
       targets: ["212.147.241.182"]
+    - dnsName: "mail.vaderrp.com"
+      recordType: AAAA
+      targets: ["2a04:3545:1000:720:a4a6:11ff:fec5:5454"]
