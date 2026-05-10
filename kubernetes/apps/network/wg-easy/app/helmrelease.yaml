@@ -85,6 +85,7 @@ spec:
         ports:
           wireguard:
             port: 51820
+            targetPort: 31820
             nodePort: 31820
             protocol: UDP
     persistence:
