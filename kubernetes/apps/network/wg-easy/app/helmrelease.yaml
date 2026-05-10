@@ -59,9 +59,11 @@ spec:
                   periodSeconds: 5
                   failureThreshold: 30
             securityContext:
+              privileged: true
               capabilities:
                 add:
                   - NET_ADMIN
+                  - SYS_MODULE
             resources:
               requests:
                 cpu: 10m
@@ -83,7 +85,7 @@ spec:
         ports:
           wireguard:
             port: 51820
-            nodePort: 51820
+            nodePort: 31820
             protocol: UDP
     persistence:
       config:
