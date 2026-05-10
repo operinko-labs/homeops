@@ -34,6 +34,8 @@ spec:
       automount:
         enabled: false
       hostRoot: /sys/fs/cgroup
+    egressGateway:
+      enabled: true
     endpointRoutes:
       enabled: true
     envoy:
