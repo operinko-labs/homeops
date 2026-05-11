@@ -4,6 +4,9 @@ kind: Kustomization
 resources:
   - ./hook-rbac.yaml
   - ./cluster17.yaml
+  - ./cluster18.yaml
+  - ./database-stalwart.yaml
+  - ./external-secret-stalwart.yaml
   - ./gatus.yaml
   - ./objectstore.yaml
   - ./prometheusrule.yaml

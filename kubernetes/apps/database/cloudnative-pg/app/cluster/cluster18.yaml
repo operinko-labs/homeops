@@ -1,0 +1,67 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres18
+  namespace: database
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: restart
+  storage:
+    size: 10Gi
+    storageClass: tns-iscsi
+    resizeInUseVolumes: true
+
+  postgresUID: 26
+  postgresGID: 26
+
+  bootstrap:
+    initdb: {}
+
+  superuserSecret:
+    name: cloudnative-pg-secret
+  enableSuperuserAccess: true
+
+  managed:
+    roles:
+      - name: stalwart
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgres18-stalwart-user
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: 128MB
+      wal_keep_size: "512MB"
+      max_wal_size: "256MB"
+      min_wal_size: "40MB"
+      checkpoint_completion_target: "0.7"
+      archive_timeout: "60"
+      tcp_keepalives_idle: "30"
+      tcp_keepalives_interval: "10"
+  enablePDB: false
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/bulk-storage
+                operator: In
+                values:
+                  - "true"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  monitoring:
+    enablePodMonitor: true

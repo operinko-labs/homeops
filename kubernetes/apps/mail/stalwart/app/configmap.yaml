@@ -1,0 +1,42 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stalwart-config
+  namespace: mail
+data:
+  config.json: |
+    {
+      "@type": "PostgreSql",
+      "host": "postgres18-rw.database.svc.cluster.local",
+      "port": 5432,
+      "database": "stalwart",
+      "authUsername": "stalwart",
+      "authSecret": "%{env:STALWART_DB_PASSWORD}%",
+      "timeout": "15s",
+      "poolMaxConnections": 10
+    }
+  init-directory.sql: |
+    -- SQL directory tables for Stalwart mail accounts
+    -- Runs idempotently on every pod start via init container
+    CREATE TABLE IF NOT EXISTS directory.accounts (
+      name TEXT PRIMARY KEY,
+      secret TEXT,
+      description TEXT,
+      type TEXT NOT NULL DEFAULT 'individual',
+      quota INTEGER DEFAULT 0,
+      active BOOLEAN DEFAULT true
+    );
+
+    CREATE TABLE IF NOT EXISTS directory.emails (
+      name TEXT NOT NULL,
+      address TEXT NOT NULL,
+      type TEXT DEFAULT 'primary',
+      PRIMARY KEY (name, address)
+    );
+
+    CREATE TABLE IF NOT EXISTS directory.group_members (
+      name TEXT NOT NULL,
+      member_of TEXT NOT NULL,
+      PRIMARY KEY (name, member_of)
+    );

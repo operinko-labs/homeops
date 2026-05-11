@@ -1,0 +1,14 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: stalwart-db
+  namespace: database
+spec:
+  name: stalwart
+  owner: stalwart
+  cluster:
+    name: postgres18
+  schemas:
+    - name: directory
+      owner: stalwart

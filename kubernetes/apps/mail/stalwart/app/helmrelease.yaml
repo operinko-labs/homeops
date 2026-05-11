@@ -23,6 +23,19 @@ spec:
       stalwart:
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          init-db:
+            image:
+              repository: ghcr.io/cloudnative-pg/postgresql
+              tag: "18"
+            command: ["psql"]
+            args:
+              - "postgresql://$(STALWART_DB_USER):$(STALWART_DB_PASSWORD)@postgres18-rw.database.svc.cluster.local:5432/stalwart"
+              - -f
+              - /config/init-directory.sql
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
         containers:
           app:
             image:
@@ -103,5 +116,11 @@ spec:
         existingClaim: "{{ .Release.Name }}"
         globalMounts:
           - path: /var/lib/stalwart
-          - path: /etc/stalwart
-            subPath: etc
+      config:
+        type: configMap
+        name: stalwart-config
+        globalMounts:
+          - path: /etc/stalwart/config.json
+            subPath: config.json
+          - path: /config/init-directory.sql
+            subPath: init-directory.sql
