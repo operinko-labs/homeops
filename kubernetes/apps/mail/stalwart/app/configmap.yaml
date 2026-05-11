@@ -5,17 +5,6 @@ metadata:
   name: stalwart-config
   namespace: mail
 data:
-  config.json: |
-    {
-      "@type": "PostgreSql",
-      "host": "postgres18-rw.database.svc.cluster.local",
-      "port": 5432,
-      "database": "stalwart",
-      "authUsername": "stalwart",
-      "authSecret": "%{env:STALWART_DB_PASSWORD}%",
-      "timeout": "15s",
-      "poolMaxConnections": 10
-    }
   init-directory.sql: |
     -- SQL directory tables for Stalwart mail accounts
     -- Runs idempotently on every pod start via init container

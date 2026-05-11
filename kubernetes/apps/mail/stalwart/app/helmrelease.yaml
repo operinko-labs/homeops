@@ -117,10 +117,14 @@ spec:
         globalMounts:
           - path: /var/lib/stalwart
       config:
-        type: configMap
-        name: stalwart-config
+        type: secret
+        name: stalwart-secret
         globalMounts:
           - path: /etc/stalwart/config.json
             subPath: config.json
+      init-sql:
+        type: configMap
+        name: stalwart-config
+        globalMounts:
           - path: /config/init-directory.sql
             subPath: init-directory.sql
