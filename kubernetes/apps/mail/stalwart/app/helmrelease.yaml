@@ -105,6 +105,9 @@ spec:
           imaps:
             port: 993
             protocol: TCP
+          pop3s:
+            port: 995
+            protocol: TCP
           sieve:
             port: 4190
             protocol: TCP
