@@ -21,6 +21,8 @@ spec:
   values:
     controllers:
       bulwark:
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
@@ -29,9 +31,16 @@ spec:
             env:
               TZ: Europe/Helsinki
               JMAP_SERVER_URL: "https://mail.erinko.fi"
-              APP_NAME: "Vaderrp Mail"
+              APP_NAME: "Erinko Mail"
+              APP_SHORT_NAME: "Mail"
+              APP_DESCRIPTION: "Erinko Mail — webmail for erinko.fi, shadowmorph.info & vaderrp.com"
               LOG_FORMAT: json
-              SESSION_SECRET: "NXYVYpGbhnrLdXdYUQb/LaIAvBMMcMS4QlVHDrzS2UA="
+              SETTINGS_SYNC_ENABLED: "true"
+              TRUSTED_PROXY_DEPTH: "2"
+              EXTENSION_DIRECTORY_URL: "https://extensions.bulwarkmail.org"
+            envFrom:
+              - secretRef:
+                  name: bulwark-secret
             probes:
               liveness: &probes
                 enabled: true
@@ -66,7 +75,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
     persistence:
       data:
-        type: emptyDir
+        existingClaim: bulwark
         globalMounts:
           - path: /app/data
     service:
