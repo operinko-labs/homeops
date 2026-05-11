@@ -31,6 +31,7 @@ spec:
               JMAP_SERVER_URL: "https://mail.erinko.fi"
               APP_NAME: "Vaderrp Mail"
               LOG_FORMAT: json
+              SESSION_SECRET: "NXYVYpGbhnrLdXdYUQb/LaIAvBMMcMS4QlVHDrzS2UA="
             probes:
               liveness: &probes
                 enabled: true
