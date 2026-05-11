@@ -6,8 +6,10 @@ metadata:
   namespace: mail
 data:
   init-directory.sql: |
-    -- SQL directory tables for Stalwart mail accounts
+    -- SQL directory schema and tables for Stalwart mail accounts
     -- Runs idempotently on every pod start via init container
+    CREATE SCHEMA IF NOT EXISTS directory;
+
     CREATE TABLE IF NOT EXISTS directory.accounts (
       name TEXT PRIMARY KEY,
       secret TEXT,
