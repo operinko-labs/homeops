@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: harbor
-      version: 1.18.2
+      version: 1.18.3
       sourceRef:
         kind: HelmRepository
         name: harbor
@@ -54,6 +54,8 @@ spec:
     trivy:
       enabled: true
       insecure: true
+      image:
+        tag: v2.14.4
       resources:
         requests:
           cpu: 100m
@@ -68,6 +70,8 @@ spec:
           region: us-east-1
           regionendpoint: https://minio.vaderrp.com:9000
     portal:
+      image:
+        tag: v2.14.4
       resources:
         requests:
           cpu: 50m
@@ -75,6 +79,8 @@ spec:
         limits:
           memory: 128Mi
     core:
+      image:
+        tag: v2.14.4
       resources:
         requests:
           cpu: 100m
@@ -83,6 +89,8 @@ spec:
           memory: 1Gi
     registry:
       registry:
+        image:
+          tag: v2.14.4
         resources:
           requests:
             cpu: 100m
@@ -90,6 +98,8 @@ spec:
           limits:
             memory: 512Mi
       controller:
+        image:
+          tag: v2.14.4
         resources:
           requests:
             cpu: 50m
@@ -97,6 +107,8 @@ spec:
           limits:
             memory: 128Mi
     jobservice:
+      image:
+        tag: v2.14.4
       resources:
         requests:
           cpu: 50m
@@ -104,6 +116,8 @@ spec:
         limits:
           memory: 256Mi
     nginx:
+      image:
+        tag: v2.14.4
       resources:
         requests:
           cpu: 50m
