@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: harbor
-      version: 1.18.3
+      version: 1.19.0
       sourceRef:
         kind: HelmRepository
         name: harbor
@@ -55,7 +55,7 @@ spec:
       enabled: true
       insecure: true
       image:
-        tag: v2.14.4
+        tag: v2.15.1
       resources:
         requests:
           cpu: 100m
@@ -71,7 +71,7 @@ spec:
           regionendpoint: https://minio.vaderrp.com:9000
     portal:
       image:
-        tag: v2.14.4
+        tag: v2.15.1
       resources:
         requests:
           cpu: 50m
@@ -80,7 +80,7 @@ spec:
           memory: 128Mi
     core:
       image:
-        tag: v2.14.4
+        tag: v2.15.1
       resources:
         requests:
           cpu: 100m
@@ -90,7 +90,7 @@ spec:
     registry:
       registry:
         image:
-          tag: v2.14.4
+          tag: v2.15.1
         resources:
           requests:
             cpu: 100m
@@ -99,7 +99,7 @@ spec:
             memory: 512Mi
       controller:
         image:
-          tag: v2.14.4
+          tag: v2.15.1
         resources:
           requests:
             cpu: 50m
@@ -108,7 +108,7 @@ spec:
             memory: 128Mi
     jobservice:
       image:
-        tag: v2.14.4
+        tag: v2.15.1
       resources:
         requests:
           cpu: 50m
@@ -117,7 +117,7 @@ spec:
           memory: 256Mi
     nginx:
       image:
-        tag: v2.14.4
+        tag: v2.15.1
       resources:
         requests:
           cpu: 50m
