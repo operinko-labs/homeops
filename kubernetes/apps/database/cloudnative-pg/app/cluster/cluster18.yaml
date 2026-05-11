@@ -65,3 +65,19 @@ spec:
       memory: 1Gi
   monitoring:
     enablePodMonitor: true
+
+  env:
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+    - name: AWS_REGION
+      value: "us-east-1"
+    - name: AWS_S3_FORCE_PATH_STYLE
+      value: "true"
+
+  plugins:
+    - enabled: true
+      isWALArchiver: true
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: postgres18-minio
+        serverName: postgres18-v1

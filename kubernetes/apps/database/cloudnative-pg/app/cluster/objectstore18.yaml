@@ -1,0 +1,23 @@
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: postgres18-minio
+  namespace: database
+spec:
+  retentionPolicy: 30d
+  configuration:
+    destinationPath: s3://cloudnative-pg/
+    endpointURL: https://minio.vaderrp.com:9000
+    s3Credentials:
+      accessKeyId:
+        name: cloudnative-pg-secret
+        key: aws-access-key-id
+      secretAccessKey:
+        name: cloudnative-pg-secret
+        key: aws-secret-access-key
+    data:
+      compression: snappy
+    wal:
+      compression: snappy
+      maxParallel: 4

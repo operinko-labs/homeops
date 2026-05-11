@@ -9,6 +9,8 @@ resources:
   - ./external-secret-stalwart.yaml
   - ./gatus.yaml
   - ./objectstore.yaml
+  - ./objectstore18.yaml
   - ./prometheusrule.yaml
   - ./scheduledbackup.yaml
+  - ./scheduledbackup18.yaml
   - ./service.yaml
