@@ -11,6 +11,3 @@ spec:
     - dnsName: "external.vaderrp.com"
       recordType: CNAME
       targets: ["00097bc2-e440-430e-83b5-161e5a94d02f.cfargotunnel.com"]
-    - dnsName: "cluster.shadowmorph.info"
-      recordType: CNAME
-      targets: ["00097bc2-e440-430e-83b5-161e5a94d02f.cfargotunnel.com"]
