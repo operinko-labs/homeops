@@ -24,13 +24,6 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: /manage/api
-      backendRefs:
-        - name: stalwart-api
-          port: 3000
-    - matches:
-        - path:
-            type: PathPrefix
             value: /
       backendRefs:
         - name: stalwart-app

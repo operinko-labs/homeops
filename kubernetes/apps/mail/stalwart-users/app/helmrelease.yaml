@@ -1,0 +1,107 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: stalwart-users
+  namespace: mail
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: stalwart-users
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      backend:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: harbor.vaderrp.com/operinko-labs/stalwart-users
+              tag: v0.2.0
+            env:
+              TZ: Europe/Helsinki
+              PORT: "3000"
+              STALWART_URL: "http://stalwart-app.mail.svc.cluster.local:8080"
+              CORS_ORIGIN: "https://email-users.vaderrp.com"
+            envFrom:
+              - secretRef:
+                  name: "{{ .Release.Name }}-secret"
+            probes:
+              liveness: &backend-probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: &backend-port 3000
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *backend-probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+      frontend:
+        containers:
+          app:
+            image:
+              repository: harbor.vaderrp.com/operinko-labs/stalwart-users-frontend
+              tag: v0.2.0
+            env:
+              TZ: Europe/Helsinki
+            probes:
+              liveness: &frontend-probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &frontend-port 80
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *frontend-probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 5m
+                memory: 16Mi
+              limits:
+                memory: 64Mi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: false
+        seccompProfile: {type: RuntimeDefault}
+    service:
+      backend:
+        controller: backend
+        ports:
+          http:
+            port: *backend-port
+      frontend:
+        controller: frontend
+        ports:
+          http:
+            port: *frontend-port

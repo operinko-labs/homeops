@@ -71,42 +71,6 @@ spec:
                 memory: 256Mi
               limits:
                 memory: 1Gi
-          user-mgmt-api:
-            image:
-              repository: harbor.vaderrp.com/operinko-labs/stalwart-users
-              tag: latest
-            env:
-              TZ: Europe/Helsinki
-              PORT: "3000"
-              STALWART_URL: "http://localhost:8080"
-              ADMIN_USERS: "admin"
-              PATH_PREFIX: "/manage/api"
-            envFrom:
-              - secretRef:
-                  name: "{{ .Release.Name }}-secret"
-            probes:
-              liveness: &api-probes
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /healthz
-                    port: &api-port 3000
-                  initialDelaySeconds: 10
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 3
-              readiness: *api-probes
-            securityContext:
-              allowPrivilegeEscalation: false
-              readOnlyRootFilesystem: true
-              capabilities: {drop: ["ALL"]}
-            resources:
-              requests:
-                cpu: 10m
-                memory: 32Mi
-              limits:
-                memory: 128Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -121,11 +85,6 @@ spec:
         ports:
           http:
             port: *http-port
-      api:
-        controller: stalwart
-        ports:
-          http:
-            port: *api-port
       mail:
         controller: stalwart
         type: ClusterIP
