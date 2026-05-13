@@ -1,0 +1,58 @@
+{
+  "active_plan": "C:\\Users\\ollie\\homeops\\.sisyphus\\plans\\stalwart-user-management.md",
+  "started_at": "2026-05-12T21:37:22.974Z",
+  "session_ids": [
+    "ses_1e39bd04effeC6F6uK1bB4Kqsd",
+    "ses_1e1a493aaffe4Gw9hemllFVewH",
+    "ses_1e1a45136ffeHXbsBqR1od4IzT",
+    "ses_1e1a3eb31ffepxTX1QQ9Qc43uX",
+    "ses_1e19843e8ffeiVZ5vh1ncKxdvZ",
+    "ses_1df4ae3ecffeYe91DwTKuhCoU8",
+    "ses_1df1b59aeffeNG9oTWFWaMqvHJ",
+    "ses_1dedcc045ffe2Sw4cG8CpzYwRo",
+    "ses_1dedc9d4dffe3JfX4Fs3rkRUG1",
+    "ses_1dedc80cfffe5ZbuerTMZ3Vznt"
+  ],
+  "session_origins": {
+    "ses_1e39bd04effeC6F6uK1bB4Kqsd": "direct",
+    "ses_1e1a493aaffe4Gw9hemllFVewH": "appended",
+    "ses_1e1a45136ffeHXbsBqR1od4IzT": "appended",
+    "ses_1e1a3eb31ffepxTX1QQ9Qc43uX": "appended",
+    "ses_1e19843e8ffeiVZ5vh1ncKxdvZ": "appended",
+    "ses_1df4ae3ecffeYe91DwTKuhCoU8": "appended",
+    "ses_1df1b59aeffeNG9oTWFWaMqvHJ": "appended",
+    "ses_1dedcc045ffe2Sw4cG8CpzYwRo": "appended",
+    "ses_1dedc9d4dffe3JfX4Fs3rkRUG1": "appended",
+    "ses_1dedc80cfffe5ZbuerTMZ3Vznt": "appended"
+  },
+  "plan_name": "stalwart-user-management",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Go Project Scaffolding + CI Skeleton",
+      "session_id": "ses_1e1ded1c0ffe8bevB3xh5bS2mR",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-12T21:43:47.608Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Database Layer + Connection + Health Check",
+      "session_id": "ses_1e1d80fa7ffe1sAqeEWjHvnoHo",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-12T21:53:53.446Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_1e19843e8ffeiVZ5vh1ncKxdvZ",
+      "agent": "oracle",
+      "updated_at": "2026-05-12T22:56:35.072Z"
+    }
+  }
+}
