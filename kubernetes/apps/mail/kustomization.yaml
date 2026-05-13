@@ -5,6 +5,7 @@ namespace: mail
 resources:
   - ./namespace.yaml
   - ./stalwart/ks.yaml
+  - ./stalwart-users/ks.yaml
   - ./bulwark/ks.yaml
 components:
   - ../../components/common
