@@ -60,6 +60,9 @@ spec:
               limits:
                 memory: 128Mi
       frontend:
+        pod:
+          securityContext:
+            runAsNonRoot: false
         containers:
           app:
             image:
@@ -83,7 +86,9 @@ spec:
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: false
-              capabilities: {drop: ["ALL"]}
+              capabilities:
+                drop: ["ALL"]
+                add: ["CHOWN", "SETUID", "SETGID", "NET_BIND_SERVICE"]
             resources:
               requests:
                 cpu: 5m
@@ -92,7 +97,7 @@ spec:
                 memory: 64Mi
     defaultPodOptions:
       securityContext:
-        runAsNonRoot: false
+        runAsNonRoot: true
         seccompProfile: {type: RuntimeDefault}
     service:
       backend:
