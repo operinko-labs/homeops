@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: harbor.vaderrp.com/operinko-labs/stalwart-users
-              tag: v0.2.1
+              tag: v0.2.2
             env:
               TZ: Europe/Helsinki
               PORT: "3000"
@@ -67,7 +67,7 @@ spec:
           app:
             image:
               repository: harbor.vaderrp.com/operinko-labs/stalwart-users-frontend
-              tag: v0.2.1
+              tag: v0.2.2
             env:
               TZ: Europe/Helsinki
             probes:
