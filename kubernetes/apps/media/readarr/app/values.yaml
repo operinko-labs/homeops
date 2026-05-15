@@ -20,7 +20,7 @@ controllers:
       init-db:
         image:
           repository: ghcr.io/home-operations/postgres-init
-          tag: 18.3
+          tag: 18.4
         env:
           INIT_POSTGRES_DBNAME: readarr-main readarr-logs readarr-cache
           INIT_POSTGRES_HOST: postgres17.database.svc.cluster.local.
