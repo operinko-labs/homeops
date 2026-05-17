@@ -6,4 +6,5 @@ resources:
   - ocirepository.yaml
   - helmrelease.yaml
   - httproute.yaml
+  - httproute-erinko.yaml
   - pvc.yaml

@@ -1,0 +1,15 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: erinko-fi-production
+  namespace: network
+spec:
+  secretName: erinko-fi-production-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "erinko.fi"
+  dnsNames:
+    - "erinko.fi"
+    - "*.erinko.fi"
