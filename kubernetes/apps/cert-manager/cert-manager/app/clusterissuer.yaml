@@ -24,4 +24,10 @@ spec:
               key: shadowmorph-api-token
         selector:
           dnsZones: ["shadowmorph.info"]
-
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cert-manager-secret
+              key: erinko-api-token
+        selector:
+          dnsZones: ["erinko.fi"]
