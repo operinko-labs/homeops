@@ -13,3 +13,17 @@ spec:
   commonName: "vaderrp.com"
   dnsNames: ["vaderrp.com", "*.vaderrp.com"]
 
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/cert-manager.io/certificate_v1.json
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: erinko-fi-production
+  namespace: cert-manager
+spec:
+  secretName: erinko-fi-production-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "erinko.fi"
+  dnsNames: ["erinko.fi", "*.erinko.fi"]
