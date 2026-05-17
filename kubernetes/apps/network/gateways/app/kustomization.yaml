@@ -10,4 +10,5 @@ resources:
   - gateway-public.yaml
   - gatewayclass.yaml
   - httproute-traefik-dashboard.yaml
+  - service-traefik-wg.yaml
 

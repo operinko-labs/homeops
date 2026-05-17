@@ -36,4 +36,16 @@ spec:
         certificateRefs:
           - kind: Secret
             name: vaderrp-com-production-tls
+    - name: https-erinko
+      protocol: HTTPS
+      port: 443
+      hostname: "*.erinko.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: erinko-fi-production-tls
 
