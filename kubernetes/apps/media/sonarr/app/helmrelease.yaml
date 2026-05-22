@@ -38,7 +38,7 @@ spec:
           init-db:
             image:
               repository: ghcr.io/home-operations/postgres-init
-              tag: 18.3
+              tag: 18.4
             env:
               INIT_POSTGRES_DBNAME: sonarr-main sonarr-logs
               INIT_POSTGRES_HOST: postgres17.database.svc.cluster.local.
