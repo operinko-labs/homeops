@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: ghcr.io/goauthentik/server
-              tag: 2026.2.2
+              tag: 2026.5.0
             args: ["server"]
             env:
               AUTHENTIK_POSTGRESQL__HOST: "postgres17.database.svc.cluster.local."
@@ -99,7 +99,7 @@ spec:
           app:
             image:
               repository: ghcr.io/goauthentik/server
-              tag: 2026.2.2
+              tag: 2026.5.0
             args: ["worker"]
             env:
               AUTHENTIK_POSTGRESQL__HOST: "postgres17.database.svc.cluster.local."
