@@ -46,7 +46,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: kubectl
-              image: docker.io/alpine/k8s:1.36.0
+              image: docker.io/alpine/k8s:1.36.1
               imagePullPolicy: IfNotPresent
               command:
                 - /bin/sh
