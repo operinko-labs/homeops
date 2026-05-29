@@ -38,4 +38,4 @@ spec:
       interval: 1m
 
   updateStrategy:
-    type: ReplicaSet
+    type: RollingUpdate

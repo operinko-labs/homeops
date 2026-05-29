@@ -1,0 +1,31 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/k8s.mariadb.com/backup_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Backup
+metadata:
+  name: mariadb-backup
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+
+  schedule:
+    cron: "0 2 * * *"   # daily at 02:00, offset from CNPG's midnight run
+    suspend: false
+
+  maxRetention: 720h    # 30 days
+
+  storage:
+    s3:
+      bucket: mariadb
+      prefix: mariadb
+      endpoint: minio.vaderrp.com:9000
+      region: us-east-1
+      tls:
+        enabled: true
+      accessKeyIdSecretKeyRef:
+        name: mariadb-minio
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-minio
+        key: secret-access-key
