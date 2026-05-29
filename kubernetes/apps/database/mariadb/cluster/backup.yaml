@@ -24,8 +24,8 @@ spec:
       tls:
         enabled: true
       accessKeyIdSecretKeyRef:
-        name: mariadb-minio
-        key: access-key-id
+        name: cloudnative-pg-secret
+        key: aws-access-key-id
       secretAccessKeySecretKeyRef:
-        name: mariadb-minio
-        key: secret-access-key
+        name: cloudnative-pg-secret
+        key: aws-secret-access-key
