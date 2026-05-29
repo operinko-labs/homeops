@@ -26,9 +26,11 @@ spec:
 
   myCnf: |
     [mysqld]
-    character-set-server = utf8mb4
-    collation-server     = utf8mb4_unicode_ci
-    max_allowed_packet   = 256M
+    character-set-server  = utf8mb4
+    collation-server      = utf8mb4_unicode_ci
+    max_allowed_packet    = 256M
+    # Drupal requires READ COMMITTED; MariaDB default is REPEATABLE READ
+    transaction_isolation = READ-COMMITTED
 
   metrics:
     enabled: true
