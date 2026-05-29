@@ -1,31 +1,60 @@
 ---
-# yaml-language-server: $schema=https://crd.movishell.pl/k8s.mariadb.com/backup_v1alpha1.json
+# Scheduled physical backup — runs daily at 02:00.
+# For ad-hoc / restore-to-new-cluster operations, create a one-off Backup:
+#
+#   apiVersion: k8s.mariadb.com/v1alpha1
+#   kind: Backup
+#   metadata:
+#     name: manual-backup-<slug>
+#     namespace: database
+#   spec:
+#     mariaDbRef:
+#       name: mariadb
+#     storage:
+#       s3:
+#         bucket: mariadb
+#         prefix: backup
+#         endpoint: minio.vaderrp.com:9000
+#         region: us-east-1
+#         accessKeyIdSecretKeyRef:
+#           name: mariadb-s3-secret
+#           key: access-key-id
+#         secretAccessKeySecretKeyRef:
+#           name: mariadb-s3-secret
+#           key: secret-access-key
+#         tls:
+#           enabled: true
 apiVersion: k8s.mariadb.com/v1alpha1
-kind: Backup
+kind: PhysicalBackup
 metadata:
   name: mariadb-backup
   namespace: database
 spec:
   mariaDbRef:
     name: mariadb
-
   schedule:
-    cron: "0 2 * * *"   # daily at 02:00, offset from CNPG's midnight run
+    cron: "0 2 * * *"
     suspend: false
-
-  maxRetention: 720h    # 30 days
-
   storage:
     s3:
       bucket: mariadb
-      prefix: mariadb
+      prefix: backup
       endpoint: minio.vaderrp.com:9000
       region: us-east-1
+      accessKeyIdSecretKeyRef:
+        name: mariadb-s3-secret
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-s3-secret
+        key: secret-access-key
       tls:
         enabled: true
-      accessKeyIdSecretKeyRef:
-        name: cloudnative-pg-secret
-        key: aws-access-key-id
-      secretAccessKeySecretKeyRef:
-        name: cloudnative-pg-secret
-        key: aws-secret-access-key
+  timeout: 1h
+  podAffinity: true
+  stagingStorage:
+    persistentVolumeClaim:
+      resources:
+        requests:
+          storage: 1Gi
+      accessModes:
+        - ReadWriteOnce
