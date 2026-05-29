@@ -1,0 +1,46 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/fluxcd.controlplane.io/resourceset_v1.json
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSet
+metadata:
+  name: paikky
+  namespace: paikky
+  annotations:
+    fluxcd.controlplane.io/reconcile: "enabled"
+    fluxcd.controlplane.io/reconcileEvery: "5m"
+    fluxcd.controlplane.io/reconcileTimeout: "10m"
+spec:
+  inputsFrom:
+    - kind: ResourceSetInputProvider
+      name: paikky-branches
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      metadata:
+        name: paikky-<< inputs.branch >>
+        namespace: paikky
+      spec:
+        interval: 1m
+        url: https://github.com/operinko-labs/paikky
+        ref:
+          branch: << inputs.branch >>
+        secretRef:
+          name: paikky-github-pat
+
+    - apiVersion: kustomize.toolkit.fluxcd.io/v1
+      kind: Kustomization
+      metadata:
+        name: paikky-<< inputs.branch >>
+        namespace: paikky
+      spec:
+        interval: 5m
+        prune: true
+        wait: true
+        timeout: 5m
+        force: true
+        decryption:
+          provider: sops
+        sourceRef:
+          kind: GitRepository
+          name: paikky-<< inputs.branch >>
+        path: ./deploy/k8s/overlays/<< inputs.branch >>

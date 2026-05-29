@@ -1,0 +1,39 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/k8s.mariadb.com/mariadb_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb
+  namespace: database
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb-root
+    key: password
+
+  image: mariadb:11.4
+  port: 3306
+
+  storage:
+    size: 20Gi
+    storageClassName: tns-iscsi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+  myCnf: |
+    [mysqld]
+    character-set-server = utf8mb4
+    collation-server     = utf8mb4_unicode_ci
+    max_allowed_packet   = 256M
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      interval: 1m
+
+  updateStrategy:
+    type: ReplicaSet

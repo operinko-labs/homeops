@@ -1,0 +1,48 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: aikido8
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: aikido8
+  characterSet: utf8mb4
+  collate: utf8mb4_unicode_ci
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: ruskonkesateatteri
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: ruskonkesateatteri
+  characterSet: utf8mb4
+  collate: utf8mb4_unicode_ci
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: leo
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: leo
+  characterSet: utf8mb4
+  collate: utf8mb4_unicode_ci
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: dmarc
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: dmarc
+  characterSet: utf8mb4
+  collate: utf8mb4_unicode_ci

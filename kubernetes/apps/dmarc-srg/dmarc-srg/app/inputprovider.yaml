@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/fluxcd.controlplane.io/resourcesetinputprovider_v1.json
+apiVersion: fluxcd.controlplane.io/v1
+kind: ResourceSetInputProvider
+metadata:
+  name: dmarc-srg-branches
+  namespace: dmarc-srg
+  annotations:
+    fluxcd.controlplane.io/reconcile: "enabled"
+    fluxcd.controlplane.io/reconcileEvery: "1m"
+spec:
+  type: GitHubBranch
+  url: https://github.com/operinko-labs/dmarc-srg
+  filter:
+    includeBranch: "^main$"
+  secretRef:
+    name: dmarc-srg-github-pat
