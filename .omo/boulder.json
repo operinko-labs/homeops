@@ -11,7 +11,9 @@
     "ses_1df1b59aeffeNG9oTWFWaMqvHJ",
     "ses_1dedcc045ffe2Sw4cG8CpzYwRo",
     "ses_1dedc9d4dffe3JfX4Fs3rkRUG1",
-    "ses_1dedc80cfffe5ZbuerTMZ3Vznt"
+    "ses_1dedc80cfffe5ZbuerTMZ3Vznt",
+    "ses_1dd79362fffeEyQrn37FXV93tQ",
+    "ses_1dd79117dffeOs97pfbEBkeuhT"
   ],
   "session_origins": {
     "ses_1e39bd04effeC6F6uK1bB4Kqsd": "direct",
@@ -23,7 +25,9 @@
     "ses_1df1b59aeffeNG9oTWFWaMqvHJ": "appended",
     "ses_1dedcc045ffe2Sw4cG8CpzYwRo": "appended",
     "ses_1dedc9d4dffe3JfX4Fs3rkRUG1": "appended",
-    "ses_1dedc80cfffe5ZbuerTMZ3Vznt": "appended"
+    "ses_1dedc80cfffe5ZbuerTMZ3Vznt": "appended",
+    "ses_1dd79362fffeEyQrn37FXV93tQ": "appended",
+    "ses_1dd79117dffeOs97pfbEBkeuhT": "appended"
   },
   "plan_name": "stalwart-user-management",
   "agent": "atlas",
