@@ -21,14 +21,14 @@ spec:
           cloudflare:
             apiTokenSecretRef:
               name: cert-manager-secret
-              key: shadowmorph-api-token
+              key: apitoken
         selector:
           dnsZones: ["shadowmorph.info"]
       - dns01:
           cloudflare:
             apiTokenSecretRef:
               name: cert-manager-secret
-              key: erinko-api-token
+              key: apitoken
         selector:
           dnsZones: ["erinko.fi"]
       - dns01:
