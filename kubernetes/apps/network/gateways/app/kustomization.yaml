@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - certificate.yaml
   - certificate-erinko.yaml
+  - certificate-hietamakidojo.yaml
+  - certificate-ruskonkesateatteri.yaml
   - certificate-shadowmorph.yaml
   - external-vaderrp-dnsendpoint.yaml
   - gateway-internal.yaml

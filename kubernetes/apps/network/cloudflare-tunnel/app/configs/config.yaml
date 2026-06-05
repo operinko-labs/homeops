@@ -7,6 +7,20 @@ ingress:
     service: &svc https://traefik.network.svc.cluster.local:443
   - hostname: "*.vaderrp.com"
     service: *svc
+  - hostname: "shadowmorph.info"
+    service: *svc
   - hostname: "*.shadowmorph.info"
+    service: *svc
+  - hostname: "erinko.fi"
+    service: *svc
+  - hostname: "*.erinko.fi"
+    service: *svc
+  - hostname: "hietamakidojo.fi"
+    service: *svc
+  - hostname: "*.hietamakidojo.fi"
+    service: *svc
+  - hostname: "ruskonkesateatteri.fi"
+    service: *svc
+  - hostname: "*.ruskonkesateatteri.fi"
     service: *svc
   - service: http_status:404

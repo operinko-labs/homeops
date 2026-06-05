@@ -31,3 +31,17 @@ spec:
               key: erinko-api-token
         selector:
           dnsZones: ["erinko.fi"]
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cert-manager-secret
+              key: hietamakidojo-api-token
+        selector:
+          dnsZones: ["hietamakidojo.fi"]
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cert-manager-secret
+              key: ruskonkesateatteri-api-token
+        selector:
+          dnsZones: ["ruskonkesateatteri.fi"]

@@ -1,11 +1,9 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: database
+namespace: leo-cal
 resources:
   - ./namespace.yaml
-  - ./cloudnative-pg/ks.yaml
-  - ./dragonfly/ks.yaml
-  - ./mariadb/ks.yaml
+  #- ./leo-cal/ks.yaml
 components:
   - ../../components/common

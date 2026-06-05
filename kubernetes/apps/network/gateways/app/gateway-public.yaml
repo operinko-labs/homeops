@@ -44,3 +44,39 @@ spec:
         certificateRefs:
           - kind: Secret
             name: shadowmorph-info-production-tls
+    - name: https-erinko
+      protocol: HTTPS
+      port: 443
+      hostname: "*.erinko.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: erinko-fi-production-tls
+    - name: https-hietamakidojo
+      protocol: HTTPS
+      port: 443
+      hostname: "*.hietamakidojo.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: hietamakidojo-fi-production-tls
+    - name: https-ruskonkesateatteri
+      protocol: HTTPS
+      port: 443
+      hostname: "*.ruskonkesateatteri.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: ruskonkesateatteri-fi-production-tls

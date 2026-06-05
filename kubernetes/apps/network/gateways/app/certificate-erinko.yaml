@@ -9,6 +9,7 @@ spec:
   issuerRef:
     name: letsencrypt-production
     kind: ClusterIssuer
-  commonName: "webmail.erinko.fi"
+  commonName: "erinko.fi"
   dnsNames:
-    - "webmail.erinko.fi"
+    - "erinko.fi"
+    - "*.erinko.fi"

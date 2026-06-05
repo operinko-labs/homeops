@@ -1,0 +1,60 @@
+---
+# Scheduled physical backup — runs daily at 02:00.
+# For ad-hoc / restore-to-new-cluster operations, create a one-off Backup:
+#
+#   apiVersion: k8s.mariadb.com/v1alpha1
+#   kind: Backup
+#   metadata:
+#     name: manual-backup-<slug>
+#     namespace: database
+#   spec:
+#     mariaDbRef:
+#       name: mariadb
+#     storage:
+#       s3:
+#         bucket: mariadb
+#         prefix: backup
+#         endpoint: minio.vaderrp.com:9000
+#         region: us-east-1
+#         accessKeyIdSecretKeyRef:
+#           name: mariadb-s3-secret
+#           key: access-key-id
+#         secretAccessKeySecretKeyRef:
+#           name: mariadb-s3-secret
+#           key: secret-access-key
+#         tls:
+#           enabled: true
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: PhysicalBackup
+metadata:
+  name: mariadb-backup
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  schedule:
+    cron: "0 2 * * *"
+    suspend: false
+  storage:
+    s3:
+      bucket: mariadb
+      prefix: backup
+      endpoint: minio.vaderrp.com:9000
+      region: us-east-1
+      accessKeyIdSecretKeyRef:
+        name: mariadb-s3-secret
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-s3-secret
+        key: secret-access-key
+      tls:
+        enabled: true
+  timeout: 1h
+  podAffinity: true
+  stagingStorage:
+    persistentVolumeClaim:
+      resources:
+        requests:
+          storage: 1Gi
+      accessModes:
+        - ReadWriteOnce

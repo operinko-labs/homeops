@@ -1,0 +1,56 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: hietamakidojo
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: hietamakidojo
+  passwordSecretKeyRef:
+    name: mariadb-hietamakidojo
+    key: password
+  maxUserConnections: 20
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: ruskonkesateatteri
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: ruskonkesateatteri
+  passwordSecretKeyRef:
+    name: mariadb-ruskonkesateatteri
+    key: password
+  maxUserConnections: 20
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: leo
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: leo
+  passwordSecretKeyRef:
+    name: mariadb-leo
+    key: password
+  maxUserConnections: 20
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: dmarc
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: dmarc
+  passwordSecretKeyRef:
+    name: mariadb-dmarc
+    key: password
+  maxUserConnections: 20

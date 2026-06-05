@@ -1,0 +1,52 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: hietamakidojo
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: aikido8
+  table: "*"
+  username: hietamakidojo
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: ruskonkesateatteri
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: ruskonkesateatteri
+  table: "*"
+  username: ruskonkesateatteri
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: leo
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: leo
+  table: "*"
+  username: leo
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: dmarc
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: dmarc
+  table: "*"
+  username: dmarc
