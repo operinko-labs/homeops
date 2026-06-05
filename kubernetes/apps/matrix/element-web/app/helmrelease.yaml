@@ -1,0 +1,75 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: element-web
+  namespace: matrix
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: element-web
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      element-web:
+        strategy: RollingUpdate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/element-hq/element-web
+              tag: v1.11.97
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 80
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile: {type: RuntimeDefault}
+
+    service:
+      app:
+        controller: element-web
+        ports:
+          http:
+            port: *port
+
+    persistence:
+      config:
+        type: configMap
+        name: element-web-config
+        globalMounts:
+          - path: /app/config.json
+            subPath: config.json
+            readOnly: true

@@ -1,0 +1,57 @@
+---
+# Scans the local media store and uploads any files not yet in S3.
+# Run manually first to verify: kubectl create job --from=cronjob/synapse-s3-media-upload synapse-s3-upload-manual -n matrix
+# Add --delete flag to args once you're confident media is durably stored in S3.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: synapse-s3-media-upload
+  namespace: matrix
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 991
+            runAsGroup: 991
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: s3-upload
+              image: harbor.vaderrp.com/operinko-labs/synapse:v1.131.0
+              command: [s3_media_upload]
+              args:
+                - --config
+                - /config/homeserver.yaml
+                - scan
+                - local
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: false
+                capabilities: {drop: ["ALL"]}
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              volumeMounts:
+                - name: config
+                  mountPath: /config/homeserver.yaml
+                  subPath: homeserver.yaml
+                  readOnly: true
+                - name: data
+                  mountPath: /data
+          volumes:
+            - name: config
+              secret:
+                secretName: synapse-secret
+            - name: data
+              persistentVolumeClaim:
+                claimName: synapse
