@@ -4,6 +4,6 @@ kind: Kustomization
 namespace: leo-cal
 resources:
   - ./namespace.yaml
-  - ./leo-cal/ks.yaml
+  #- ./leo-cal/ks.yaml
 components:
   - ../../components/common

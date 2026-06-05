@@ -4,6 +4,6 @@ kind: Kustomization
 namespace: paikky
 resources:
   - ./namespace.yaml
-  - ./paikky/ks.yaml
+  #- ./paikky/ks.yaml
 components:
   - ../../components/common
