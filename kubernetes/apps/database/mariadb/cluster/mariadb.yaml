@@ -10,7 +10,7 @@ spec:
     name: mariadb-root
     key: password
 
-  image: mariadb:11.4
+  image: mariadb:12.3
   port: 3306
 
   storage:
