@@ -35,13 +35,13 @@ spec:
           cloudflare:
             apiTokenSecretRef:
               name: cert-manager-secret
-              key: hietamakidojo-api-token
+              key: apitoken
         selector:
           dnsZones: ["hietamakidojo.fi"]
       - dns01:
           cloudflare:
             apiTokenSecretRef:
               name: cert-manager-secret
-              key: ruskonkesateatteri-api-token
+              key: apitoken
         selector:
           dnsZones: ["ruskonkesateatteri.fi"]
