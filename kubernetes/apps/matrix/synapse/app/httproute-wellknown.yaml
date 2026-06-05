@@ -1,0 +1,31 @@
+---
+# Routes /.well-known/matrix/ from the bare erinko.fi domain to Synapse.
+# Synapse serves these endpoints automatically when serve_server_wellknown: true,
+# allowing Matrix ID delegation (@user:erinko.fi) while the homeserver runs at matrix.erinko.fi.
+# After first deploy, verify the responses:
+#   curl https://erinko.fi/.well-known/matrix/server  -> {"m.server":"matrix.erinko.fi:443"}
+#   curl https://erinko.fi/.well-known/matrix/client  -> {"m.homeserver":{"base_url":"https://matrix.erinko.fi"}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: synapse-wellknown
+  namespace: matrix
+  labels:
+    route.scope: external
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+      sectionName: https-erinko-root
+  hostnames:
+    - erinko.fi
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /.well-known/matrix/
+      backendRefs:
+        - name: synapse-app
+          port: 8008

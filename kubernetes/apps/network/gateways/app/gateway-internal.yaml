@@ -39,7 +39,7 @@ spec:
     - name: https-erinko
       protocol: HTTPS
       port: 443
-      hostname: "webmail.erinko.fi"
+      hostname: "*.erinko.fi"
       allowedRoutes:
         namespaces:
           from: All
