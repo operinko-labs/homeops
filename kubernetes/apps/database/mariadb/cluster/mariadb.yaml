@@ -13,6 +13,20 @@ spec:
   image: mariadb:11.4
   port: 3306
 
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
   storage:
     size: 20Gi
     storageClassName: tns-iscsi
