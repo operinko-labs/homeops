@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: parsedmarc-config
+data:
+  parsedmarc.ini.tpl: |
+    [general]
+    save_aggregate = True
+    save_forensic = True
+    output = /tmp/parsedmarc-output
+
+    [imap]
+    host = stalwart-mail.mail.svc.cluster.local
+    port = 993
+    ssl = True
+    skip_certificate_verification = True
+    user = postmaster@erinko.fi
+    password = __IMAP_PASSWORD__
+    reports_folder = INBOX
+    archive_folder = INBOX.DMARC-Processed
+    watch = False
+    delete = False
+
+  run.sh: |
+    #!/bin/sh
+    set -e
+    mkdir -p /tmp/parsedmarc-output
+    python3 -c "
+    import os
+    tpl = open('/etc/parsedmarc/parsedmarc.ini.tpl').read()
+    open('/tmp/parsedmarc.ini', 'w').write(tpl.replace('__IMAP_PASSWORD__', os.environ['IMAP_PASSWORD']))
+    "
+    parsedmarc -c /tmp/parsedmarc.ini
+    python3 /etc/parsedmarc/emit.py
+
+  emit.py: |
+    import json, os
+
+    def emit(path, report_type):
+        if not os.path.exists(path):
+            return
+        with open(path) as f:
+            try:
+                reports = json.load(f)
+            except (json.JSONDecodeError, ValueError):
+                return
+        if not reports:
+            return
+        if report_type == 'aggregate':
+            for report in reports:
+                meta = report.get('report_metadata', {})
+                policy = report.get('policy_published', {})
+                for record in report.get('records', []):
+                    entry = {
+                        'type': 'dmarc_aggregate',
+                        'reporter': meta.get('org_name'),
+                        'domain': policy.get('domain'),
+                        'source_ip': record.get('source', {}).get('ip_address'),
+                        'count': record.get('count', 0),
+                        'disposition': record.get('policy_evaluated', {}).get('disposition'),
+                        'dkim': record.get('policy_evaluated', {}).get('dkim'),
+                        'spf': record.get('policy_evaluated', {}).get('spf'),
+                        'header_from': record.get('identifiers', {}).get('header_from'),
+                        'envelope_from': record.get('identifiers', {}).get('envelope_from'),
+                    }
+                    print(json.dumps(entry), flush=True)
+        else:
+            for report in reports:
+                print(json.dumps({'type': 'dmarc_forensic', **report}), flush=True)
+
+    emit('/tmp/parsedmarc-output/aggregate_reports.json', 'aggregate')
+    emit('/tmp/parsedmarc-output/forensic_reports.json', 'forensic')

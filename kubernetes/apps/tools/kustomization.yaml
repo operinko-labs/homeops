@@ -8,6 +8,7 @@ resources:
   - ./headlamp/ks.yaml
   - ./log-aggregator/ks.yaml
   - ./n8n/ks.yaml
+  - ./parsedmarc/ks.yaml
   - ./tainer/ks.yaml
 components:
   - ../../components/common

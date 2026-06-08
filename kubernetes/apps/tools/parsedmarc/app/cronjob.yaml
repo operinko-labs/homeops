@@ -1,0 +1,38 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: parsedmarc
+spec:
+  schedule: "0 6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: parsedmarc
+              image: domainaware/parsedmarc:latest
+              command: ["sh", "/etc/parsedmarc/run.sh"]
+              env:
+                - name: IMAP_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: parsedmarc-imap
+                      key: IMAP_PASSWORD
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/parsedmarc
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+          volumes:
+            - name: config
+              configMap:
+                name: parsedmarc-config
