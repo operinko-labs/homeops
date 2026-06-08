@@ -16,7 +16,7 @@ spec:
           containers:
             - name: parsedmarc
               image: ghcr.io/domainaware/parsedmarc:latest
-              command: ["sh", "/etc/parsedmarc/run.sh"]
+              command: ["python3", "/etc/parsedmarc/run.py"]
               env:
                 - name: IMAP_PASSWORD
                   valueFrom:

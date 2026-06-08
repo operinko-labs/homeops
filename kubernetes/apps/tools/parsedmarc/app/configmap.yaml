@@ -4,47 +4,81 @@ kind: ConfigMap
 metadata:
   name: parsedmarc-config
 data:
-  parsedmarc.ini.tpl: |
-    [general]
-    save_aggregate = True
-    save_forensic = True
+  run.py: |
+    #!/usr/bin/env python3
+    import json, os, sys
+    from datetime import datetime, timezone
 
-    [imap]
-    host = stalwart-mail.mail.svc.cluster.local
-    port = 993
-    ssl = True
-    skip_certificate_verification = True
-    user = postmaster@erinko.fi
-    password = __IMAP_PASSWORD__
+    import parsedmarc
+    import boto3
 
-    [mailbox]
-    reports_folder = INBOX
-    archive_folder = INBOX/DMARC-Processed
-    watch = False
-    delete = False
-    batch_size = 50
+    imap_password     = os.environ['IMAP_PASSWORD']
+    s3_key_id         = os.environ['S3_ACCESS_KEY_ID']
+    s3_secret         = os.environ['S3_SECRET_ACCESS_KEY']
+    s3_region         = os.environ['S3_REGION']
+    s3_endpoint       = os.environ['S3_ENDPOINT']
 
-    [syslog]
-    server = alloy-syslog.observability.svc.cluster.local
-    port = 6514
-    protocol = tcp
+    conn = parsedmarc.IMAPConnection(
+        host='stalwart-mail.mail.svc.cluster.local',
+        user='postmaster@erinko.fi',
+        password=imap_password,
+        port=993,
+        ssl=True,
+        verify=False,
+    )
 
-    [s3]
-    bucket = parsedmarc
-    path = /
-    access_key_id = __S3_ACCESS_KEY_ID__
-    secret_access_key = __S3_SECRET_ACCESS_KEY__
-    region_name = __S3_REGION__
-    endpoint_url = __S3_ENDPOINT__
+    results = parsedmarc.get_dmarc_reports_from_mailbox(
+        conn,
+        reports_folder='INBOX',
+        archive_folder='INBOX/DMARC-Processed',
+        delete=False,
+        batch_size=50,
+        create_folders=True,
+    )
 
-  run.sh: |
-    #!/bin/sh
-    set -e
-    python3 -c "
-    import os
-    tpl = open('/etc/parsedmarc/parsedmarc.ini.tpl').read()
-    for key in ['IMAP_PASSWORD', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_REGION', 'S3_ENDPOINT']:
-        tpl = tpl.replace('__' + key + '__', os.environ[key])
-    open('/tmp/parsedmarc.ini', 'w').write(tpl)
-    "
-    parsedmarc -c /tmp/parsedmarc.ini
+    aggregate_reports = results.get('aggregate_reports', [])
+    failure_reports   = results.get('failure_reports', [])
+
+    for report in aggregate_reports:
+        meta   = report.get('report_metadata', {})
+        policy = report.get('policy_published', {})
+        for record in report.get('records', []):
+            source      = record.get('source', {})
+            policy_eval = record.get('policy_evaluated', {})
+            ids         = record.get('identifiers', {})
+            print(json.dumps({
+                'type':          'dmarc_aggregate',
+                'reporter':      meta.get('org_name'),
+                'domain':        policy.get('domain'),
+                'source_ip':     source.get('ip_address'),
+                'count':         record.get('count', 0),
+                'disposition':   policy_eval.get('disposition'),
+                'dkim':          policy_eval.get('dkim'),
+                'spf':           policy_eval.get('spf'),
+                'header_from':   ids.get('header_from'),
+                'envelope_from': ids.get('envelope_from'),
+            }), flush=True)
+
+    for report in failure_reports:
+        print(json.dumps({'type': 'dmarc_failure', **report}), flush=True)
+
+    if not aggregate_reports and not failure_reports:
+        print(json.dumps({'type': 'dmarc_run', 'processed': 0}), flush=True)
+        sys.exit(0)
+
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=s3_key_id,
+        aws_secret_access_key=s3_secret,
+        region_name=s3_region,
+        endpoint_url=s3_endpoint,
+    )
+    ts  = datetime.now(tz=timezone.utc).strftime('%Y/%m/%d/%H%M%S')
+    key = f'aggregate/{ts}.json'
+    s3.put_object(
+        Bucket='parsedmarc',
+        Key=key,
+        Body=json.dumps(aggregate_reports, default=str),
+        ContentType='application/json',
+    )
+    print(json.dumps({'type': 'dmarc_run', 'processed': len(aggregate_reports), 's3_key': key}), flush=True)
