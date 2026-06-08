@@ -10,7 +10,7 @@ metadata:
     fluxcd.controlplane.io/reconcileEvery: "1m"
 spec:
   type: GitHubBranch
-  url: https://github.com/operinko-labs/leo-cal
+  url: https://github.com/operinko-labs/leo_cal
   filter:
     includeBranch: "^main$"
   secretRef:

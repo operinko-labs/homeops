@@ -21,7 +21,7 @@ spec:
         namespace: leo-cal
       spec:
         interval: 1m
-        url: https://github.com/operinko-labs/leo-cal
+        url: https://github.com/operinko-labs/leo_cal
         ref:
           branch: << inputs.branch >>
         secretRef:

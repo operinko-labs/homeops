@@ -21,7 +21,7 @@ spec:
         namespace: paikky
       spec:
         interval: 1m
-        url: https://github.com/operinko-labs/paikky
+        url: https://github.com/operinko-labs/paikky_calendar_export
         ref:
           branch: << inputs.branch >>
         secretRef:
