@@ -29,12 +29,22 @@ data:
     port = 6514
     protocol = tcp
 
+    [s3]
+    bucket = parsedmarc
+    path = /
+    access_key_id = __S3_ACCESS_KEY_ID__
+    secret_access_key = __S3_SECRET_ACCESS_KEY__
+    region_name = __S3_REGION__
+    endpoint_url = __S3_ENDPOINT__
+
   run.sh: |
     #!/bin/sh
     set -e
     python3 -c "
     import os
     tpl = open('/etc/parsedmarc/parsedmarc.ini.tpl').read()
-    open('/tmp/parsedmarc.ini', 'w').write(tpl.replace('__IMAP_PASSWORD__', os.environ['IMAP_PASSWORD']))
+    for key in ['IMAP_PASSWORD', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_REGION', 'S3_ENDPOINT']:
+        tpl = tpl.replace('__' + key + '__', os.environ[key])
+    open('/tmp/parsedmarc.ini', 'w').write(tpl)
     "
     parsedmarc -c /tmp/parsedmarc.ini
