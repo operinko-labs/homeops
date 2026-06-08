@@ -49,6 +49,8 @@ loki:
           prefix: loki_index_
           period: 24h
   structuredConfig:
+    limits_config:
+      allow_deletes: true
     ruler:
       enable_api: true
       enable_alertmanager_v2: true
