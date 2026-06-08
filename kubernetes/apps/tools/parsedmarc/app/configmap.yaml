@@ -25,7 +25,7 @@ data:
     batch_size = 50
 
     [syslog]
-    host = alloy-syslog.observability.svc.cluster.local
+    server = alloy-syslog.observability.svc.cluster.local
     port = 6514
     protocol = tcp
 
