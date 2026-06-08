@@ -42,7 +42,11 @@ data:
     for report in aggregate_reports:
         meta   = report.get('report_metadata', {})
         policy = report.get('policy_published', {})
-        report_end = meta.get('date_range', {}).get('end')
+        end_date_str = meta.get('end_date')
+        if end_date_str:
+            report_end = int(datetime.strptime(str(end_date_str), '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())
+        else:
+            report_end = None
         for record in report.get('records', []):
             source      = record.get('source', {})
             policy_eval = record.get('policy_evaluated', {})
