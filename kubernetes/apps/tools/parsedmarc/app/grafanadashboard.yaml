@@ -62,7 +62,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | unwrap count [$__range]))",
+              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "refId": "A"
             }
@@ -92,7 +92,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | dkim=`pass` | unwrap count [$__range]))",
+              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | dkim=`pass` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "refId": "A"
             }
@@ -122,7 +122,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | spf=`pass` | unwrap count [$__range]))",
+              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | spf=`pass` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "refId": "A"
             }
@@ -155,7 +155,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | disposition=~`quarantine|reject` | unwrap count [$__range]))",
+              "expr": "sum(sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | disposition=~`quarantine|reject` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "refId": "A"
             }
@@ -199,7 +199,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum by (disposition) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | unwrap count [$__interval]))",
+              "expr": "sum by (disposition) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__interval]))",
               "legendFormat": "{{disposition}}",
               "refId": "A"
             }
@@ -220,7 +220,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum by (source_ip, domain, reporter) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | dkim=`fail` | spf=`fail` | unwrap count [$__range]))",
+              "expr": "sum by (source_ip, domain, reporter) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | dkim=`fail` | spf=`fail` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "legendFormat": "{{source_ip}} / {{domain}}",
               "refId": "A"
@@ -241,7 +241,7 @@ spec:
           "targets": [
             {
               "datasource": {"type": "loki", "uid": "${DS_LOKI}"},
-              "expr": "sum by (domain, disposition) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | unwrap count [$__range]))",
+              "expr": "sum by (domain, disposition) (sum_over_time({namespace=\"tools\", container=\"parsedmarc\"} | json | type=`dmarc_aggregate` | report_end >= ${__from:date:seconds} | report_end <= ${__to:date:seconds} | unwrap count [$__range]))",
               "instant": true,
               "refId": "A"
             }

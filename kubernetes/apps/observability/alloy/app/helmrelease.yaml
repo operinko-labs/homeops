@@ -66,46 +66,11 @@ spec:
           // Tail logs from discovered pods
           loki.source.kubernetes "pods" {
             targets    = discovery.relabel.pods.output
-            forward_to = [loki.process.parsedmarc_ts.receiver]
-          }
-
-          // Override log timestamp for parsedmarc aggregate records with the
-          // actual DMARC report period end date (instead of ingestion time)
-          loki.process "parsedmarc_ts" {
-            stage.match {
-              selector = "{container=\"parsedmarc\"} |= \"dmarc_aggregate\""
-
-              stage.json {
-                expressions = {
-                  report_end = "report_end",
-                }
-              }
-
-              stage.timestamp {
-                source = "report_end"
-                format = "Unix"
-              }
-            }
-
             forward_to = [loki.write.default.receiver]
           }
 
           // Collect Kubernetes events
           loki.source.kubernetes_events "cluster" {
-            forward_to = [loki.write.default.receiver]
-          }
-
-          // Receive syslog from parsedmarc CronJob
-          loki.source.syslog "parsedmarc" {
-            listener {
-              address  = "0.0.0.0:6514"
-              protocol = "tcp"
-              labels = {
-                namespace = "tools",
-                container = "parsedmarc",
-                job       = "tools/parsedmarc",
-              }
-            }
             forward_to = [loki.write.default.receiver]
           }
 
