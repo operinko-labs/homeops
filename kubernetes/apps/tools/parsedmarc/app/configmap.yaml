@@ -23,6 +23,7 @@ data:
     archive_folder = INBOX.DMARC-Processed
     watch = False
     delete = False
+    batch_size = 500
 
   run.sh: |
     #!/bin/sh
