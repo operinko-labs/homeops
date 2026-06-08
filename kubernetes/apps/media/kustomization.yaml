@@ -8,6 +8,7 @@ resources:
   - ./configarr/ks.yaml
   - ./maintainerr/ks.yaml
   - ./prowlarr/ks.yaml
+  - ./seerr/ks.yaml
   - ./radarr/ks.yaml
   - ./readarr/ks.yaml
   - ./sonarr/ks.yaml
