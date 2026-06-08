@@ -42,12 +42,14 @@ data:
     for report in aggregate_reports:
         meta   = report.get('report_metadata', {})
         policy = report.get('policy_published', {})
+        report_end = meta.get('date_range', {}).get('end')
         for record in report.get('records', []):
             source      = record.get('source', {})
             policy_eval = record.get('policy_evaluated', {})
             ids         = record.get('identifiers', {})
             print(json.dumps({
                 'type':          'dmarc_aggregate',
+                'report_end':    report_end,
                 'reporter':      meta.get('org_name'),
                 'domain':        policy.get('domain'),
                 'source_ip':     source.get('ip_address'),
