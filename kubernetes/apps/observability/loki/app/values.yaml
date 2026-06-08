@@ -33,7 +33,6 @@ loki:
   limits_config:
     volume_enabled: true
     retention_period: 14d
-    allow_deletes: true
   storage:
     type: filesystem
     bucketNames:
