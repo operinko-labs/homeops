@@ -5,3 +5,4 @@ resources:
   - helmrelease.yaml
   - ocirepository.yaml
   - httproute.yaml
+  - httproute-ombi-redirect.yaml
