@@ -51,6 +51,8 @@ loki:
   structuredConfig:
     limits_config:
       allow_deletes: true
+    compactor:
+      delete_request_cancel_period: 0s
     ruler:
       enable_api: true
       enable_alertmanager_v2: true
