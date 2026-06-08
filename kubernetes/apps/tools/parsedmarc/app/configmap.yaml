@@ -23,7 +23,7 @@ data:
     archive_folder = INBOX.DMARC-Processed
     watch = False
     delete = False
-    batch_size = 500
+    batch_size = 50
 
   run.sh: |
     #!/bin/sh
@@ -34,7 +34,7 @@ data:
     tpl = open('/etc/parsedmarc/parsedmarc.ini.tpl').read()
     open('/tmp/parsedmarc.ini', 'w').write(tpl.replace('__IMAP_PASSWORD__', os.environ['IMAP_PASSWORD']))
     "
-    parsedmarc --debug -c /tmp/parsedmarc.ini
+    parsedmarc -c /tmp/parsedmarc.ini
     python3 /etc/parsedmarc/emit.py
 
   emit.py: |
