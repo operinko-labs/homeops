@@ -68,10 +68,34 @@ spec:
         certificateRefs:
           - kind: Secret
             name: hietamakidojo-fi-production-tls
+    - name: https-hietamakidojo-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "hietamakidojo.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: hietamakidojo-fi-production-tls
     - name: https-ruskonkesateatteri
       protocol: HTTPS
       port: 443
       hostname: "*.ruskonkesateatteri.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: ruskonkesateatteri-fi-production-tls
+    - name: https-ruskonkesateatteri-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "ruskonkesateatteri.fi"
       allowedRoutes:
         namespaces:
           from: All
