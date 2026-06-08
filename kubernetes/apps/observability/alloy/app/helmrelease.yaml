@@ -74,6 +74,20 @@ spec:
             forward_to = [loki.write.default.receiver]
           }
 
+          // Receive syslog from parsedmarc CronJob
+          loki.source.syslog "parsedmarc" {
+            listener {
+              address  = "0.0.0.0:6514"
+              protocol = "tcp"
+              labels = {
+                namespace = "tools",
+                container = "parsedmarc",
+                job       = "tools/parsedmarc",
+              }
+            }
+            forward_to = [loki.write.default.receiver]
+          }
+
           // Push logs to Loki
           loki.write "default" {
             endpoint {
