@@ -20,7 +20,7 @@ data:
 
     [mailbox]
     reports_folder = INBOX
-    archive_folder = INBOX.DMARC-Processed
+    archive_folder = INBOX/DMARC-Processed
     watch = False
     delete = False
     batch_size = 50
