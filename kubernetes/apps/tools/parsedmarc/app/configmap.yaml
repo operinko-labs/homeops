@@ -17,6 +17,8 @@ data:
     skip_certificate_verification = True
     user = postmaster@erinko.fi
     password = __IMAP_PASSWORD__
+
+    [mailbox]
     reports_folder = INBOX
     archive_folder = INBOX.DMARC-Processed
     watch = False
