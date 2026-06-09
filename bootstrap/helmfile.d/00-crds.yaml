@@ -20,7 +20,7 @@ releases:
     namespace: observability
     chart: oci://ghcr.io/grafana/helm-charts/grafana-operator
     # renovate: datasource=docker depName=ghcr.io/grafana/helm-charts/grafana-operator
-    version: 5.23.0
+    version: 5.24.0
 
   - name: kube-prometheus-stack
     namespace: observability
