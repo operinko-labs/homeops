@@ -3,6 +3,13 @@
 # `oidc-auth` middleware but WITHOUT BypassAuthenticationRule, so the dashboard's
 # /api/* config endpoints are also protected (the SPA's /api calls carry the OIDC
 # session cookie, so the dashboard stays functional after login).
+#
+# NOTE: env-var refs are escaped as $${VAR}. Unlike the shared oidc-auth (which
+# lives under components/common and is rendered by cluster-apps with no postBuild
+# substitution), this file is rendered by the `gateways` Flux Kustomization which
+# DOES run postBuild substitution. Escaping makes Flux emit a literal ${VAR} so the
+# traefik-oidc-auth plugin resolves it from Traefik's env (envFrom traefik-oidc-secret)
+# instead of Flux blanking it out.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -11,11 +18,11 @@ spec:
   plugin:
     traefik-oidc-auth:
       LogLevel: WARN
-      Secret: "${OIDC_ENCRYPTION_SECRET}"
+      Secret: "$${OIDC_ENCRYPTION_SECRET}"
       Provider:
         Url: "https://auth.vaderrp.com/application/o/traefik/"
-        ClientId: "${OIDC_CLIENT_ID}"
-        ClientSecret: "${OIDC_CLIENT_SECRET}"
+        ClientId: "$${OIDC_CLIENT_ID}"
+        ClientSecret: "$${OIDC_CLIENT_SECRET}"
       Scopes: ["openid", "profile", "email"]
       CallbackUri: "/oidc/callback"
       Headers:
