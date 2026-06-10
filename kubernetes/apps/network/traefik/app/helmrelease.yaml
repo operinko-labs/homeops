@@ -35,7 +35,7 @@ spec:
         prometheus.io/port: "9100"
       initContainers:
         - name: plugin-loader
-          image: alpine:3.23
+          image: alpine:3.24
           command: ["sh", "-c"]
           args:
             - |
