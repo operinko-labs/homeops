@@ -11,6 +11,7 @@ resources:
   - gateway-internal.yaml
   - gateway-public.yaml
   - gatewayclass.yaml
+  - middleware-traefik-dashboard-oidc.yaml
   - httproute-traefik-dashboard.yaml
   - service-traefik-wg.yaml
 

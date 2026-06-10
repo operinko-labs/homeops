@@ -1,0 +1,29 @@
+---
+# OIDC middleware dedicated to the Traefik dashboard. Identical to the shared
+# `oidc-auth` middleware but WITHOUT BypassAuthenticationRule, so the dashboard's
+# /api/* config endpoints are also protected (the SPA's /api calls carry the OIDC
+# session cookie, so the dashboard stays functional after login).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-dashboard-oidc
+spec:
+  plugin:
+    traefik-oidc-auth:
+      LogLevel: WARN
+      Secret: "${OIDC_ENCRYPTION_SECRET}"
+      Provider:
+        Url: "https://auth.vaderrp.com/application/o/traefik/"
+        ClientId: "${OIDC_CLIENT_ID}"
+        ClientSecret: "${OIDC_CLIENT_SECRET}"
+      Scopes: ["openid", "profile", "email"]
+      CallbackUri: "/oidc/callback"
+      Headers:
+        - Name: X-Authentik-Username
+          Value: "{{ .claims.preferred_username }}"
+        - Name: X-Authentik-Email
+          Value: "{{ .claims.email }}"
+        - Name: X-Authentik-Name
+          Value: "{{ .claims.name }}"
+        - Name: X-Authentik-Groups
+          Value: "{{ .claims.groups }}"
