@@ -13,7 +13,6 @@ resources:
   - ./kromgo/ks.yaml
   - ./kube-prometheus-stack/ks.yaml
   - ./loki/ks.yaml
-  - ./robusta/ks.yaml
   - ./unpoller/ks.yaml
 components:
   - ../../components/common
