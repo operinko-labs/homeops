@@ -30,10 +30,10 @@ spec:
       tag: "2026.4.1"
     resources:
       requests:
-        cpu: 200m
+        cpu: 512m
         memory: 512Mi
       limits:
-        cpu: 500m
+        cpu: 1000m
         memory: 1Gi
   postRenderers:
     - kustomize:
