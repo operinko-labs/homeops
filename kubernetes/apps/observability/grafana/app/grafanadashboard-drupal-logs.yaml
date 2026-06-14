@@ -13,9 +13,9 @@ spec:
     {
       "title": "Drupal Logs",
       "uid": "drupal-logs",
-      "description": "Drupal application logs from Loki — filterable by namespace, pod, container and free-text search",
+      "description": "Drupal application logs from Loki — filterable by namespace, pod, container, log type and free-text search",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "30s",
       "timezone": "browser",
       "time": { "from": "now-1h", "to": "now" },
@@ -92,6 +92,26 @@ spec:
             "current": {}
           },
           {
+            "name": "log_type",
+            "type": "custom",
+            "label": "Drupal Log Type",
+            "hide": 0,
+            "multi": false,
+            "includeAll": false,
+            "query": "All : .*,php : php,user : user,page not found : page not found,access denied : access denied,content : content,system : system,cron : cron",
+            "options": [
+              { "selected": true,  "text": "All",              "value": ".*" },
+              { "selected": false, "text": "php",              "value": "php" },
+              { "selected": false, "text": "user",             "value": "user" },
+              { "selected": false, "text": "page not found",   "value": "page not found" },
+              { "selected": false, "text": "access denied",    "value": "access denied" },
+              { "selected": false, "text": "content",          "value": "content" },
+              { "selected": false, "text": "system",           "value": "system" },
+              { "selected": false, "text": "cron",             "value": "cron" }
+            ],
+            "current": { "selected": true, "text": "All", "value": ".*" }
+          },
+          {
             "name": "search",
             "type": "textbox",
             "label": "Search",
@@ -144,12 +164,7 @@ spec:
             "overrides": []
           },
           "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
+            "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
             "tooltip": { "mode": "multi", "sort": "desc" }
           },
           "targets": [
@@ -165,10 +180,11 @@ spec:
         },
         {
           "id": 2,
-          "title": "Logs",
+          "title": "All Pod Logs",
+          "description": "Raw logs from all containers — php-fpm access log, nginx access log, and Drupal syslog combined",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "${datasource}" },
-          "gridPos": { "h": 30, "w": 24, "x": 0, "y": 8 },
+          "gridPos": { "h": 22, "w": 24, "x": 0, "y": 8 },
           "options": {
             "dedupStrategy": "none",
             "enableLogDetails": true,
@@ -185,6 +201,33 @@ spec:
               "datasource": { "type": "loki", "uid": "${datasource}" },
               "editorMode": "code",
               "expr": "{namespace=~\"$namespace\", pod=~\"$pod\", container=~\"$container\"} |= \"$search\"",
+              "queryType": "range"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Drupal Watchdog Logs",
+          "description": "Only Drupal syslog/watchdog entries (pipe-delimited format). Use the 'Drupal Log Type' filter to narrow by type. Requires Syslog module + syslog-to-stdout forwarding in the container.",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "${datasource}" },
+          "gridPos": { "h": 22, "w": 24, "x": 0, "y": 30 },
+          "options": {
+            "dedupStrategy": "none",
+            "enableLogDetails": true,
+            "prettifyLogMessage": false,
+            "showCommonLabels": false,
+            "showLabels": true,
+            "showTime": true,
+            "sortOrder": "Descending",
+            "wrapLogMessage": true
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "loki", "uid": "${datasource}" },
+              "editorMode": "code",
+              "expr": "{namespace=~\"$namespace\", pod=~\"$pod\", container=~\"$container\"} |= \"$search\" | regexp \"\\]: [^|]+\\|[^|]+\\|(?P<log_type>[^|]+)\\|\" | log_type =~ \"^$log_type$\"",
               "queryType": "range"
             }
           ]
