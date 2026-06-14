@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - ./external-secret.yaml
   - ./grafanadashboard.yaml
+  - ./grafanadashboard-drupal-logs.yaml
   - ./helmrelease.yaml
   - ./ocirepository.yaml
