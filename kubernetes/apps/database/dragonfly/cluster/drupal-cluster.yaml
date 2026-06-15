@@ -17,7 +17,7 @@ spec:
           divisor: 1Mi
   args:
     - --maxmemory=$(MAX_MEMORY)Mi
-    - --maxmemory_policy=volatile-lru
+    - --cache_mode
     - --proactor_threads=2
     - --cluster_mode=emulated
   authentication:
