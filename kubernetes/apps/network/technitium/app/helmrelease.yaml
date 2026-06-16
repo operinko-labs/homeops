@@ -27,7 +27,7 @@ spec:
           mk-pfx:
             image:
               repository: alpine/openssl
-              tag: "3.5.6"
+              tag: "3.5.7"
               pullPolicy: IfNotPresent
             command:
               - sh
