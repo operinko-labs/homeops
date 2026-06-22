@@ -6,7 +6,6 @@ resources:
   - helmrelease.yaml
   - ocirepository.yaml
   - httproute.yaml
-  - alertrules-argocd.yaml
   - alertrules-certificates.yaml
   - alertrules-cilium-bgp.yaml
   - alertrules-node-health.yaml
