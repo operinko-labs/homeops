@@ -21,8 +21,11 @@ spec:
     controllers:
       birdnet-go:
         initContainers:
-          # Seed config.yaml onto the writable PVC on first run only, so the
-          # model gallery (Perch) and any UI changes persist and get backed up.
+          # TEMPORARY (shakeout): always overwrite config.yaml from the seed so
+          # config fixes auto-apply on restart without deleting the PVC.
+          # REVERT to copy-if-absent before installing Perch via the gallery,
+          # otherwise a restart wipes UI/model-gallery changes:
+          #   [ -f /config/config.yaml ] || cp /seed/config.yaml /config/config.yaml
           init-config:
             image:
               repository: docker.io/library/busybox # mirrored via Harbor
@@ -30,7 +33,7 @@ spec:
             command:
               - sh
               - -c
-              - "[ -f /config/config.yaml ] || cp /seed/config.yaml /config/config.yaml"
+              - "cp -f /seed/config.yaml /config/config.yaml"
         containers:
           app:
             image:
