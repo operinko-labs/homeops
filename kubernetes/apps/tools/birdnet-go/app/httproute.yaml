@@ -1,0 +1,27 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: birdnet-go
+  namespace: tools
+  labels:
+    route.scope: internal
+  annotations:
+    external-dns.alpha.kubernetes.io/public: "false"
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/guarded: "true"
+    gatus.home-operations.com/endpoint: |
+      group: Tools
+spec:
+  parentRefs:
+    - name: gateway-internal
+      namespace: network
+  hostnames: ["birdnet.vaderrp.com"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: birdnet-go
+          port: 8080

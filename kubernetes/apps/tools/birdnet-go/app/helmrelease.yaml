@@ -1,0 +1,89 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: birdnet-go
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: birdnet-go
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      birdnet-go:
+        initContainers:
+          # Seed config.yaml onto the writable PVC on first run only, so the
+          # model gallery (Perch) and any UI changes persist and get backed up.
+          init-config:
+            image:
+              repository: public.ecr.aws/docker/library/busybox
+              tag: "1.37"
+            command:
+              - sh
+              - -c
+              - "[ -f /config/config.yaml ] || cp /seed/config.yaml /config/config.yaml"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/tphakala/birdnet-go
+              tag: nightly@sha256:60573d17f59c132ac42d9d264508e80cdfbf08125f235aaaf6791a9ce511af68
+            env:
+              TZ: Europe/Helsinki
+            # MYSQL_PASSWORD and RTSP_URL come from the ExternalSecret below and
+            # are expanded inside config.yaml via ${VAR} placeholders.
+            envFrom:
+              - secretRef:
+                  name: birdnet-go-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 500m # continuous inference; Perch is heavier than v2.4
+                memory: 1Gi
+              limits:
+                memory: 3Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+    service:
+      app:
+        controller: birdnet-go
+        ports:
+          http:
+            port: 8080
+    persistence:
+      config:
+        existingClaim: birdnet-go
+        globalMounts:
+          - path: /config
+      seed:
+        type: configMap
+        name: birdnet-go-config
+        globalMounts:
+          - path: /seed
+            readOnly: true
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

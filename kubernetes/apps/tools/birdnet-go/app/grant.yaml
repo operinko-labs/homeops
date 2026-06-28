@@ -1,0 +1,14 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: birdnet
+  namespace: tools
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: database
+  privileges: ["ALL PRIVILEGES"]
+  database: birdnet
+  table: "*"
+  username: birdnet

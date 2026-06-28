@@ -1,0 +1,15 @@
+---
+# DB resources live with the app (in the tools namespace) and reference the
+# central MariaDB across namespaces via mariaDbRef.namespace.
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: birdnet
+  namespace: tools
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: database
+  name: birdnet
+  characterSet: utf8mb4
+  collate: utf8mb4_unicode_ci

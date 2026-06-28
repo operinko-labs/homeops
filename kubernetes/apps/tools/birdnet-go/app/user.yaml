@@ -1,0 +1,15 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: birdnet
+  namespace: tools
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: database
+  name: birdnet
+  passwordSecretKeyRef:
+    name: birdnet-go-secret
+    key: MYSQL_PASSWORD
+  maxUserConnections: 20
