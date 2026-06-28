@@ -20,20 +20,6 @@ spec:
   values:
     controllers:
       birdnet-go:
-        initContainers:
-          # TEMPORARY (shakeout): always overwrite config.yaml from the seed so
-          # config fixes auto-apply on restart without deleting the PVC.
-          # REVERT to copy-if-absent before installing Perch via the gallery,
-          # otherwise a restart wipes UI/model-gallery changes:
-          #   [ -f /config/config.yaml ] || cp /seed/config.yaml /config/config.yaml
-          init-config:
-            image:
-              repository: docker.io/library/busybox # mirrored via Harbor
-              tag: "1.37"
-            command:
-              - sh
-              - -c
-              - "cp -f /seed/config.yaml /config/config.yaml"
         containers:
           app:
             image:
@@ -82,14 +68,6 @@ spec:
             subPath: config
           - path: /data # WORKDIR: clips + downloaded models (Perch)
             subPath: data
-      seed:
-        # Rendered config.yaml lives in the ExternalSecret; init-config copies it
-        # to the writable PVC once so the model gallery (Perch) + UI edits persist.
-        type: secret
-        name: birdnet-go-secret
-        globalMounts:
-          - path: /seed
-            readOnly: true
       tmp:
         type: emptyDir
         globalMounts:
