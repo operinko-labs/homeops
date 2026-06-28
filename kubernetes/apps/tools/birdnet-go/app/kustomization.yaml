@@ -9,9 +9,3 @@ resources:
   - user.yaml
   - grant.yaml
   - httproute.yaml
-configMapGenerator:
-  - name: birdnet-go-config
-    files:
-      - config.yaml
-generatorOptions:
-  disableNameSuffixHash: true

@@ -25,7 +25,7 @@ spec:
           # model gallery (Perch) and any UI changes persist and get backed up.
           init-config:
             image:
-              repository: public.ecr.aws/docker/library/busybox
+              repository: docker.io/library/busybox # mirrored via Harbor
               tag: "1.37"
             command:
               - sh
@@ -38,20 +38,20 @@ spec:
               tag: nightly@sha256:60573d17f59c132ac42d9d264508e80cdfbf08125f235aaaf6791a9ce511af68
             env:
               TZ: Europe/Helsinki
-            # MYSQL_PASSWORD and RTSP_URL come from the ExternalSecret below and
-            # are expanded inside config.yaml via ${VAR} placeholders.
-            envFrom:
-              - secretRef:
-                  name: birdnet-go-secret
+              # Per upstream docker docs the image starts as root and gosu-drops
+              # to this UID/GID, then sets HOME and chowns /config + /data.
+              BIRDNET_UID: "1000"
+              BIRDNET_GID: "1000"
             probes:
               liveness:
                 enabled: true
               readiness:
                 enabled: true
             securityContext:
-              allowPrivilegeEscalation: false
+              # Must start as root so the entrypoint can chown the volumes and
+              # gosu-drop to BIRDNET_UID/GID — do not force non-root here.
+              allowPrivilegeEscalation: true
               readOnlyRootFilesystem: false
-              capabilities: {drop: ["ALL"]}
             resources:
               requests:
                 cpu: 500m # continuous inference; Perch is heavier than v2.4
@@ -60,9 +60,8 @@ spec:
                 memory: 3Gi
     defaultPodOptions:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+        # Entrypoint starts as root then drops to 1000; keep fsGroup so the
+        # dropped user can read/write the VolSync PVC.
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
         seccompProfile: {type: RuntimeDefault}
@@ -73,13 +72,18 @@ spec:
           http:
             port: 8080
     persistence:
-      config:
+      data:
         existingClaim: birdnet-go
         globalMounts:
-          - path: /config
+          - path: /config # config.yaml (entrypoint symlinks ~/.config/birdnet-go here)
+            subPath: config
+          - path: /data # WORKDIR: clips + downloaded models (Perch)
+            subPath: data
       seed:
-        type: configMap
-        name: birdnet-go-config
+        # Rendered config.yaml lives in the ExternalSecret; init-config copies it
+        # to the writable PVC once so the model gallery (Perch) + UI edits persist.
+        type: secret
+        name: birdnet-go-secret
         globalMounts:
           - path: /seed
             readOnly: true
