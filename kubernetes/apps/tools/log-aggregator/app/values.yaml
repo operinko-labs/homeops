@@ -17,7 +17,7 @@ controllers:
     containers:
       app:
         image:
-          repository: ghcr.io/operinko/log-aggregator
+          repository: ghcr.io/operinko-labs/log-aggregator
           tag: 0.2.8
           pullPolicy: Always
         env:
