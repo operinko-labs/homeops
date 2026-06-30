@@ -108,7 +108,7 @@ spec:
           # Uses native FastMCP StreamableHTTP (no Supergateway middleware)
           tempest-mcp:
             image:
-              repository: ghcr.io/operinko-labs/tempest-mcp
+              repository: harbor.vaderrp.com/operinko-labs/tempest-mcp
               tag: 0.1.7
             env:
               TZ: Europe/Helsinki
