@@ -109,7 +109,7 @@ spec:
           tempest-mcp:
             image:
               repository: ghcr.io/operinko/tempest-mcp
-              tag: 0.1.6
+              tag: 0.1.7
             env:
               TZ: Europe/Helsinki
             envFrom:

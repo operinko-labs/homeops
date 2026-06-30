@@ -79,7 +79,7 @@ async def get_stations(
 async def get_station(
     station_id: Annotated[
         int,
-        Field(description="The station ID to get information for", gt=0),
+        Field(description="The station ID to get information for", ge=1),
     ],
     use_cache: Annotated[
         bool,
@@ -119,7 +119,7 @@ async def get_station(
 async def get_observation(
     station_id: Annotated[
         int,
-        Field(description="The station ID to get observations for", gt=0),
+        Field(description="The station ID to get observations for", ge=1),
     ],
     use_cache: Annotated[
         bool,
@@ -160,7 +160,7 @@ async def get_observation(
 async def get_forecast(
     station_id: Annotated[
         int,
-        Field(description="The station ID to get forecast for", gt=0),
+        Field(description="The station ID to get forecast for", ge=1),
     ],
     use_cache: Annotated[
         bool,
