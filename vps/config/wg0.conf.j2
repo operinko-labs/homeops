@@ -1,0 +1,13 @@
+[Interface]
+PrivateKey = {{ vps_wg_private_key }}
+Address = 172.16.8.2/32
+MTU = 1420
+Table = off
+PostUp = ip route add 172.16.8.0/24 dev wg0; ip route add 10.96.0.0/16 dev wg0; ip route add 10.42.0.0/16 dev wg0
+PostDown = ip route del 172.16.8.0/24 dev wg0; ip route del 10.96.0.0/16 dev wg0; ip route del 10.42.0.0/16 dev wg0
+
+[Peer]
+PublicKey = zFEcLX+tpfWVbgelxPQz0ljctGTskPTKmxZ7rh308Bg=
+AllowedIPs = 172.16.8.0/24, 10.96.0.0/16, 10.42.0.0/16
+PersistentKeepalive = 25
+Endpoint = 80.223.184.52:51820
