@@ -42,7 +42,7 @@ render-config node:
     fi; \
     export IS_CONTROLLER=$(grep -q "type: controlplane" "{{ talos_dir }}/nodes/${HOSTNAME}.yaml.j2" && echo "true" || echo "false"); \
     sops -d "{{ talos_dir }}/secrets.sops.yaml" | minijinja-cli "{{ talos_dir }}/machineconfig.yaml.j2" --format yaml - -D IS_CONTROLLER="${IS_CONTROLLER}" | \
-        talosctl machineconfig patch /dev/stdin -p @<(minijinja-cli "{{ talos_dir }}/nodes/${HOSTNAME}.yaml.j2")
+        talosctl machineconfig patch /dev/stdin -p @<(sops -d "{{ talos_dir }}/secrets.sops.yaml" | minijinja-cli "{{ talos_dir }}/nodes/${HOSTNAME}.yaml.j2" --format yaml -)
 
 [doc('Reset a node')]
 reset-node node *args:

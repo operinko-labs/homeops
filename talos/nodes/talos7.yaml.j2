@@ -34,7 +34,7 @@ machine:
           - 172.16.8.1/24
           - 172.16.8.10/32
         wireguard:
-          privateKey: iBDlQmWU0qtWFI21ch3NeoWHALoCF6nhEq86Il+83ns=
+          privateKey: {{ talos7_wg_private_key }}
           listenPort: 51820
           peers:
             - publicKey: PgiKvgszPybBoirZg0Qa2OVsZ9HCDhb589Ry7iIo7hg=
