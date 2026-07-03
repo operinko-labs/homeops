@@ -1,0 +1,46 @@
+# Relay Postfix config for Stalwart mail
+compatibility_level = 3.9
+
+# Hostname and origin
+myhostname = wg-haproxy.vaderrp.com
+myorigin = $myhostname
+
+smtpd_banner = $myhostname ESMTP
+
+# Listen on WireGuard + public interfaces
+inet_interfaces = 172.16.8.2
+inet_protocols = ipv4
+
+# Trust Stalwart on WireGuard network
+mynetworks = 172.16.8.0/24
+
+# No local delivery - relay only
+mydestination =
+local_transport = error:no local delivery
+local_recipient_maps =
+
+# Relay inbound mail for vaderrp.com to Stalwart
+relay_domains = 
+
+# No relay host for outbound - deliver directly
+relayhost =
+
+# TLS for outbound
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_security_level = may
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+# No inbound TLS on WG, optional on public
+smtpd_tls_security_level = none
+
+# Relay restrictions
+smtpd_relay_restrictions = permit_mynetworks reject_unauth_destination
+
+# Limits
+mailbox_size_limit = 0
+message_size_limit = 52428800
+
+# Disable local aliases
+alias_maps =
+alias_database =
+smtp_helo_name = mail.vaderrp.com

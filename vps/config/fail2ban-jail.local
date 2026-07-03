@@ -1,0 +1,42 @@
+[DEFAULT]
+bantime = 1h
+findtime = 10m
+maxretry = 5
+banaction = iptables-multiport
+ignoreip = 127.0.0.1/8 ::1 80.223.184.52 192.168.0.0/16 172.16.8.0/24 10.42.0.0/16
+
+[sshd]
+enabled = true
+port = 22,2222
+mode = aggressive
+maxretry = 3
+bantime = 24h
+
+[haproxy-http-auth]
+enabled = true
+port = 443,587,465,993,143,25,4190
+filter = haproxy-http-auth
+logpath = /var/log/haproxy.log
+maxretry = 5
+bantime = 1h
+findtime = 5m
+
+[postfix]
+enabled = true
+port = 25
+filter = postfix[mode=aggressive]
+logpath = /var/log/mail.log
+maxretry = 3
+bantime = 1h
+findtime = 10m
+backend = auto
+
+[postfix-sasl]
+enabled = true
+port = 25
+filter = postfix[mode=auth]
+logpath = /var/log/mail.log
+maxretry = 3
+bantime = 24h
+findtime = 10m
+backend = auto
