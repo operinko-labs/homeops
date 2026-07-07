@@ -39,7 +39,7 @@ spec:
           app:
             image:
               repository: technitium/dns-server
-              tag: 15.2.0
+              tag: 15.3.0
             envFrom:
               - secretRef:
                   name: technitium-secret
