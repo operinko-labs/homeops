@@ -27,7 +27,7 @@ spec:
           app:
             image:
               repository: ghcr.io/bulwarkmail/webmail
-              tag: v1.7.4@sha256:8adf0f9b5f0e706324fb319da251bdc030d0b290ef317bca86b2657c42ff2de8
+              tag: v1.7.6@sha256:494f3b1050d7c766088f7567e26822be173da0125f78189b14fd610c81ceffb2
             env:
               TZ: Europe/Helsinki
               JMAP_SERVER_URL: "https://mail.erinko.fi"
