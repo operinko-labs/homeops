@@ -40,7 +40,7 @@ spec:
           app:
             image:
               repository: ghcr.io/stalwartlabs/stalwart
-              tag: v0.16.10@sha256:921b5065485a34939e8a4c485a32bde54c1a6a0c1a6812b39f75200beb210b0d
+              tag: v0.16.12@sha256:b7ee9deb6344b1365b00b38bf6aaa18c2922f2c3321f8cfecc57fdb07dd5f464
             env:
               TZ: Europe/Helsinki
             envFrom:
