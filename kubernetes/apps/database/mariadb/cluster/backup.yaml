@@ -53,6 +53,9 @@ spec:
   podAffinity: true
   stagingStorage:
     persistentVolumeClaim:
+      # tns-iscsi (not local-path): the PVC must be attachable on whichever
+      # node mariadb-0 runs on, since podAffinity pins the job to that node
+      storageClassName: tns-iscsi
       resources:
         requests:
           storage: 1Gi
