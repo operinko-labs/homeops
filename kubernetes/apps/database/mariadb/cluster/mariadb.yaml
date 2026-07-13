@@ -48,6 +48,19 @@ spec:
 
   metrics:
     enabled: true
+    exporter:
+      # mysqld-exporter runs as nobody (65534); satisfy restricted PSS so the
+      # apiserver stops logging "would violate" warnings on every reconcile
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
     serviceMonitor:
       interval: 1m
 
