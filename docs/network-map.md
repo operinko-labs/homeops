@@ -13,6 +13,7 @@ graph TB
     subgraph garage_rack["🔧 Garage Rack"]
         direction TB
         UDM["Unifi Dream Machine<br/>Pro Max<br/><i>Router / Firewall</i>"]
+        USW_AGG["USW Aggregation<br/><i>STP Root · Priority 4096</i>"]
         UPS_GARAGE["Eaton 9130 3000VA-R"]
         USW_GARAGE["USW Pro Max 16 PoE"]
 
@@ -205,8 +206,9 @@ graph TB
     %% Connections
     %% ════════════════════════════════════════
     Internet -->|Fiber| UDM
-    UDM --- USW_GARAGE
-    USW_GARAGE ===|"10GbE Fiber"| USW_HOUSE
+    UDM === USW_AGG
+    USW_AGG === USW_GARAGE
+    USW_AGG ===|"10GbE Fiber"| USW_HOUSE
     USW_HOUSE --- PATCH
     USW_HOUSE --- FRITZ
 
@@ -248,13 +250,17 @@ graph TB
 
     %% Servers
     USW_GARAGE --- nuc
-    USW_GARAGE --- meanie
-    USW_GARAGE --- truenas
+    USW_AGG === meanie
+    USW_AGG === truenas
 
+    UPS_GARAGE -.-|Powers| UDM
+    UPS_GARAGE -.-|Powers| USW_AGG
+    UPS_GARAGE -.-|Powers| USW_GARAGE
     UPS_GARAGE -.-|Powers| nuc
     UPS_GARAGE -.-|Powers| meanie
     UPS_GARAGE -.-|Powers| truenas
     UPS_HOUSE -.-|Powers| USW_HOUSE
+    UPS_HOUSE -.-|Powers| FRITZ
 
     %% Talos node mapping
     M_VM_120 -.-> CP1
@@ -279,7 +285,7 @@ graph TB
     class CP1,CP2,CP3 cp
     class W4,W5,W6,W7 worker
     class UPS_GARAGE,UPS_HOUSE,UPS_DESK ups
-    class UDM,USW_GARAGE,USW_HOUSE,USW_FLEX_XG,USW_FLEX network
+    class UDM,USW_AGG,USW_GARAGE,USW_HOUSE,USW_FLEX_XG,USW_FLEX network
     class RAIDZ1_1,RAIDZ1_2,NVME storage
     class CAM_DOORBELL,CAM_KIDS,CAM_OFFICE,CAM_G4PRO_FRONT,CAM_GARAGE,CAM_STORAGE,AI_PORT camera
     class UAP_AC_PRO,U6_ENTRY,U6_OFFICE,U7_LIVING,U6_GARAGE wifi
@@ -291,8 +297,8 @@ graph TB
 |---|---|
 | ⚙️ CP | Kubernetes control plane node |
 | 👷 Worker | Kubernetes worker node |
-| ═══ | 10GbE fiber uplink |
-| ─── | Ethernet |
+| ═══ | 10Gbps link (copper DAC or fiber) |
+| ─── | 1GbE Ethernet |
 | -·-·- | Power / logical mapping |
 
 ## Physical Hosts Summary
@@ -307,7 +313,7 @@ graph TB
 
 | UPS | Location | Protects |
 |---|---|---|
-| Eaton 9130 3000VA-R | Garage rack | NUC, DL360, DL380 |
+| Eaton 9130 3000VA-R | Garage rack | Entire garage rack — UDM Pro Max, USW Aggregation, USW Pro Max 16 PoE, NUC, DL360, DL380 |
 | BackUPS Pro 650 | House rack | USW Enterprise 24 PoE, Fritz!Box |
 | Eaton Ellipse 1600 | Desk (via RPi 3 NUT) | Workstation, monitors, peripherals |
 
