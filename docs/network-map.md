@@ -173,7 +173,6 @@ graph TB
             K_GATUS["Gatus"]
             K_GOLDILOCKS["Goldilocks"]
             K_KROMGO["Kromgo"]
-            K_ROBUSTA["Robusta"]
             K_SYSLOG["Syslog Gateway"]
             K_UNPOLLER["Unpoller"]
             K_VPA["VPA"]

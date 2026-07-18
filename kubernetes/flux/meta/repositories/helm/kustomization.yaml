@@ -10,7 +10,6 @@ resources:
   - ./descheduler.yaml
   - ./metrics-server.yaml
   - ./fairwinds.yaml
-  - ./robusta.yaml
   - ./prometheus-community.yaml
   - ./grafana.yaml
   - ./harbor.yaml
