@@ -26,4 +26,4 @@ releases:
     namespace: observability
     chart: oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack
     # renovate: datasource=docker depName=ghcr.io/prometheus-community/charts/kube-prometheus-stack
-    version: 87.15.1
+    version: 87.19.0
