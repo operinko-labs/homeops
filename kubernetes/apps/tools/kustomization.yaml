@@ -11,5 +11,6 @@ resources:
   - ./n8n/ks.yaml
   - ./parsedmarc/ks.yaml
   - ./tainer/ks.yaml
+  - ./trilium/ks.yaml
 components:
   - ../../components/common
