@@ -18,6 +18,18 @@ spec:
   values:
     controllers:
       main:
+        initContainers:
+          claude-install:
+            image:
+              repository: node
+              tag: 24-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
+            command:
+              - npm
+              - install
+              - -g
+              - --prefix
+              - /opt/claude
+              - "@anthropic-ai/claude-code@2.1.217"
         containers:
           trilium:
             env:
@@ -26,6 +38,8 @@ spec:
               # MUST be explicit: unset silently falls back to Google (TriliumNext/Trilium#6444)
               TRILIUM_OAUTH_ISSUER_BASE_URL: https://auth.vaderrp.com/application/o/trilium/.well-known/openid-configuration
               TRILIUM_OAUTH_ISSUER_NAME: Authentik
+              TRILIUM_CLAUDE_CODE_PATH: /opt/claude/bin/claude
+              CLAUDE_CONFIG_DIR: /home/node/trilium-data/.claude
             envFrom:
               - secretRef:
                   name: trilium-secret
@@ -34,7 +48,58 @@ spec:
                 cpu: 100m
                 memory: 512Mi
               limits:
-                memory: 1Gi
+                memory: 2Gi
+          mcp-proxy:
+            image:
+              repository: caddy
+              tag: 2@sha256:844f60b64e4724a5aa8245e019dace0d3f199f7433ce6c57676cb30a920dbad9
+            env:
+              TRILIUM_MCP_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: trilium-secret
+                    key: TRILIUM_MCP_TOKEN
+            probes:
+              readiness:
+                enabled: true
+                type: TCP
+                port: 8081
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+
+    configMaps:
+      caddyfile:
+        data:
+          Caddyfile: |
+            {
+              auto_https off
+              admin off
+            }
+            :8081 {
+              @mcp {
+                path /mcp /mcp/*
+                header Authorization "Bearer {env.TRILIUM_MCP_TOKEN}"
+              }
+              handle @mcp {
+                reverse_proxy 127.0.0.1:8080 {
+                  header_up Host localhost:8080
+                  header_up -X-Forwarded-For
+                }
+              }
+              @mcpNoAuth {
+                path /mcp /mcp/*
+              }
+              handle @mcpNoAuth {
+                respond 401
+              }
+              handle {
+                respond 404
+              }
+            }
 
     configini:
       general:
@@ -43,6 +108,32 @@ spec:
     persistence:
       data:
         existingClaim: trilium
+      caddyfile:
+        type: configMap
+        identifier: caddyfile
+        advancedMounts:
+          main:
+            mcp-proxy:
+              - path: /etc/caddy/Caddyfile
+                subPath: Caddyfile
+                readOnly: true
+      claude-bin:
+        type: emptyDir
+        advancedMounts:
+          main:
+            claude-install:
+              - path: /opt/claude
+            trilium:
+              - path: /opt/claude
+
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: 8080
+          mcp:
+            port: 8081
 
     route:
       main:
@@ -83,3 +174,24 @@ spec:
             backendRefs:
               - identifier: main
                 port: 8080
+
+      mcp:
+        annotations:
+          external-dns.alpha.kubernetes.io/public: "false"
+        labels:
+          route.scope: internal
+        hostnames:
+          - trilium-mcp.vaderrp.com
+        parentRefs:
+          - group: gateway.networking.k8s.io
+            kind: Gateway
+            name: gateway-internal
+            namespace: network
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - identifier: main
+                port: 8081
