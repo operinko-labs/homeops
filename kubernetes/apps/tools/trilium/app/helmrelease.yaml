@@ -18,9 +18,13 @@ spec:
   values:
     controllers:
       main:
+        annotations:
+          reloader.stakater.com/auto: "true"
         initContainers:
           claude-install:
             image:
+              # Must be musl-based (alpine): the Trilium image is Alpine and the
+              # CLI's npm postinstall downloads a libc-matched native binary.
               repository: node
               tag: 24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
             command:

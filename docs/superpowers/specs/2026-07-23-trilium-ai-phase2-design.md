@@ -1,7 +1,7 @@
 # Trilium Phase 2: MCP Access + Claude Code Chat Provider
 
 **Date:** 2026-07-23
-**Status:** Draft (pending user review)
+**Status:** Implemented
 **Builds on:** `2026-07-22-trilium-design.md` (Trilium deployed and live)
 
 ## Context
@@ -68,7 +68,8 @@ auth.
 
 ### Part B — Claude Code CLI for in-app chat
 
-- Init container `claude-install` (stock `node` LTS slim image, pinned
+- Init container `claude-install` (stock `node` LTS alpine (musl) image — must
+  match the Trilium image's libc for the CLI's native binary, pinned
   tag@digest): `npm install -g --prefix /opt/claude
   @anthropic-ai/claude-code@<version>` (pin the current version at
   implementation time), installing into an `emptyDir` volume shared with
@@ -84,9 +85,9 @@ auth.
 - Memory limit raised 1Gi → **2Gi** (each chat spawns a Claude Code
   process); requests unchanged
 - One-time manual step after rollout: `kubectl -n tools exec -it
-  deploy/trilium -c trilium -- /opt/claude/bin/claude /login`, complete
-  the OAuth flow from a browser, then add the "Claude Code" provider in
-  Trilium's AI settings (UI)
+  deploy/trilium -c trilium -- su-exec node /opt/claude/bin/claude /login`,
+  complete the OAuth flow from a browser, then add the "Claude Code"
+  provider in Trilium's AI settings (UI)
 
 ## Failure modes
 

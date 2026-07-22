@@ -323,7 +323,7 @@ Expected: a version string matching the pinned CLI version; `/home/node/trilium-
 - [ ] **Step 1: Log the CLI in** (user):
 
 ```bash
-kubectl -n tools exec -it deploy/trilium -c trilium -- /opt/claude/bin/claude /login
+kubectl -n tools exec -it deploy/trilium -c trilium -- su-exec node /opt/claude/bin/claude /login
 ```
 
 Follow the printed URL in a browser, paste the code back.
