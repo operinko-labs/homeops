@@ -108,6 +108,13 @@ spec:
     persistence:
       data:
         existingClaim: trilium
+        globalMounts: []
+        advancedMounts:
+          main:
+            fixperms:
+              - path: /home/node/trilium-data
+            trilium:
+              - path: /home/node/trilium-data
       caddyfile:
         type: configMap
         identifier: caddyfile
