@@ -51,6 +51,16 @@ bambuddy/radarr patterns:
   releases at implementation time** (latest known at design time: v0.104.0,
   released 2026-07-18). Pulls transit the Harbor mirror automatically.
 - Port 8080; env `TRILIUM_DATA_DIR=/home/node/trilium-data`, `TZ`
+- Native OIDC against Authentik (no proxy middleware):
+  - `TRILIUM_OAUTH_BASE_URL=https://trilium.vaderrp.com`
+  - `TRILIUM_OAUTH_ISSUER_BASE_URL=https://auth.vaderrp.com/application/o/trilium/.well-known/openid-configuration`
+    (MUST be set explicitly — unset silently defaults to Google, TriliumNext#6444)
+  - `TRILIUM_OAUTH_ISSUER_NAME=Authentik`
+  - `TRILIUM_OAUTH_CLIENT_ID` / `TRILIUM_OAUTH_CLIENT_SECRET` from a new
+    `app/external-secret.yaml` (1Password)
+  - Plus whatever enable flag the current config docs require (consult
+    https://docs.triliumnotes.org/user-guide/setup/server/openid-connect at
+    implementation time)
 - Liveness/readiness probes on `GET /api/health-check`
 - securityContext: runAsUser/Group 1000, fsGroup 1000, no privilege
   escalation, drop ALL capabilities, seccomp RuntimeDefault
@@ -61,20 +71,22 @@ bambuddy/radarr patterns:
 
 - Hostname `trilium.vaderrp.com` on `gateway-public` (namespace `network`)
 - Annotation `external-dns.alpha.kubernetes.io/target: external.vaderrp.com`
-- Filters: `traefik-warp` + `oidc-auth` middlewares (both already present in
-  `tools` via `components/common`)
+- Filter: `traefik-warp` only (no `oidc-auth` middleware — auth is handled
+  natively by Trilium's OIDC)
 - Gatus annotations checking `/api/health-check`; homepage annotations
   (group Tools)
 
-## Auth layering
+## Auth
 
-- Authentik gates all external browser access via the shared `oidc-auth`
-  traefik middleware
-- Trilium's built-in single-password login stays enabled underneath
-  (defense in depth; also the mechanism that issues ETAPI tokens)
-- The shared middleware bypasses only `/api`; Trilium's ETAPI lives at
-  `/etapi`, so the API is intentionally NOT reachable externally. MCP/API
-  consumers talk to `trilium.tools.svc.cluster.local:8080` in-cluster.
+- Trilium's native OIDC handles login, with Authentik as the provider —
+  no proxy-auth middleware on the route
+- Manual prerequisite in Authentik: create an OAuth2/OpenID provider +
+  application (slug `trilium`), redirect URI
+  `https://trilium.vaderrp.com/callback`; store client ID/secret in
+  1Password for the ExternalSecret
+- ETAPI (`/etapi`) is externally reachable but token-authenticated
+  (tokens minted in the Trilium UI). Accepted; MCP/API consumers still
+  talk to `trilium.tools.svc.cluster.local:8080` in-cluster.
 
 ## SQLite corruption mitigations
 
@@ -103,14 +115,14 @@ candidate images for an actually-published container image at that point.
 - Pod restart: stateless besides PVC; probes gate traffic until healthy
 - Node failure: local-path PVC ties the pod to its node; recovery = VolSync
   restore onto another node (accepted for a single-user app)
-- Authentik outage: external access blocked (fail closed); LAN/cluster
-  access unaffected
+- Authentik outage: OIDC login unavailable (fail closed for new sessions);
+  existing Trilium sessions and in-cluster ETAPI access unaffected
 
 ## Verification
 
 1. `flux get ks -A` shows `trilium` Ready; `flux get hr -n tools trilium` Ready
-2. `https://trilium.vaderrp.com` redirects to Authentik, then loads the
-   Trilium setup wizard
+2. `https://trilium.vaderrp.com` loads, OIDC login round-trips through
+   Authentik (not Google!), then the Trilium setup wizard appears
 3. Gatus endpoint green on `/api/health-check`
 4. VolSync ReplicationSource reports a successful snapshot after first run
    (or trigger via `just kube snapshot`)
