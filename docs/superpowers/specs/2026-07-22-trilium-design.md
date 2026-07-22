@@ -60,8 +60,9 @@ port 8080, fsGroup 1000, and a retained PVC. Our values only override:
   - `TRILIUM_OAUTH_ISSUER_BASE_URL=https://auth.vaderrp.com/application/o/trilium/.well-known/openid-configuration`
     (MUST be set explicitly — unset silently defaults to Google, TriliumNext#6444)
   - `TRILIUM_OAUTH_ISSUER_NAME=Authentik`
-  - client ID/secret via `envFrom`/`valueFrom` referencing the secret from a
-    new `app/external-secret.yaml` (1Password)
+  - client ID/secret via `envFrom` referencing the secret from a new
+    `app/external-secret.yaml` (Vaultwarden, `bitwarden-fields`
+    ClusterSecretStore — note: the CLAUDE.md mention of 1Password is stale)
   - Plus whatever enable flag the current config docs require (consult
     https://docs.triliumnotes.org/user-guide/setup/server/openid-connect at
     implementation time)
@@ -89,7 +90,7 @@ port 8080, fsGroup 1000, and a retained PVC. Our values only override:
 - Manual prerequisite in Authentik: create an OAuth2/OpenID provider +
   application (slug `trilium`), redirect URI
   `https://trilium.vaderrp.com/callback`; store client ID/secret in
-  1Password for the ExternalSecret
+  Vaultwarden for the ExternalSecret
 - ETAPI (`/etapi`) is externally reachable but token-authenticated
   (tokens minted in the Trilium UI). Accepted; MCP/API consumers still
   talk to `trilium.tools.svc.cluster.local:8080` in-cluster.
