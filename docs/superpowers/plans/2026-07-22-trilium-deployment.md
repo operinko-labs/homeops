@@ -445,9 +445,11 @@ Expected: route lists hostname `trilium.vaderrp.com`; curl returns `HTTP/2 200` 
 - [ ] **Step 7: Trigger and verify a VolSync snapshot**
 
 ```bash
-kubectl -n tools annotate replicationsource trilium volsync.backube/manual="$(date +%s)" --overwrite
+# Note: this cluster's VolSync uses the spec.trigger.manual field, not the
+# volsync.backube/manual annotation (see kubernetes/mod.just snapshot recipe).
+kubectl -n tools patch replicationsource trilium --type merge -p "{\"spec\":{\"trigger\":{\"manual\":\"$(date +%s)\"}}}"
 sleep 60
-kubectl -n tools get replicationsource trilium -o jsonpath='{.status.lastSyncTime}{"\n"}{.status.latestMoverStatus.result}{"\n"}'
+kubectl -n tools get replicationsource trilium -o jsonpath='{.status.lastManualSync}{"\n"}{.status.latestMoverStatus.result}{"\n"}'
 ```
 
 Expected: a recent timestamp and `Successful`.

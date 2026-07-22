@@ -104,7 +104,7 @@ unclean shutdowns. Here:
 2. Single replica + `Recreate` — never two writers
 3. Trilium's built-in automatic backups (daily/weekly/monthly copies of
    `document.db` inside the data dir, hence inside the PVC)
-4. VolSync/kopia nightly PVC snapshots; restore via
+4. VolSync/kopia hourly PVC snapshots (retain 24h/7d); restore via
    `just kube volsync-restore tools trilium`
 5. Optional later: desktop app as a sync client = a full live replica
 
@@ -113,7 +113,7 @@ unclean shutdowns. Here:
 Deferred until Trilium is running because the ETAPI token is generated in the
 Trilium UI. Plan: deploy a community Trilium MCP server (candidates:
 OVDEN13/trilium-mcp static Go binary, or trilium-fastmcp) as a small
-deployment in `tools`, ETAPI token via ExternalSecret from 1Password,
+deployment in `tools`, ETAPI token via ExternalSecret from Vaultwarden,
 exposed following the existing log-aggregator/tempest-mcp pattern. Evaluate
 candidate images for an actually-published container image at that point.
 
