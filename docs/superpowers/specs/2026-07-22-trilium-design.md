@@ -40,41 +40,47 @@ bambuddy/radarr patterns:
 
 ### `app/ocirepository.yaml`
 
-- bjw-s `app-template` chart, `4.6.2` (same as other apps)
+- **Official 1st-party chart** (policy: app-template is a fallback only):
+  `oci://ghcr.io/triliumnext/helm-charts/trilium`, chart version `2.0.0`
+  (appVersion v0.104.0). **Verify latest chart/app version against the live
+  registry at implementation time.** The chart wraps bjw-s common 5.0.1, so
+  all common-library values apply. Charts are cosign-signed (keyless);
+  optionally add Flux `spec.verify` cosign verification.
 
 ### `app/helmrelease.yaml`
 
-- Single controller `trilium`, one replica, `Recreate` strategy (single
-  writer, always)
-- Image: `triliumnext/trilium`, pinned `<latest-tag>@sha256:<digest>`.
-  **The tag and digest MUST be verified against the live registry/GitHub
-  releases at implementation time** (latest known at design time: v0.104.0,
-  released 2026-07-18). Pulls transit the Harbor mirror automatically.
-- Port 8080; env `TRILIUM_DATA_DIR=/home/node/trilium-data`, `TZ`
-- Native OIDC against Authentik (no proxy middleware):
+The chart's defaults already provide: image `triliumnext/trilium:v0.104.0`,
+fixperms init container, startup/readiness/liveness probes on
+`/api/health-check`, config.ini ConfigMap with `trustedReverseProxy: true`,
+port 8080, fsGroup 1000, and a retained PVC. Our values only override:
+
+- `controllers.main.containers.trilium.env`: `TZ` + native OIDC against
+  Authentik (no proxy middleware):
   - `TRILIUM_OAUTH_BASE_URL=https://trilium.vaderrp.com`
   - `TRILIUM_OAUTH_ISSUER_BASE_URL=https://auth.vaderrp.com/application/o/trilium/.well-known/openid-configuration`
     (MUST be set explicitly — unset silently defaults to Google, TriliumNext#6444)
   - `TRILIUM_OAUTH_ISSUER_NAME=Authentik`
-  - `TRILIUM_OAUTH_CLIENT_ID` / `TRILIUM_OAUTH_CLIENT_SECRET` from a new
-    `app/external-secret.yaml` (1Password)
+  - client ID/secret via `envFrom`/`valueFrom` referencing the secret from a
+    new `app/external-secret.yaml` (1Password)
   - Plus whatever enable flag the current config docs require (consult
     https://docs.triliumnotes.org/user-guide/setup/server/openid-connect at
     implementation time)
-- Liveness/readiness probes on `GET /api/health-check`
-- securityContext: runAsUser/Group 1000, fsGroup 1000, no privilege
-  escalation, drop ALL capabilities, seccomp RuntimeDefault
+- `persistence.data.existingClaim: trilium` (VolSync component provisions
+  the PVC; disables the chart-created one)
 - Resources: requests 100m / 512Mi, limit 1Gi memory
-- Persistence: `existingClaim: trilium` mounted at `/home/node/trilium-data`
+- `configini.general.instanceName: trilium`
+- Single replica (chart default) — SQLite, one writer
 
-### `app/httproute.yaml`
+### Routing (in HelmRelease values, no separate httproute.yaml)
 
-- Hostname `trilium.vaderrp.com` on `gateway-public` (namespace `network`)
-- Annotation `external-dns.alpha.kubernetes.io/target: external.vaderrp.com`
-- Filter: `traefik-warp` only (no `oidc-auth` middleware — auth is handled
-  natively by Trilium's OIDC)
-- Gatus annotations checking `/api/health-check`; homepage annotations
-  (group Tools)
+- bjw-s common `route:` key generates the HTTPRoute from chart values:
+  hostname `trilium.vaderrp.com`, parentRef `gateway-public` (ns `network`)
+- Route annotations: `external-dns.alpha.kubernetes.io/target:
+  external.vaderrp.com`, gatus check on `/api/health-check`, homepage
+  (group Tools); label `route.scope: external`
+- Filter: `traefik-warp` ExtensionRef only (no `oidc-auth` middleware —
+  auth is handled natively by Trilium's OIDC). Verified: common 5.0.1
+  supports `route.<id>.rules[].filters` (covered by upstream unit tests).
 
 ## Auth
 
