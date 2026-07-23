@@ -10,6 +10,13 @@
 libraries:
   Movies:
     remove_overlays: false
+    collection_files:
+      # Academy Awards (Oscars) collections
+      - default: oscars
+      # IMDb charts (Popular, Top 250, Lowest Rated)
+      - default: imdb
+      # Common Sense Media content-rating collections
+      - default: content_rating_cs
     operations:
       # Fix/normalize metadata from TMDb
       mass_genre_update: tmdb
@@ -21,6 +28,11 @@ libraries:
       # mass_audience_rating_update: tmdb
   TV Shows:
     remove_overlays: false
+    collection_files:
+      # IMDb charts (Popular, Top 250, Lowest Rated)
+      - default: imdb
+      # Common Sense Media content-rating collections
+      - default: content_rating_cs
     operations:
       mass_genre_update: tmdb
       mass_content_rating_update: tmdb
@@ -61,8 +73,13 @@ radarr:
   url: http://radarr.media.svc.cluster.local
   token: <<radarrapikey>>
   add_missing: false
-  add_existing: false
+  # Add Plex items that Radarr doesn't know about to Radarr (in place, no download)
+  add_existing: true
   upgrade_existing: false
+  # If Plex sees the media at a different path than Radarr's /mnt/media,
+  # uncomment and adjust so add_existing registers paths Radarr can access:
+  # radarr_path: /mnt/media
+  # plex_path: /path/as/seen/by/plex
   monitor: true
   availability: announced
   # Only used when add_missing is enabled
@@ -73,8 +90,13 @@ sonarr:
   url: http://sonarr.media.svc.cluster.local
   token: <<sonarrapikey>>
   add_missing: false
-  add_existing: false
+  # Add Plex items that Sonarr doesn't know about to Sonarr (in place, no download)
+  add_existing: true
   upgrade_existing: false
+  # If Plex sees the media at a different path than Sonarr's /mnt/media,
+  # uncomment and adjust so add_existing registers paths Sonarr can access:
+  # sonarr_path: /mnt/media
+  # plex_path: /path/as/seen/by/plex
   monitor: all
   series_type: standard
   season_folder: true
