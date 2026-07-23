@@ -8,6 +8,9 @@ resources:
   - pvc.yaml
   - httproute.yaml
   - vpa.yaml
+  # posterizarr-overlays ConfigMap (binaryData-embedded PNGs — Flux excludes
+  # *.png from Git artifacts, so configMapGenerator file sources can't be used)
+  - configmap.yaml
 
 configMapGenerator:
   - name: posterizarr-values
@@ -15,11 +18,3 @@ configMapGenerator:
       - values.yaml
     options:
       disableNameSuffixHash: true # Optional, keeps name clean
-  # Custom overlay images (from bullmoose20's community config) — copied
-  # into /config by the copy-config initContainer
-  - name: posterizarr-overlays
-    files:
-      - overlays/bottom-up-fade.png
-      - overlays/bottom-up-fade-background.png
-    options:
-      disableNameSuffixHash: true
