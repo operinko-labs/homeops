@@ -35,6 +35,13 @@ libraries:
       - default: commonsense
       # Award/chart ribbons (Oscars, IMDb Top 250, ...)
       - default: ribbon
+      # Languages spoken and subtitles with associated flags and two-digit lang codes
+      - default: languages
+      # Languages spoken and subtitles with associated flags and two-digit lang codes
+      - default: languages
+        template_variables:
+          back_color: '#FFFFFF00'
+          font_color: '#FFFFFF00'
     operations:
       # Fix/normalize metadata from TMDb
       mass_genre_update: tmdb
@@ -80,6 +87,13 @@ libraries:
       - default: runtimes
         template_variables:
           builder_level: episode
+      # Languages spoken and subtitles with associated flags and two-digit lang codes
+      - default: languages
+      # Languages spoken and subtitles with associated flags and two-digit lang codes
+      - default: languages
+        template_variables:
+          back_color: '#FFFFFF00'
+          font_color: '#FFFFFF00'
     operations:
       mass_genre_update: tmdb
       mass_content_rating_update: tmdb
