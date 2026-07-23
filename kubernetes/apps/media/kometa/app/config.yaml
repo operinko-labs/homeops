@@ -65,9 +65,9 @@ radarr:
   upgrade_existing: false
   monitor: true
   availability: announced
-  # Only used when add_missing is enabled — verify these match your Radarr setup
+  # Only used when add_missing is enabled
   root_folder_path: /mnt/media/Movies
-  quality_profile: HD-1080p
+  quality_profile: HD Bluray + WEB
 
 sonarr:
   url: http://sonarr.media.svc.cluster.local
@@ -78,6 +78,6 @@ sonarr:
   monitor: all
   series_type: standard
   season_folder: true
-  # Only used when add_missing is enabled — verify these match your Sonarr setup
+  # Only used when add_missing is enabled
   root_folder_path: /mnt/media/TV
-  quality_profile: HD-1080p
+  quality_profile: WEB-1080p
