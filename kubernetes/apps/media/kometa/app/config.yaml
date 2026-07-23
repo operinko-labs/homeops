@@ -22,14 +22,12 @@ libraries:
       - default: audio_codec
       - default: ratings
         template_variables:
+          # Fonts default to bundled fonts/Inter-Bold.ttf @ 63 (only the Inter
+          # family ships with Kometa)
           rating1: critic                                        # matches mass_critic_rating_update: imdb
           rating1_image: imdb
-          rating1_font: config/custom_fonts/Impact.ttf           # local font on the config PVC
-          rating1_font_size: 70
           rating2: audience                                      # matches mass_audience_rating_update: tmdb
           rating2_image: tmdb
-          rating2_font: config/custom_fonts/Avenir_95_Black.ttf  # local font on the config PVC
-          rating2_font_size: 70
           horizontal_position: right
       - default: video_format
       - default: runtimes
@@ -65,14 +63,12 @@ libraries:
           builder_level: episode
       - default: ratings
         template_variables:
+          # Fonts default to bundled fonts/Inter-Bold.ttf @ 63 (only the Inter
+          # family ships with Kometa)
           rating1: critic                                        # matches mass_episode_critic_rating_update: imdb
           rating1_image: imdb
-          rating1_font: config/custom_fonts/Impact.ttf           # local font on the config PVC
-          rating1_font_size: 70
           rating2: audience                                      # matches mass_episode_audience_rating_update: tmdb
           rating2_image: tmdb
-          rating2_font: config/custom_fonts/Avenir_95_Black.ttf  # local font on the config PVC
-          rating2_font_size: 70
           horizontal_position: right
           builder_level: episode
       - default: video_format
