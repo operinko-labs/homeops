@@ -1,0 +1,66 @@
+---
+# Helm values for kometa app-template deployment
+controllers:
+  kometa:
+    annotations:
+      reloader.stakater.com/auto: "true"
+    strategy: Recreate
+    containers:
+      app:
+        image:
+          repository: kometateam/kometa
+          tag: v2.4.5
+        env:
+          TZ: Europe/Helsinki
+          # Run daily at 06:00 (container stays up and runs on this schedule)
+          KOMETA_TIMES: "06:00"
+          # Config is mounted from a ConfigMap — don't let Kometa write it back
+          KOMETA_READ_ONLY_CONFIG: "true"
+        envFrom:
+          - secretRef:
+              name: kometa-secret
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+        resources:
+          requests:
+            cpu: 10m
+            memory: 256Mi
+          limits:
+            memory: 2Gi
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 568
+    runAsGroup: 568
+    fsGroup: 568
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile: {type: RuntimeDefault}
+  dnsConfig:
+    options:
+      - name: ndots
+        value: "1"
+      - name: use-vc
+      - name: single-request-reopen
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: kometa
+    globalMounts:
+      - path: /config
+  config-file:
+    type: configMap
+    name: kometa-config
+    globalMounts:
+      - path: /config/config.yml
+        subPath: config.yml
+        readOnly: true
+  tmp:
+    type: emptyDir
+    globalMounts:
+      - path: /tmp

@@ -6,6 +6,7 @@ resources:
   - ./namespace.yaml
   - ./bazarr/ks.yaml
   - ./configarr/ks.yaml
+  - ./kometa/ks.yaml
   - ./maintainerr/ks.yaml
   - ./prowlarr/ks.yaml
   - ./seerr/ks.yaml
