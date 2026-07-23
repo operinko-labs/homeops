@@ -15,6 +15,8 @@ configMapGenerator:
       disableNameSuffixHash: true # Optional, keeps name clean
   - name: kometa-config
     files:
-      - config.yml
+      # Key stays config.yml (the filename Kometa expects at /config/config.yml);
+      # the source file is named .yaml so CI's kubeconform ignore pattern skips it
+      - config.yml=config.yaml
     options:
       disableNameSuffixHash: true
