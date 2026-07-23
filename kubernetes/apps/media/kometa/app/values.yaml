@@ -2,18 +2,24 @@
 # Helm values for kometa app-template deployment
 controllers:
   kometa:
-    annotations:
-      reloader.stakater.com/auto: "true"
-    strategy: Recreate
+    type: cronjob
+    cronjob:
+      # Daily metadata run at 06:00 local time
+      schedule: "0 6 * * *"
+      timeZone: Europe/Helsinki
+      concurrencyPolicy: Forbid
+      successfulJobsHistory: 1
+      failedJobsHistory: 1
     containers:
       app:
         image:
           repository: docker.io/kometateam/kometa
           tag: v2.4.5@sha256:a376a1818196cde159b5a4d5a6ad55411415f7b5bc38d8a27e8c718bae7f0ddd
+        # Run once and exit (scheduling is handled by the CronJob)
+        args:
+          - --run
         env:
           TZ: Europe/Helsinki
-          # Run daily at 06:00 (container stays up and runs on this schedule)
-          KOMETA_TIMES: "06:00"
           # Config is mounted from a ConfigMap — don't let Kometa write it back
           KOMETA_READ_ONLY_CONFIG: "true"
         envFrom:

@@ -1,6 +1,6 @@
 ---
 # Custom VPA for Kometa - Burstable QoS
-# Scheduled batch tool - idles most of the day, bursts during the daily run
+# Daily CronJob batch run - VPA recommends from completed job pods
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
@@ -8,8 +8,8 @@ metadata:
   namespace: media
 spec:
   targetRef:
-    apiVersion: apps/v1
-    kind: Deployment
+    apiVersion: batch/v1
+    kind: CronJob
     name: kometa
   updatePolicy:
     updateMode: "Off"  # Recommendation mode only (Goldilocks compatible)
