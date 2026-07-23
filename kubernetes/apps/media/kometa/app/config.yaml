@@ -17,15 +17,35 @@ libraries:
       - default: imdb
       # Common Sense Media content-rating collections
       - default: content_rating_cs
+    overlay_files:
+      - default: resolution
+      - default: audio_codec
+      - default: ratings
+        template_variables:
+          rating1: critic                                        # matches mass_critic_rating_update: imdb
+          rating1_image: imdb
+          rating1_font: config/custom_fonts/Impact.ttf           # local font on the config PVC
+          rating1_font_size: 70
+          rating2: audience                                      # matches mass_audience_rating_update: tmdb
+          rating2_image: tmdb
+          rating2_font: config/custom_fonts/Avenir_95_Black.ttf  # local font on the config PVC
+          rating2_font_size: 70
+          horizontal_position: right
+      - default: video_format
+      - default: runtimes
+      # Common Sense age rating badge
+      - default: commonsense
+      # Award/chart ribbons (Oscars, IMDb Top 250, ...)
+      - default: ribbon
     operations:
       # Fix/normalize metadata from TMDb
       mass_genre_update: tmdb
       mass_content_rating_update: tmdb
       mass_originally_available_update: tmdb
       mass_studio_update: tmdb
-      # Uncomment to also sync ratings:
-      # mass_critic_rating_update: tmdb
-      # mass_audience_rating_update: tmdb
+      # Ratings feeding the ratings overlay
+      mass_critic_rating_update: imdb
+      mass_audience_rating_update: tmdb
   TV Shows:
     remove_overlays: false
     collection_files:
@@ -33,11 +53,45 @@ libraries:
       - default: imdb
       # Common Sense Media content-rating collections
       - default: content_rating_cs
+    overlay_files:
+      # Common Sense age rating badge (show posters)
+      - default: commonsense
+      # Episode-level overlays
+      - default: resolution
+        template_variables:
+          builder_level: episode
+      - default: audio_codec
+        template_variables:
+          builder_level: episode
+      - default: ratings
+        template_variables:
+          rating1: critic                                        # matches mass_episode_critic_rating_update: imdb
+          rating1_image: imdb
+          rating1_font: config/custom_fonts/Impact.ttf           # local font on the config PVC
+          rating1_font_size: 70
+          rating2: audience                                      # matches mass_episode_audience_rating_update: tmdb
+          rating2_image: tmdb
+          rating2_font: config/custom_fonts/Avenir_95_Black.ttf  # local font on the config PVC
+          rating2_font_size: 70
+          horizontal_position: right
+          builder_level: episode
+      - default: video_format
+        template_variables:
+          builder_level: episode
+      - default: episode_info
+        template_variables:
+          builder_level: episode
+      - default: runtimes
+        template_variables:
+          builder_level: episode
     operations:
       mass_genre_update: tmdb
       mass_content_rating_update: tmdb
       mass_originally_available_update: tmdb
       mass_studio_update: tmdb
+      # Episode ratings feeding the episode-level ratings overlay
+      mass_episode_critic_rating_update: imdb
+      mass_episode_audience_rating_update: tmdb
 
 settings:
   cache: true
