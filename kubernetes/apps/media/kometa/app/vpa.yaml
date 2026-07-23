@@ -23,5 +23,5 @@ spec:
           memory: 128Mi
         maxAllowed:
           cpu: 500m
-          memory: 1Gi  # Conservative max for requests (limit is 2Gi)
+          memory: 3Gi  # Conservative max for requests (limit is 6Gi)
         mode: "Auto"
