@@ -1,0 +1,22 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ocirepository.yaml
+  - helmrelease.yaml
+  - external-secret.yaml
+  - vpa.yaml
+
+configMapGenerator:
+  - name: kometa-values
+    files:
+      - values.yaml
+    options:
+      disableNameSuffixHash: true # Optional, keeps name clean
+  - name: kometa-config
+    files:
+      # Key stays config.yml (the filename Kometa expects at /config/config.yml);
+      # the source file is named .yaml so CI's kubeconform ignore pattern skips it
+      - config.yml=config.yaml
+    options:
+      disableNameSuffixHash: true

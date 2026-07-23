@@ -1,0 +1,72 @@
+---
+# Helm values for kometa app-template deployment
+controllers:
+  kometa:
+    type: cronjob
+    cronjob:
+      # Daily metadata run at 06:00 local time
+      schedule: "0 6 * * *"
+      timeZone: Europe/Helsinki
+      concurrencyPolicy: Forbid
+      successfulJobsHistory: 1
+      failedJobsHistory: 1
+    containers:
+      app:
+        image:
+          repository: docker.io/kometateam/kometa
+          tag: v2.4.5@sha256:a376a1818196cde159b5a4d5a6ad55411415f7b5bc38d8a27e8c718bae7f0ddd
+        # Run once and exit (scheduling is handled by the CronJob)
+        args:
+          - --run
+        env:
+          TZ: Europe/Helsinki
+          # Config is mounted from a ConfigMap — don't let Kometa write it back
+          KOMETA_READ_ONLY_CONFIG: "true"
+        envFrom:
+          - secretRef:
+              name: kometa-secret
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+        resources:
+          requests:
+            cpu: 10m
+            memory: 256Mi
+          limits:
+            memory: 2Gi
+defaultPodOptions:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 568
+    runAsGroup: 568
+    fsGroup: 568
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile: {type: RuntimeDefault}
+  dnsConfig:
+    options:
+      - name: ndots
+        value: "1"
+      - name: use-vc
+      - name: single-request-reopen
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: kometa
+    globalMounts:
+      - path: /config
+  config-file:
+    type: configMap
+    name: kometa-config
+    globalMounts:
+      - path: /config/config.yml
+        subPath: config.yml
+        readOnly: true
+  tmp:
+    type: emptyDir
+    globalMounts:
+      - path: /tmp

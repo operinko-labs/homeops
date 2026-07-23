@@ -1,0 +1,27 @@
+---
+# Custom VPA for Kometa - Burstable QoS
+# Daily CronJob batch run - VPA recommends from completed job pods
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: kometa
+  namespace: media
+spec:
+  targetRef:
+    apiVersion: batch/v1
+    kind: CronJob
+    name: kometa
+  updatePolicy:
+    updateMode: "Off"  # Recommendation mode only (Goldilocks compatible)
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "app"
+        controlledResources: ["cpu", "memory"]
+        controlledValues: RequestsOnly  # Burstable QoS - only manage requests, not limits
+        minAllowed:
+          cpu: 10m
+          memory: 128Mi
+        maxAllowed:
+          cpu: 500m
+          memory: 1Gi  # Conservative max for requests (limit is 2Gi)
+        mode: "Auto"
