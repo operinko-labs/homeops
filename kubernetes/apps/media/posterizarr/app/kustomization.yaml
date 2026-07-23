@@ -15,3 +15,11 @@ configMapGenerator:
       - values.yaml
     options:
       disableNameSuffixHash: true # Optional, keeps name clean
+  # Custom overlay images (from bullmoose20's community config) — copied
+  # into /config by the copy-config initContainer
+  - name: posterizarr-overlays
+    files:
+      - overlays/bottom-up-fade.png
+      - overlays/bottom-up-fade-background.png
+    options:
+      disableNameSuffixHash: true

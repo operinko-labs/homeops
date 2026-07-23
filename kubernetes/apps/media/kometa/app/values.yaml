@@ -36,9 +36,11 @@ controllers:
         resources:
           requests:
             cpu: 10m
-            memory: 256Mi
+            memory: 512Mi
           limits:
-            memory: 2Gi
+            # First full-library run (episode overlays + caching) is memory
+            # hungry - repeatedly OOMKilled at 2Gi
+            memory: 6Gi
 defaultPodOptions:
   securityContext:
     runAsNonRoot: true
