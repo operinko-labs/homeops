@@ -1,0 +1,15 @@
+---
+# Generated poster/background/titlecard assets. Not VolSync-backed —
+# everything here can be regenerated from the media servers and APIs.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: posterizarr-assets
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: local-path

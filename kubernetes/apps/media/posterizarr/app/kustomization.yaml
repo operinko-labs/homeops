@@ -1,0 +1,17 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ocirepository.yaml
+  - helmrelease.yaml
+  - external-secret.yaml
+  - pvc.yaml
+  - httproute.yaml
+  - vpa.yaml
+
+configMapGenerator:
+  - name: posterizarr-values
+    files:
+      - values.yaml
+    options:
+      disableNameSuffixHash: true # Optional, keeps name clean
