@@ -1,0 +1,27 @@
+---
+# Custom VPA for Posterizarr - Burstable QoS
+# Idles between runs, bursts hard during ImageMagick poster generation
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: posterizarr
+  namespace: media
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: posterizarr
+  updatePolicy:
+    updateMode: "Off"  # Recommendation mode only (Goldilocks compatible)
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "app"
+        controlledResources: ["cpu", "memory"]
+        controlledValues: RequestsOnly  # Burstable QoS - only manage requests, not limits
+        minAllowed:
+          cpu: 10m
+          memory: 256Mi
+        maxAllowed:
+          cpu: 1000m
+          memory: 2Gi  # Conservative max for requests (limit is 4Gi)
+        mode: "Auto"

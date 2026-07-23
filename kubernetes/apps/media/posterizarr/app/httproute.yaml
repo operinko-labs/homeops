@@ -1,0 +1,46 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: posterizarr
+  namespace: media
+  labels:
+    route.scope: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: Media
+    gethomepage.dev/name: Posterizarr
+    gethomepage.dev/icon: posterizarr.png
+    gethomepage.dev/href: https://posterizarr.vaderrp.com
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=posterizarr
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+  hostnames:
+    - posterizarr.vaderrp.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: traefik-warp
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: oidc-auth
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: posterizarr
+          port: 8000
+          weight: 1
