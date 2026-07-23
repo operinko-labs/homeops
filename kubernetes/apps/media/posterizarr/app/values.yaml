@@ -13,7 +13,7 @@ controllers:
         command:
           - sh
           - -c
-          - cp /secret/config.json /config/config.json && cp /overlays/*.png /config/
+          - cp /overlays/*.png /config/
     containers:
       app:
         image:
