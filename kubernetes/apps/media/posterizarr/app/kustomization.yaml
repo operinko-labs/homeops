@@ -5,7 +5,6 @@ resources:
   - ocirepository.yaml
   - helmrelease.yaml
   - external-secret.yaml
-  - pvc.yaml
   - httproute.yaml
   - vpa.yaml
   # posterizarr-overlays ConfigMap (binaryData-embedded PNGs — Flux excludes
