@@ -10,6 +10,10 @@
 libraries:
   Movies:
     remove_overlays: false
+    settings:
+      # Posterizarr-generated assets (shared NFS mount) as overlay base
+      asset_directory: /assets/Movies
+      prioritize_assets: true
     collection_files:
       # Academy Awards (Oscars) collections
       - default: oscars
@@ -51,8 +55,14 @@ libraries:
       # Ratings feeding the ratings overlay
       mass_critic_rating_update: imdb
       mass_audience_rating_update: tmdb
+      # Apply Posterizarr assets to every item
+      assets_for_all: true
   TV Shows:
     remove_overlays: false
+    settings:
+      # Posterizarr-generated assets (shared NFS mount) as overlay base
+      asset_directory: /assets/TV Shows
+      prioritize_assets: true
     collection_files:
       # IMDb charts (Popular, Top 250, Lowest Rated)
       - default: imdb
@@ -102,6 +112,8 @@ libraries:
       # Episode ratings feeding the episode-level ratings overlay
       mass_episode_critic_rating_update: imdb
       mass_episode_audience_rating_update: tmdb
+      # Apply Posterizarr assets to every item
+      assets_for_all: true
 
 settings:
   cache: true

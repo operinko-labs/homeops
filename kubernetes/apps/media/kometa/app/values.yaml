@@ -61,6 +61,15 @@ persistence:
     existingClaim: kometa
     globalMounts:
       - path: /config
+  # Posterizarr's generated assets (shared NFS) — used as overlay base via
+  # per-library asset_directory + prioritize_assets in config.yaml
+  assets:
+    type: nfs
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Public/posterizarr
+    globalMounts:
+      - path: /assets
+        readOnly: true
   config-file:
     type: configMap
     name: kometa-config

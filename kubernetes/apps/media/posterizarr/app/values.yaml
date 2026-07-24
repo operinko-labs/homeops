@@ -93,13 +93,27 @@ persistence:
       posterizarr:
         copy-config:
           - path: /overlays
+  # Shared with kometa (asset_directory) so overlays are composited from the
+  # generated assets directly instead of round-tripping art through Plex
   assets:
+    type: nfs
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Public/posterizarr
+    advancedMounts:
+      posterizarr:
+        app:
+          - path: /assets
+  # Old local-path assets PVC, kept mounted read-only for one-time migration:
+  #   kubectl -n media exec deploy/posterizarr -- sh -c 'cp -a /assets-old/. /assets/'
+  # Remove this mount and pvc.yaml afterwards.
+  assets-old:
     type: persistentVolumeClaim
     existingClaim: posterizarr-assets
     advancedMounts:
       posterizarr:
         app:
-          - path: /assets
+          - path: /assets-old
+            readOnly: true
   assetsbackup:
     type: emptyDir
     advancedMounts:
