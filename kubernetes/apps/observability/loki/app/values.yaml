@@ -59,7 +59,8 @@ loki:
         type: local
         local:
           directory: /rules
-      rule_path: /rules/fake
+      # scratch dir for rule evaluation; must not overlap the sidecar target
+      rule_path: /var/loki/rules-scratch
 singleBinary:
   replicas: 1
   persistence:
@@ -100,3 +101,6 @@ sidecar:
     repository: ghcr.io/kiwigrid/k8s-sidecar
   rules:
     searchNamespace: ALL
+    # ruler local storage reads <directory>/<tenant>/*.yaml; with auth
+    # disabled the tenant is "fake", so rules must land in /rules/fake
+    folder: /rules/fake
