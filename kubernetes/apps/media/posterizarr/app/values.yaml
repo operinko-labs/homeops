@@ -103,17 +103,6 @@ persistence:
       posterizarr:
         app:
           - path: /assets
-  # Old local-path assets PVC, kept mounted read-only for one-time migration:
-  #   kubectl -n media exec deploy/posterizarr -- sh -c 'cp -a /assets-old/. /assets/'
-  # Remove this mount and pvc.yaml afterwards.
-  assets-old:
-    type: persistentVolumeClaim
-    existingClaim: posterizarr-assets
-    advancedMounts:
-      posterizarr:
-        app:
-          - path: /assets-old
-            readOnly: true
   assetsbackup:
     type: emptyDir
     advancedMounts:
