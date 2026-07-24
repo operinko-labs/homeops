@@ -25,3 +25,4 @@ talos/clusterconfig-ref/
 talos/clusterconfig
 .sisyphus/
 .omo/
+.env
