@@ -13,7 +13,9 @@ controllers:
         command:
           - sh
           - -c
-          - cp /overlays/*.png /config/
+          # config.json is UI-owned: seed it from the secret only on a fresh
+          # /config PVC, never overwrite (the web UI writes changes back to it)
+          - '[ -f /config/config.json ] || cp /secret/config.json /config/config.json; cp /overlays/*.png /config/'
     containers:
       app:
         image:
