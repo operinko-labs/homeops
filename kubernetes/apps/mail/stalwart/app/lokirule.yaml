@@ -1,0 +1,30 @@
+---
+groups:
+  - name: stalwart
+    rules:
+      - alert: StalwartOutboundRcptRejected
+        expr: |
+          sum by (namespace, pod) (count_over_time({namespace="mail", pod=~"stalwart-[a-z0-9]+-[a-z0-9]+"} |= "(delivery.rcpt-to-rejected)"[15m])) > 0
+        for: 5m
+        annotations:
+          summary: >-
+            Stalwart outbound mail is being rejected at the smarthost hop.
+            The only next hop is Postfix on wg-haproxy (172.16.8.2); a
+            "550 5.1.2 Relay not allowed" response most likely means Postfix
+            is down and haproxy is looping the connection back into Stalwart.
+            Check
+            `systemctl status postfix` on the VPS.
+        labels:
+          severity: critical
+
+      - alert: StalwartSmarthostUnreachable
+        expr: |
+          sum by (namespace, pod) (count_over_time({namespace="mail", pod=~"stalwart-[a-z0-9]+-[a-z0-9]+"} |~ "\\(delivery\\.(connect-error|greeting-failed|start-tls-error)\\)"[15m])) > 0
+        for: 5m
+        annotations:
+          summary: >-
+            Stalwart cannot connect to the outbound smarthost (Postfix on
+            wg-haproxy, 172.16.8.2). Likely the WireGuard tunnel or the VPS
+            itself is down; queued mail will defer and eventually bounce.
+        labels:
+          severity: critical

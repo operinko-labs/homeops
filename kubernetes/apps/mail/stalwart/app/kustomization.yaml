@@ -8,3 +8,12 @@ resources:
   - external-secret.yaml
   - dnsendpoint.yaml
   - configmap.yaml
+configMapGenerator:
+  - name: stalwart-loki-rules
+    files:
+      - stalwart.yaml=./lokirule.yaml
+    options:
+      labels:
+        loki_rule: "true"
+generatorOptions:
+  disableNameSuffixHash: true
