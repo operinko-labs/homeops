@@ -48,6 +48,9 @@ if install_file postfix-main.cf /etc/postfix/main.cf 644; then
   postfix check
   systemctl reload postfix
 fi
+if install_file postfix-unit-override.conf /etc/systemd/system/postfix.service.d/50-homeops.conf 644; then
+  systemctl daemon-reload
+fi
 
 # --- wireguard ---------------------------------------------------------------
 if install_file wg0.conf /etc/wireguard/wg0.conf 600; then
