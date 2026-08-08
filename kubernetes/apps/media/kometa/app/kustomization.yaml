@@ -5,6 +5,7 @@ resources:
   - ocirepository.yaml
   - helmrelease.yaml
   - external-secret.yaml
+  - rbac.yaml
   - vpa.yaml
 
 configMapGenerator:

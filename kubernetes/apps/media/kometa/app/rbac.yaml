@@ -1,0 +1,78 @@
+---
+# Identity used by the n8n "poster pipeline" workflow to spawn ad-hoc kometa
+# Jobs when Posterizarr reports a completed run (Apprise webhook -> n8n ->
+# Kubernetes API). n8n authenticates with this ServiceAccount's bearer token
+# (see kometa-trigger-token below).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kometa-trigger
+  namespace: media
+---
+# Long-lived token for the ServiceAccount so it can be pasted into an n8n
+# Header Auth credential:
+#   kubectl -n media get secret kometa-trigger-token -o jsonpath='{.data.token}' | base64 -d
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kometa-trigger-token
+  namespace: media
+  annotations:
+    kubernetes.io/service-account.name: kometa-trigger
+type: kubernetes.io/service-account-token
+---
+# Just enough to read the kometa CronJob template and create/inspect Jobs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kometa-trigger
+  namespace: media
+rules:
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kometa-trigger
+  namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kometa-trigger
+subjects:
+  - kind: ServiceAccount
+    name: kometa-trigger
+    namespace: media
+---
+# Read-only job visibility for the kometa pod itself: the wait-for-turn
+# initContainer polls for other active kometa jobs so runs serialize instead
+# of overlapping. The `kometa` ServiceAccount is created by app-template
+# (serviceAccount block in values.yaml).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kometa-runner
+  namespace: media
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kometa-runner
+  namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kometa-runner
+subjects:
+  - kind: ServiceAccount
+    name: kometa
+    namespace: media

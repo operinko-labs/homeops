@@ -37,8 +37,6 @@ libraries:
       - default: runtimes
       # Common Sense age rating badge
       - default: commonsense
-      # Award/chart ribbons (Oscars, IMDb Top 250, ...)
-      - default: ribbon
       # Languages spoken and subtitles with associated flags and two-digit lang codes
       - default: languages
       # Languages spoken and subtitles with associated flags and two-digit lang codes

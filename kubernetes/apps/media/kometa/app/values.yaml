@@ -10,6 +10,38 @@ controllers:
       concurrencyPolicy: Forbid
       successfulJobsHistory: 1
       failedJobsHistory: 1
+    serviceAccount:
+      identifier: kometa
+    initContainers:
+      # Serialize kometa runs across ALL jobs (scheduled + webhook-triggered):
+      # wait until no other kometa job is active, then proceed. Queue-style,
+      # so triggered runs are delayed instead of dropped, and state lives in
+      # the API server (nothing to go stale, unlike a lockfile).
+      wait-for-turn:
+        image:
+          repository: docker.io/alpine/k8s
+          tag: 1.36.2
+        env:
+          JOB_NAME:
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['job-name']
+        command:
+          - sh
+          - -c
+          - |
+            while true; do
+              active=$(kubectl get jobs -n media -o json | jq -r --arg self "$JOB_NAME" \
+                '[.items[] | select(.metadata.name != $self)
+                           | select(.metadata.name | startswith("kometa"))
+                           | select((.status.active // 0) > 0)] | length')
+              if [ "$active" = "0" ]; then
+                echo "no other kometa jobs active - proceeding"
+                exit 0
+              fi
+              echo "$active other kometa job(s) active - waiting 30s"
+              sleep 30
+            done
     containers:
       app:
         image:
@@ -81,3 +113,5 @@ persistence:
     type: emptyDir
     globalMounts:
       - path: /tmp
+serviceAccount:
+  kometa: {}
