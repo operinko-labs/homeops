@@ -45,7 +45,7 @@ spec:
               # renovate: datasource=github-releases depName=l4rm4nd/traefik-warp
               WARP_VER=v1.1.5
               # renovate: datasource=github-releases depName=sevensolutions/traefik-oidc-auth
-              OIDC_VER=v0.18.0
+              OIDC_VER=v0.21.0
               AUTH_DIR=/plugins-local/src/github.com/xabinapal/traefik-authentik-forward-plugin
               WARP_DIR=/plugins-local/src/github.com/l4rm4nd/traefik-warp
               OIDC_DIR=/plugins-local/src/github.com/sevensolutions/traefik-oidc-auth
