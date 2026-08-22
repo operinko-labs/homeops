@@ -41,7 +41,7 @@ spec:
             - |
               set -e
               # renovate: datasource=github-releases depName=xabinapal/traefik-authentik-forward-plugin
-              AUTH_VER=v1.0.0
+              AUTH_VER=v1.0.1
               # renovate: datasource=github-releases depName=l4rm4nd/traefik-warp
               WARP_VER=v1.1.5
               # renovate: datasource=github-releases depName=sevensolutions/traefik-oidc-auth
