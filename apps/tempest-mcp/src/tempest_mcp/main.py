@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 
 from . import __version__
 from .config import settings
-from .mcp_server import mcp
+from .mcp_server import mcp, security_settings
 
 # Configure logging
 logging.basicConfig(
@@ -16,9 +16,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-# Configure MCP server path
-mcp.settings.streamable_http_path = "/mcp"
 
 
 @asynccontextmanager
@@ -149,7 +146,15 @@ async def root() -> dict:
 
 # Mount MCP server at root (it handles /mcp path internally)
 # MUST be mounted after other routes to avoid capturing them (since root matching catches everything)
-app.mount("/", mcp.streamable_http_app())
+# Transport options moved here from the constructor in mcp 2.0
+app.mount(
+    "/",
+    mcp.streamable_http_app(
+        stateless_http=True,
+        streamable_http_path="/mcp",
+        transport_security=security_settings,
+    ),
+)
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 [project]
 name = "tempest-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP Server for WeatherFlow Tempest weather data with native StreamableHTTP support"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -10,7 +10,7 @@ dependencies = [
     "httpx>=0.28.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
-    "mcp>=1.9.0",
+    "mcp>=2,<3",
     "starlette>=0.45.0",
     "cachetools>=5.0.0",
     "weatherflow4py>=1.0.0",

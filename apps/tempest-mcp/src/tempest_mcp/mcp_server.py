@@ -5,7 +5,7 @@ import os
 from typing import Annotated, Any
 
 from cachetools import TTLCache
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import Field
 from weatherflow4py.api import WeatherFlowRestAPI
@@ -19,12 +19,9 @@ security_settings = TransportSecuritySettings(
     enable_dns_rebinding_protection=False,  # Disable for internal K8s traffic
 )
 
-# Create MCP server instance
-mcp = FastMCP(
-    "Tempest Weather",
-    stateless_http=True,  # No session persistence - prevents memory leaks
-    transport_security=security_settings,
-)
+# Create MCP server instance (transport options are passed to
+# streamable_http_app() in main.py since mcp 2.0)
+mcp = MCPServer("Tempest Weather")
 
 # Response cache
 cache: TTLCache[str, Any] = TTLCache(
