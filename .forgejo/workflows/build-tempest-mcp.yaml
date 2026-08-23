@@ -84,7 +84,9 @@ jobs:
         with:
           context: apps/tempest-mcp
           file: apps/tempest-mcp/Dockerfile
-          push: ${{ github.event_name != 'pull_request' || inputs.force_push }}
+          # inputs.force_push is empty (not a boolean) on pull_request events;
+          # compare explicitly so the expression always yields a boolean
+          push: ${{ github.event_name != 'pull_request' || inputs.force_push == true }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
