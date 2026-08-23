@@ -9,7 +9,7 @@ controllers:
       app:
         image:
           repository: harbor.vaderrp.com/operinko-labs/autoposter
-          tag: sha-bc4b856
+          tag: sha-1eb5941
         env:
           TZ: Europe/Helsinki
           # python-plexapi and friends want a writable HOME
