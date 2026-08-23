@@ -35,14 +35,14 @@ operations:
 
 badges:
   enabled: true # composite badge overlays and upload them to Plex
-  upload_to_plex: false # dry run by default: compose and fingerprint, upload nothing
+  upload_to_plex: true # dry run by default: compose and fingerprint, upload nothing
   lock_artwork: true # lock the Plex field after upload so the agent cannot reclaim it
-  apply_overlay_label: false # add the literal Plex label "Overlay", as the previous tool did
+  apply_overlay_label: true # add the literal Plex label "Overlay", as the previous tool did
   adopt_from_plex: true # skip the upload when Plex is already serving this exact badged image
 
 collections:
   enabled: true # reconcile the Common Sense age-bucket collections
-  apply_to_plex: false # dry run by default: report the actions, change nothing
+  apply_to_plex: true # dry run by default: report the actions, change nothing
   ownership_label: autoposter # only collections carrying this label are ever modified
   libraries: # Plex library names to reconcile
     - Movies
@@ -51,7 +51,7 @@ collections:
   awards: true # Oscars winner collections
   separators: true # the blank "Ratings Collections" section-divider collection
   posters: true # give managed collections a poster
-  adopt: false # claim collections created by a tool being replaced; a Plex write, off by default
+  adopt: true # claim collections created by a tool being replaced; a Plex write, off by default
   adopt_from: # labels belonging to tools being replaced
     - Kometa
   adopt_removes_prior_label: false # strip the prior label once claimed; keeping it is reversible, this isn't
@@ -59,12 +59,12 @@ collections:
     - Collection managed by Maintainerr
 
 cleanup:
-  apply: false # dry run by default: report what would move, change nothing
+  apply: true # dry run by default: report what would move, change nothing
   max_orphans: 500 # refuse the pass if more than this many directories look orphaned
   max_orphan_share: 0.25 # ...or more than this share of the tree; "almost everything is garbage" means something is wrong
 
 adopt:
-  apply: false # dry run by default: produce the report, write nothing
+  apply: true # dry run by default: produce the report, write nothing
   libraries: # Plex library names to adopt
     - Movies
     - TV Shows
@@ -81,7 +81,7 @@ scheduler:
   # already governs whether the cleanup pass writes (dry run by default)
 
 radarr:
-  enabled: false # off until base_url is set and AUTOPOSTER_RADARR_APIKEY is exported
+  enabled: true # off until base_url is set and AUTOPOSTER_RADARR_APIKEY is exported
   base_url: http://radarr.media.svc.cluster.local
   add_existing: false # register Plex movies Radarr does not know about, in place, without downloading
   plex_path: /mnt/Media # Plex mounts the library here (capital M)
@@ -91,7 +91,7 @@ radarr:
   minimum_availability: announced
 
 sonarr:
-  enabled: false # off until base_url is set and AUTOPOSTER_SONARR_APIKEY is exported
+  enabled: true # off until base_url is set and AUTOPOSTER_SONARR_APIKEY is exported
   base_url: http://sonarr.media.svc.cluster.local
   add_existing: false # register Plex shows Sonarr does not know about, in place, without downloading
   plex_path: /mnt/Media
