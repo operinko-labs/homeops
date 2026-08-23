@@ -1,6 +1,6 @@
 [project]
 name = "log-aggregator"
-version = "0.2.9"
+version = "0.3.0"
 description = "Middleware for aggregating Kubernetes logs and alerts for LLM summarization"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,9 +14,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "alembic>=1.14.0",
     "prometheus-client>=0.21.0",
-    # mcp 2.0 removed mcp.server.fastmcp; FastMCP moved to the standalone
-    # `fastmcp` package. Cap until mcp_server.py is migrated.
-    "mcp>=1.9.0,<2",
+    "mcp>=2,<3",
     "starlette>=0.45.0",
 ]
 

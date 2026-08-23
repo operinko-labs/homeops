@@ -14,7 +14,7 @@ from . import __version__
 from .clients import KubernetesClient, LokiClient, PrometheusClient
 from .config import settings
 from .database import get_session, init_db
-from .mcp_server import mcp
+from .mcp_server import mcp, security_settings
 from .models import (
     AlertContextResponse,
     AlertmanagerWebhook,
@@ -34,10 +34,6 @@ logger = logging.getLogger(__name__)
 loki_client = LokiClient()
 prometheus_client = PrometheusClient()
 kubernetes_client = KubernetesClient()
-
-# Configure MCP server path to be at root of mount point
-mcp.settings.streamable_http_path = "/"
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,8 +58,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mount MCP server at /mcp
-app.mount("/mcp", mcp.streamable_http_app())
+# Mount MCP server at /mcp (transport options moved here from the
+# constructor in mcp 2.0; path "/" puts the endpoint at the mount root)
+app.mount(
+    "/mcp",
+    mcp.streamable_http_app(
+        stateless_http=True,
+        streamable_http_path="/",
+        transport_security=security_settings,
+    ),
+)
 
 
 # Dependencies
