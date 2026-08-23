@@ -66,6 +66,10 @@ DEFAULT_ACTIONS_URL = github
 [mirror]
 ENABLED = true
 
+[webhook]
+# flux-webhook resolves to a LAN IP, which the SSRF guard denies by default
+ALLOWED_HOST_LIST = external, flux-webhook.vaderrp.com
+
 [security]
 SECRET_KEY = {{ forgejo_secret_key }}
 INTERNAL_TOKEN = {{ forgejo_internal_token }}
