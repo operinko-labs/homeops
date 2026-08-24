@@ -96,6 +96,12 @@ persistence:
     path: /mnt/Nakkiallas/Public/posterizarr
     globalMounts:
       - path: /assets
+  plexbackup:
+    type: nfs
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Public/autoposter-plexbackup
+    globalMounts:
+      - path: /plexbackup
   manualassets:
     type: emptyDir
     globalMounts:
