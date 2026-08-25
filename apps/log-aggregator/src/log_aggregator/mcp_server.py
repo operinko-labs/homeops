@@ -49,13 +49,39 @@ def _get_kubernetes() -> KubernetesClient:
     return _kubernetes_client
 
 
+def _dedupe_alerts(alerts: list[Any]) -> list[tuple[Any, int]]:
+    """Collapse repeat notifications of the same alert into one entry.
+
+    Alertmanager re-sends still-firing alerts every repeat_interval, and each
+    re-send outside the ingest dedup window is stored as a new row. Keep the
+    most recently received row per alert and report how many times it arrived.
+    """
+    newest: dict[tuple, Any] = {}
+    counts: dict[tuple, int] = {}
+
+    for alert in alerts:
+        key = (alert.alertname, alert.namespace, alert.pod, alert.container)
+        counts[key] = counts.get(key, 0) + 1
+        current = newest.get(key)
+        if current is None or alert.created_at > current.created_at:
+            newest[key] = alert
+
+    entries = [(alert, counts[key]) for key, alert in newest.items()]
+    entries.sort(key=lambda entry: entry[0].created_at, reverse=True)
+    return entries
+
+
 @mcp.tool()
 async def list_alerts(
-    hours_back: Annotated[int, Field(description="How many hours to look back (default: 24)")] = 24,
+    hours_back: Annotated[int, Field(description="How many hours to look back, by when the alert was last received (default: 24)")] = 24,
     severity: Annotated[str, Field(description="Filter by severity - 'critical', 'warning', or 'info' (default: all)")] = "",
     limit: Annotated[int, Field(description="Maximum number of alerts to return (default: 50)")] = 50,
 ) -> dict[str, Any]:
     """List recent alerts from the cluster (lightweight).
+
+    The window is applied to when each alert was last received, not to when it
+    first fired, so long-running alerts stay visible for as long as Alertmanager
+    keeps re-sending them. Check fired_at to see how long one has been active.
 
     Returns only essential info per alert. Use get_alert_details(alert_id) to
     fetch full details for specific alerts worth investigating.
@@ -69,8 +95,8 @@ async def list_alerts(
 
     async with async_session_maker() as session:
         stmt = select(AlertContext).where(
-            AlertContext.fired_at >= since
-        ).order_by(AlertContext.fired_at.desc())
+            AlertContext.created_at >= since
+        ).order_by(AlertContext.created_at.desc())
 
         result = await session.execute(stmt)
         alerts = result.scalars().all()
@@ -79,12 +105,13 @@ async def list_alerts(
     if severity:
         alerts = [a for a in alerts if a.severity == severity]
 
-    total_before_limit = len(alerts)
-    alerts = alerts[:limit]
+    entries = _dedupe_alerts(alerts)
+    total_before_limit = len(entries)
+    entries = entries[:limit]
 
     # Build lightweight list - just enough to identify and prioritize
     alert_list = []
-    for alert in alerts:
+    for alert, occurrences in entries:
         # Extract service name from pod
         service = None
         if alert.pod:
@@ -95,13 +122,17 @@ async def list_alerts(
             "id": str(alert.id),
             "alert": alert.alertname,
             "severity": alert.severity,
+            "status": alert.status,
             "service": service,
             "namespace": alert.namespace or "unknown",
+            "fired_at": alert.fired_at.isoformat() if alert.fired_at else None,
+            "last_seen": alert.created_at.isoformat() if alert.created_at else None,
+            "occurrences": occurrences,
         })
 
     return {
         "total_matching": total_before_limit,
-        "returned": len(alerts),
+        "returned": len(alert_list),
         "period_hours": hours_back,
         "severity_filter": severity or None,
         "alerts": alert_list,
@@ -302,10 +333,13 @@ async def get_cluster_health() -> dict[str, Any]:
 
     async with async_session_maker() as session:
         stmt = select(AlertContext).where(
-            AlertContext.fired_at >= since
+            AlertContext.created_at >= since
         )
         result = await session.execute(stmt)
-        alerts = result.scalars().all()
+        rows = result.scalars().all()
+
+    # Collapse repeat notifications, then judge health on what is still firing
+    alerts = [alert for alert, _ in _dedupe_alerts(rows) if alert.status != "resolved"]
 
     # Count by severity
     critical = sum(1 for a in alerts if a.severity == "critical")
