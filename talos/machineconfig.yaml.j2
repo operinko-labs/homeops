@@ -163,6 +163,8 @@ cluster:
     image: registry.k8s.io/kube-proxy:v1.35.3
   scheduler:
     image: registry.k8s.io/kube-scheduler:v1.35.3
+    extraArgs:
+      bind-address: 0.0.0.0
   {% endif %}
 ---
 apiVersion: v1alpha1
