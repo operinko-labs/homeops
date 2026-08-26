@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/gitrepository_v1.json
+# A second GitRepository for the same repo, with its own WRITE-enabled deploy
+# key ("flux-image-automation" in Forgejo). Separate from `flux-system` on
+# purpose: the main sync key stays read-only, and only ImageUpdateAutomation
+# holds push access.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: homeops-write
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: ssh://git@192.168.7.30/operinko-labs/homeops.git
+  ref:
+    branch: main
+  secretRef:
+    name: flux-image-automation-ssh
+  ignore: |
+    # ImageUpdateAutomation only needs the tree to commit into; no artifact
+    # consumers, so keep the artifact minimal.
+    /*
+    !/kubernetes/

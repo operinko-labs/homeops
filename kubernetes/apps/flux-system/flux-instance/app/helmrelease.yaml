@@ -21,6 +21,8 @@ spec:
         - kustomize-controller
         - helm-controller
         - notification-controller
+        - image-reflector-controller
+        - image-automation-controller
       sync:
         kind: GitRepository
         name: flux-system

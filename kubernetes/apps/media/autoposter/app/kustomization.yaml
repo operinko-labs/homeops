@@ -2,26 +2,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ocirepository.yaml
   - helmrelease.yaml
+  - ocirepository.yaml
   - external-secret.yaml
   - secret.sops.yaml
   - httproute.yaml
   # autoposter-overlays ConfigMap (binaryData-embedded PNGs/font — Flux
   # excludes *.png from Git artifacts, so configMapGenerator can't be used)
   - configmap.yaml
-
 configMapGenerator:
-  - name: autoposter-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true
   - name: autoposter-config
     files:
       # Key stays autoposter.yaml (the path the image's AUTOPOSTER_CONFIG
       # expects at /config/autoposter.yaml); the source file is named
       # config.yaml so CI's kubeconform ignore pattern skips it
       - autoposter.yaml=config.yaml
-    options:
-      disableNameSuffixHash: true
+generatorOptions:
+  disableNameSuffixHash: true

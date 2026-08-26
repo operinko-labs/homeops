@@ -1,0 +1,27 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imageupdateautomation_v1beta2.json
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: homeops
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: homeops-write
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: flux-image-automation
+        email: flux@vaderrp.com
+      messageTemplate: |
+        chore(images): update {{ range .Changed.Changes }}{{ .OldValue }} -> {{ .NewValue }}{{ end }}
+    push:
+      branch: main
+  update:
+    path: ./kubernetes/apps
+    strategy: Setters
