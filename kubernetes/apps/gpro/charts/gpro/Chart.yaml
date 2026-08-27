@@ -1,0 +1,9 @@
+apiVersion: v2
+name: gpro
+description: "Helm chart for the GPRO (Grand Prix Racing Online) management tool"
+type: application
+version: 0.3.0
+appVersion: "1.0.0"
+maintainers:
+  - name: operinko
+    email: olli.erinko@gmail.com

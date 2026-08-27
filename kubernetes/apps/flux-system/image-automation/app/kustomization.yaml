@@ -7,4 +7,6 @@ resources:
   - external-secret-harbor.yaml
   - imagerepository.yaml
   - imagepolicy.yaml
+  - imagerepository-gpro.yaml
+  - imagepolicy-gpro.yaml
   - imageupdateautomation.yaml

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gpro.fullname" . }}-worker
+  labels:
+    {{- include "gpro.componentLabels" (dict "context" . "component" "worker") | nindent 4 }}
+spec:
+  {{- if not .Values.worker.autoscaling.enabled }}
+  replicas: {{ .Values.worker.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "worker") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "worker") | nindent 8 }}
+    spec:
+      {{- include "gpro.podDnsConfig" . | nindent 6 }}
+      containers:
+        - name: worker
+          image: {{ include "gpro.image" (dict "root" . "image" .Values.images.app) }}
+          imagePullPolicy: {{ .Values.images.app.pullPolicy }}
+          command: ["node", "dist/worker.js"]
+          env:
+            - name: NODE_ENV
+              value: production
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envSecretName }}
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}

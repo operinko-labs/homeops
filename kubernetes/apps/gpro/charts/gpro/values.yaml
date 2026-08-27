@@ -1,0 +1,116 @@
+nameOverride: ''
+fullnameOverride: ''
+
+images:
+  app:
+    repository: harbor.vaderrp.com/operinko-labs/gpro-backend
+    tag: ''
+    pullPolicy: Always
+  frontend:
+    repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
+    tag: ''
+    pullPolicy: Always
+  postgresInit:
+    repository: ghcr.io/home-operations/postgres-init
+    tag: '17.6'
+
+envSecretName: ''
+
+backend:
+  # replicas is ignored when autoscaling.enabled — the HPA owns the count.
+  replicas: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  replicas: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  backendServiceName: ''
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+worker:
+  replicas: 1
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 80
+  podDisruptionBudget:
+    enabled: false
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 1000m
+      memory: 256Mi
+
+# Safety-net CronJob that POSTs /cron/tick to the backend — fallback for the
+# worker's internal setInterval scheduler (Postgres advisory locks prevent
+# concurrent ticks). Uses envSecretName for CRON_SECRET/JWT_SECRET.
+schedulerTick:
+  enabled: false
+  schedule: '*/5 * * * *'
+  image: curlimages/curl:latest
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+dbMigrate:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+httpRoute:
+  enabled: true
+  # name: override (defaults to fullname)
+  labels: {}
+  annotations: {}
+  parentRefs:
+    - name: gateway-public
+      namespace: network
+  hostnames: []
+
+redirectRoute:
+  enabled: false
+  labels: {}
+  annotations: {}
+  parentRefs: []
+  hostnames: []
+  targetHostname: ''
+  statusCode: 301

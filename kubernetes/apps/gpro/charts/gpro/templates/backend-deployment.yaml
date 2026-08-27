@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gpro.fullname" . }}-backend
+  labels:
+    {{- include "gpro.componentLabels" (dict "context" . "component" "backend") | nindent 4 }}
+spec:
+  {{- if not .Values.backend.autoscaling.enabled }}
+  replicas: {{ .Values.backend.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "backend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "backend") | nindent 8 }}
+    spec:
+      {{- include "gpro.podDnsConfig" . | nindent 6 }}
+      initContainers:
+        - name: init-db
+          image: {{ include "gpro.image" (dict "root" . "image" .Values.images.postgresInit) }}
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envSecretName }}
+        - name: db-migrate
+          image: {{ include "gpro.image" (dict "root" . "image" .Values.images.app) }}
+          imagePullPolicy: {{ .Values.images.app.pullPolicy }}
+          command: ["node", "dist/db/migrate.js"]
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envSecretName }}
+          resources:
+            {{- toYaml .Values.dbMigrate.resources | nindent 12 }}
+      containers:
+        - name: backend
+          image: {{ include "gpro.image" (dict "root" . "image" .Values.images.app) }}
+          imagePullPolicy: {{ .Values.images.app.pullPolicy }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: GPRO_API_BASE_URL
+              value: https://gpro.net
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envSecretName }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}

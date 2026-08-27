@@ -1,0 +1,30 @@
+{{- if and .Values.redirectRoute.enabled .Values.redirectRoute.hostnames }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ printf "%s-redirect" (include "gpro.fullname" .) | quote }}
+  labels:
+    {{- include "gpro.labels" . | nindent 4 }}
+    {{- with .Values.redirectRoute.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.redirectRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- toYaml .Values.redirectRoute.parentRefs | nindent 4 }}
+  hostnames:
+    {{- toYaml .Values.redirectRoute.hostnames | nindent 4 }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            hostname: {{ required "redirectRoute.targetHostname is required when redirectRoute.enabled is true" .Values.redirectRoute.targetHostname | quote }}
+            statusCode: {{ .Values.redirectRoute.statusCode | default 301 }}
+{{- end }}

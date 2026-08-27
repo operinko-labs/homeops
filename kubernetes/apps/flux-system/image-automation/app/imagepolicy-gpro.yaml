@@ -1,0 +1,68 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+# gpro CI pushes `<branch>-<unix epoch>-sha-<short>` tags from both the main
+# and production branches into the same Harbor repos, so each environment's
+# policy filters on its branch prefix and orders on the epoch. The plain
+# sha-* and latest tags are ignored here but keep working for manual pins.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: gpro-backend-production
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: gpro-backend
+  filterTags:
+    pattern: '^production-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: gpro-frontend-production
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: gpro-frontend
+  filterTags:
+    pattern: '^production-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: gpro-backend-main
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: gpro-backend
+  filterTags:
+    pattern: '^main-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: gpro-frontend-main
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: gpro-frontend
+  filterTags:
+    pattern: '^main-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

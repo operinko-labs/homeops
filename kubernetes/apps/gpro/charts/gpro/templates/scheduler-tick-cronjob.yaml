@@ -1,0 +1,50 @@
+{{- if .Values.schedulerTick.enabled }}
+# Single scheduler-tick CronJob — safety net for the DB-backed cron scheduler.
+# The worker process runs its own setInterval(60s) tick loop internally.
+# This K8s CronJob calls POST /cron/tick as a fallback in case the internal
+# timer misses (e.g. pod restart, long GC pause). The scheduler uses Postgres
+# advisory locks to prevent concurrent ticks.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "gpro.fullname" . }}-scheduler-tick
+  labels:
+    {{- include "gpro.componentLabels" (dict "context" . "component" "cronjob") | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedulerTick.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "cronjob") | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          {{- include "gpro.podDnsConfig" . | nindent 10 }}
+          containers:
+            - name: scheduler-tick
+              image: {{ .Values.schedulerTick.image }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  curl -X POST \
+                    -H "Authorization: Bearer ${CRON_SECRET:-$JWT_SECRET}" \
+                    -H "Content-Type: application/json" \
+                    http://{{ include "gpro.fullname" . }}-backend:3000/cron/tick
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.envSecretName }}
+              resources:
+                {{- toYaml .Values.schedulerTick.resources | nindent 16 }}
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 100
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+{{- end }}

@@ -1,0 +1,106 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gpro-production
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./kubernetes/apps/gpro/charts/gpro
+      # Rebuild the chart on any change to its files, not just Chart.yaml
+      # version bumps — the chart is vendored in this repo, not released.
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  timeout: 10m
+  uninstall:
+    keepHistory: false
+  values:
+    fullnameOverride: gpro
+    images:
+      app:
+        repository: harbor.vaderrp.com/operinko-labs/gpro-backend
+        tag: production-1787839099-sha-54d50ec # {"$imagepolicy": "flux-system:gpro-backend-production:tag"}
+      frontend:
+        repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
+        tag: production-1787839099-sha-54d50ec # {"$imagepolicy": "flux-system:gpro-frontend-production:tag"}
+    envSecretName: gpro-secret
+    schedulerTick:
+      enabled: true
+    backend:
+      autoscaling:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    frontend:
+      autoscaling:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+      backendServiceName: gpro-backend
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+    worker:
+      autoscaling:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 1000m
+          memory: 256Mi
+    httpRoute:
+      enabled: true
+      labels:
+        route.scope: external
+      annotations:
+        external-dns.alpha.kubernetes.io/target: cluster.shadowmorph.info
+        gatus.home-operations.com/enabled: "true"
+        gatus.home-operations.com/endpoint: |
+          group: GPRO
+      parentRefs:
+        - name: gateway-public
+          namespace: network
+          sectionName: https-shadowmorph
+      hostnames:
+        - gpro.shadowmorph.info
+    redirectRoute:
+      enabled: true
+      labels:
+        route.scope: external
+      annotations:
+        external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+      parentRefs:
+        - name: gateway-public
+          namespace: network
+          sectionName: https
+      hostnames:
+        - gpro.vaderrp.com
+      targetHostname: gpro.shadowmorph.info
+      statusCode: 301

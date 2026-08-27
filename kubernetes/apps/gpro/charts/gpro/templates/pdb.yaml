@@ -1,0 +1,17 @@
+{{- range $component := list "backend" "frontend" "worker" }}
+{{- $cfg := index $.Values $component }}
+{{- if $cfg.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "gpro.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "gpro.componentLabels" (dict "context" $ "component" $component) | nindent 4 }}
+spec:
+  minAvailable: {{ $cfg.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "gpro.componentSelectorLabels" (dict "context" $ "component" $component) | nindent 6 }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,79 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gpro-main
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./kubernetes/apps/gpro/charts/gpro
+      # Rebuild the chart on any change to its files, not just Chart.yaml
+      # version bumps — the chart is vendored in this repo, not released.
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    fullnameOverride: gpro-dev
+    images:
+      app:
+        repository: harbor.vaderrp.com/operinko-labs/gpro-backend
+        tag: main-1787839066-sha-6e8d8d8 # {"$imagepolicy": "flux-system:gpro-backend-main:tag"}
+      frontend:
+        repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
+        tag: main-1787839065-sha-6e8d8d8 # {"$imagepolicy": "flux-system:gpro-frontend-main:tag"}
+    envSecretName: gpro-dev-secret
+    backend:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    frontend:
+      replicas: 1
+      backendServiceName: gpro-dev-backend
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
+    worker:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          cpu: 1000m
+          memory: 256Mi
+    httpRoute:
+      enabled: true
+      labels:
+        route.scope: external
+      annotations:
+        external-dns.alpha.kubernetes.io/target: "external.vaderrp.com"
+        gatus.home-operations.com/enabled: "true"
+        gatus.home-operations.com/endpoint: |
+          group: GPRO Dev
+      parentRefs:
+        - name: gateway-public
+          namespace: network
+      hostnames:
+        - gpro-dev.vaderrp.com

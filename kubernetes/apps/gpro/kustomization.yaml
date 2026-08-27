@@ -5,5 +5,7 @@ namespace: gpro
 resources:
   - namespace.yaml
   - ./gpro/ks.yaml
+  - ./gpro-production/ks.yaml
+  - ./gpro-main/ks.yaml
 components:
   - ../../components/common
