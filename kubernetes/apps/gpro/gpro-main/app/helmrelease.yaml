@@ -9,9 +9,9 @@ spec:
   chart:
     spec:
       chart: ./kubernetes/apps/gpro/charts/gpro
-      # Rebuild the chart on any change to its files, not just Chart.yaml
-      # version bumps — the chart is vendored in this repo, not released.
-      reconcileStrategy: Revision
+      # Default ChartVersion strategy: chart edits only roll out after a
+      # version bump in Chart.yaml. Revision strategy is not usable here —
+      # it mints a new chart version on every commit to this repo.
       sourceRef:
         kind: GitRepository
         name: flux-system
