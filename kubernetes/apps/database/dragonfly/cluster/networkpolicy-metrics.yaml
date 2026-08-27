@@ -1,0 +1,29 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/networking.k8s.io/networkpolicy_v1.json
+# The Dragonfly operator renders its own NetworkPolicy for each cluster
+# (spec.networkPolicyEnabled) that opens the admin/metrics port 9999 only to
+# the operator and to peer Dragonfly pods. Prometheus is not in that list, so
+# PodMonitor scrapes of :9999 were silently dropped and showed up as
+# "context deadline exceeded" / TargetDown rather than a refused connection.
+# NetworkPolicies are additive, so this grants the extra ingress without
+# touching the operator-owned policy (which it would reconcile back anyway).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dragonfly-allow-metrics-scrape
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: dragonfly
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 9999
+          protocol: TCP

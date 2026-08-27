@@ -7,3 +7,4 @@ resources:
   - secret.sops.yaml
   - podmonitor.yaml
   - drupal-podmonitor.yaml
+  - networkpolicy-metrics.yaml
