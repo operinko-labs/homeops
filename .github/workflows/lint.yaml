@@ -61,6 +61,7 @@ jobs:
             -ignore-filename-pattern 'values\.yaml$' \
             -ignore-filename-pattern 'lokirule\.yaml$' \
             -ignore-filename-pattern 'resources.(settings|kubernetes)\.yaml$' \
+            -ignore-filename-pattern 'apps/.+/charts/' \
             -summary \
             kubernetes/
 

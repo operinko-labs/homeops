@@ -7,6 +7,8 @@ ignore:
   - manifest.yaml
   - talos/clusterconfig/
   - talos/clusterconfig-ref/
+  # Vendored Helm charts: templates are Go templates, not valid YAML
+  - kubernetes/apps/*/charts/
   - docs/examples/
   - examples/
   - '*.sops.yaml'
