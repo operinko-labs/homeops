@@ -107,6 +107,10 @@ spec:
         type: nfs
         server: 192.168.0.221
         path: /mnt/Nakkiallas/Public/posterizarr
+        mountOptions:
+          - nfsvers=4.1
+          - lookupcache=none
+          - actimeo=1
         globalMounts:
           - path: /assets
       manualassets:

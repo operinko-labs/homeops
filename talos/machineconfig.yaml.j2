@@ -41,7 +41,7 @@ machine:
         noatime: True
   install:
     disk: /dev/sda
-    image: factory.talos.dev/installer/c0ffd3f955ccbf8853e2905290e152aa377a6c6393b527d90050067986f98d3e:v1.13.0
+    image: factory.talos.dev/installer/c0ffd3f955ccbf8853e2905290e152aa377a6c6393b527d90050067986f98d3e:v1.13.9
     wipe: false
     grubUseUKICmdline: true
   network:
@@ -58,7 +58,7 @@ machine:
     disableManifestsDirectory: true
     extraArgs:
       node-labels: "topology.kubernetes.io/region=homelab,topology.kubernetes.io/zone=rack"
-    image: ghcr.io/siderolabs/kubelet:v1.36.0
+    image: ghcr.io/siderolabs/kubelet:v1.36.3
   sysctls:
     fs.inotify.max_user_watches: "1048576"
     fs.inotify.max_user_instances: "8192"
@@ -118,7 +118,7 @@ cluster:
     key: {{ service_account_key }}
   allowSchedulingOnControlPlanes: false
   apiServer:
-    image: registry.k8s.io/kube-apiserver:v1.36.0
+    image: registry.k8s.io/kube-apiserver:v1.36.3
     extraArgs:
       feature-gates: "MutatingAdmissionPolicy=true,DynamicResourceAllocation=true"
       runtime-config: "admissionregistration.k8s.io/v1beta1=true,resource.k8s.io/v1beta1=true"
@@ -145,7 +145,7 @@ cluster:
             usernames: []
           kind: PodSecurityConfiguration
   controllerManager:
-    image: registry.k8s.io/kube-controller-manager:v1.36.0
+    image: registry.k8s.io/kube-controller-manager:v1.36.3
     extraArgs:
       bind-address: 0.0.0.0
   coreDNS:
@@ -160,9 +160,9 @@ cluster:
       election-timeout: "5000"
   proxy:
     disabled: true
-    image: registry.k8s.io/kube-proxy:v1.36.0
+    image: registry.k8s.io/kube-proxy:v1.36.3
   scheduler:
-    image: registry.k8s.io/kube-scheduler:v1.36.0
+    image: registry.k8s.io/kube-scheduler:v1.36.3
     extraArgs:
       bind-address: 0.0.0.0
   {% endif %}
