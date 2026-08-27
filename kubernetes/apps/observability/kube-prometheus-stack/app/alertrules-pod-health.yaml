@@ -72,13 +72,21 @@ spec:
             description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} terminated with reason: {{ $labels.reason }}"
 
         - alert: PodHighMemoryUsage
-          expr: (sum by (namespace, pod) (container_memory_working_set_bytes{container!=""}) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource="memory"})) * 100 > 90
+          # Ratio is taken per container, not per pod. Summing to (namespace, pod)
+          # put every container in the numerator but only the limited ones in the
+          # denominator, so a pod with one unlimited sidecar reported >100% of a
+          # limit it was never near (alloy's config-reloader did exactly this).
+          expr: |-
+            (
+              sum by (namespace, pod, container) (container_memory_working_set_bytes{container!=""})
+              / sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"})
+            ) * 100 > 90
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has high memory usage"
-            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanize }}% of its memory limit"
+            description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanize }}% of its memory limit"
 
         - alert: PodHighCPUUsage
           expr: (sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=""}[5m])) / sum by (namespace, pod) (kube_pod_container_resource_limits{resource="cpu"})) * 100 > 90
