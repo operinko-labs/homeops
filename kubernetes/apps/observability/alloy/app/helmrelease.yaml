@@ -85,7 +85,9 @@ spec:
           cpu: 10m
           memory: 128Mi
         limits:
-          memory: 512Mi
+          # Per-node log-stream buffers scale with pod count; the busiest nodes
+          # (talos2/talos3/talos5) sat at ~430-480Mi against the old 512Mi cap.
+          memory: 768Mi
     controller:
       type: daemonset
       tolerations:
