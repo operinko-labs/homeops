@@ -27,3 +27,27 @@ spec:
       runAsNonRoot: true
       runAsUser: 1000
       runAsGroup: 1000
+  # Chart 0.18.2 still wires kube-rbac-proxy at --upstream=http://127.0.0.1:8080/,
+  # but volsync >= 0.17 defaults --metrics-secure=true, so the manager answers
+  # that loopback hop with TLS and the proxy hands Prometheus back a bare
+  # "400 Bad Request: Client sent an HTTP request to an HTTPS server".
+  # Serve the loopback hop as plain HTTP so it matches the proxy's upstream URL.
+  # This does not widen exposure: metrics stay bound to 127.0.0.1 inside the pod
+  # and are only reachable through kube-rbac-proxy on :8443, which already skips
+  # auth for /metrics because of metrics.disableAuth above.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: volsync
+            patch: |
+              - op: test
+                path: /spec/template/spec/containers/1/name
+                value: manager
+              - op: add
+                path: /spec/template/spec/containers/1/args/-
+                value: --metrics-secure=false
+              - op: add
+                path: /spec/template/spec/containers/1/args/-
+                value: --metrics-require-rbac=false
