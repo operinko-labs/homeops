@@ -42,7 +42,10 @@ spec:
                     port: 80
                   initialDelaySeconds: 0
                   periodSeconds: 10
-                  timeoutSeconds: 1
+                  # 1s was too tight for a 10m-CPU-request Node app under node
+                  # contention: /healthz kept answering 200 while the probe
+                  # itself timed out, flapping the pod ~10k times since Aug 15.
+                  timeoutSeconds: 5
                   failureThreshold: 3
               readiness:
                 enabled: true
@@ -53,7 +56,10 @@ spec:
                     port: 80
                   initialDelaySeconds: 0
                   periodSeconds: 10
-                  timeoutSeconds: 1
+                  # 1s was too tight for a 10m-CPU-request Node app under node
+                  # contention: /healthz kept answering 200 while the probe
+                  # itself timed out, flapping the pod ~10k times since Aug 15.
+                  timeoutSeconds: 5
                   failureThreshold: 3
             securityContext:
               allowPrivilegeEscalation: false
