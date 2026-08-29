@@ -10,7 +10,7 @@ spec:
   targetRef:
     apiVersion: batch/v1
     kind: CronJob
-    name: configarr
+    name: configarr-sync
   updatePolicy:
     updateMode: "Off"  # Recommendation mode only (Goldilocks compatible)
   resourcePolicy:

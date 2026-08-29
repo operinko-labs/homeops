@@ -1,7 +1,11 @@
 ---
 # Helm values for configarr app-template deployment
 controllers:
-  configarr:
+  # Named "sync" (not "configarr") so the CronJob is configarr-sync: the
+  # CronJob controller matches child Jobs by owner NAME only, and a CronJob
+  # named "configarr" claims VolSync's volsync-src-configarr jobs (owned by
+  # the ReplicationSource "configarr"), spamming UnexpectedJob warnings.
+  sync:
     type: cronjob
     cronjob:
       schedule: "0 * * * *"
