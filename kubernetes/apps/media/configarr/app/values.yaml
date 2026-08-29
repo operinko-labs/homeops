@@ -6,6 +6,9 @@ controllers:
   # named "configarr" claims VolSync's volsync-src-configarr jobs (owned by
   # the ReplicationSource "configarr"), spamming UnexpectedJob warnings.
   sync:
+    # Required to actually rename: with a single controller the chart names
+    # the object after the release alone, ignoring the controller key
+    suffix: sync
     type: cronjob
     cronjob:
       schedule: "0 * * * *"
