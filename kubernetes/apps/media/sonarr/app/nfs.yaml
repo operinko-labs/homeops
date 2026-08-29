@@ -1,0 +1,62 @@
+---
+# Static PV/PVC so the NFS mounts get mountOptions (inline nfs volumes
+# can't carry them — only PersistentVolume.spec.mountOptions is honored)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarr-media-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - lookupcache=none
+    - actimeo=1
+  nfs:
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-media-nfs
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: sonarr-media-nfs
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarr-download-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - lookupcache=none
+    - actimeo=1
+  nfs:
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Download
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-download-nfs
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: sonarr-download-nfs

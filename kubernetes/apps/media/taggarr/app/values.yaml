@@ -58,12 +58,6 @@ persistence:
     globalMounts:
       - path: /tmp
   media:
-    type: nfs
-    server: 192.168.0.221
-    path: /mnt/Nakkiallas/Media/TV
-    mountOptions:
-      - nfsvers=4.1
-      - lookupcache=none
-      - actimeo=1
+    existingClaim: taggarr-media-nfs
     globalMounts:
       - path: /tv

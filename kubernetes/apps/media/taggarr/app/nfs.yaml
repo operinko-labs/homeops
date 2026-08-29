@@ -1,0 +1,32 @@
+---
+# Static PV/PVC so the NFS mount gets mountOptions (inline nfs volumes
+# can't carry them — only PersistentVolume.spec.mountOptions is honored)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: taggarr-media-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - lookupcache=none
+    - actimeo=1
+  nfs:
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Media/TV
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: taggarr-media-nfs
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: taggarr-media-nfs

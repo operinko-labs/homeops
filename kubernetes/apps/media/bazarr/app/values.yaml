@@ -108,24 +108,11 @@ persistence:
     globalMounts:
       - path: /config/log
   media:
-        type: nfs
-        server: 192.168.0.221
-        path: /mnt/Nakkiallas/Media
-        # Add mountOptions block here
-        mountOptions:
-          - nfsvers=4.1
-          - lookupcache=none
-          - actimeo=1
-        globalMounts:
-          - path: /media
+    existingClaim: bazarr-media-nfs
+    globalMounts:
+      - path: /media
   backup:
-    type: nfs
-    server: 192.168.0.221
-    path: /mnt/Nakkiallas/Download/BazarrBackup
-    mountOptions:
-      - nfsvers=4.1
-      - lookupcache=none
-      - actimeo=1
+    existingClaim: bazarr-backup-nfs
     globalMounts:
       - path: /config/backup
   scripts:

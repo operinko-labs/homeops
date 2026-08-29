@@ -102,15 +102,10 @@ spec:
             subPath: bottom-up-fade-background.png
           - path: /app/assets/fonts/Comfortaa-Medium.ttf
             subPath: Comfortaa-Medium.ttf
-      # Same NFS share Posterizarr writes and Kometa reads (asset tree)
+      # Same NFS share Posterizarr writes and Kometa reads (asset tree);
+      # static PV/PVC in nfs.yaml carries the sync-related mountOptions
       assets:
-        type: nfs
-        server: 192.168.0.221
-        path: /mnt/Nakkiallas/Public/posterizarr
-        mountOptions:
-          - nfsvers=4.1
-          - lookupcache=none
-          - actimeo=1
+        existingClaim: autoposter-assets-nfs
         globalMounts:
           - path: /assets
       manualassets:

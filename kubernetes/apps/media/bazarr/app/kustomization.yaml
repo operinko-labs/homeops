@@ -8,6 +8,7 @@ resources:
   - bazarr-secret.yaml
   - httproute.yaml
   - vpa.yaml
+  - nfs.yaml
 
 configMapGenerator:
   - name: bazarr-values

@@ -123,24 +123,10 @@ spec:
       tmp:
         type: emptyDir
       media:
-        type: nfs
-        server: 192.168.0.221
-        path: /mnt/Nakkiallas/Media
-        # Add mountOptions block here
-        mountOptions:
-          - nfsvers=4.1
-          - lookupcache=none
-          - actimeo=1
+        existingClaim: radarr-media-nfs
         globalMounts:
           - path: /mnt/media
       download:
-        type: nfs
-        server: 192.168.0.221
-        path: /mnt/Nakkiallas/Download
-        # Add identical mountOptions block here
-        mountOptions:
-          - nfsvers=4.1
-          - lookupcache=none
-          - actimeo=1
+        existingClaim: radarr-download-nfs
         globalMounts:
           - path: /mnt/download
