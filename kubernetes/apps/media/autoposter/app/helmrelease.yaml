@@ -116,6 +116,10 @@ spec:
         type: emptyDir
         globalMounts:
           - path: /assetsbackup
+      plexbackup:
+        existingClaim: autoposter-plexbackup-nfs
+        globalMounts:
+          - path: /plexbackup
       tmp:
         type: emptyDir
         globalMounts:
