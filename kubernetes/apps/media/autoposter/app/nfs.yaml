@@ -17,7 +17,7 @@ spec:
     - actimeo=1
   nfs:
     server: 192.168.0.221
-    path: /mnt/Nakkiallas/Public/posterizarr
+    path: /mnt/Nakkiallas/Public/autoposter/assets
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -49,7 +49,7 @@ spec:
     - actimeo=1
   nfs:
     server: 192.168.0.221
-    path: /mnt/Nakkiallas/Public/plexbackup
+    path: /mnt/Nakkiallas/Public/autoposter/plexbackup
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -62,3 +62,35 @@ spec:
       storage: 1Gi
   storageClassName: ""
   volumeName: autoposter-plexbackup-nfs
+---
+# Static PV/PVC so the NFS mount gets mountOptions (inline nfs volumes
+# can't carry them — only PersistentVolume.spec.mountOptions is honored)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: autoposter-manualassets-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - lookupcache=none
+    - actimeo=1
+  nfs:
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Public/autoposter/manualassets
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autoposter-manualassets-nfs
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: autoposter-manualassets-nfs
