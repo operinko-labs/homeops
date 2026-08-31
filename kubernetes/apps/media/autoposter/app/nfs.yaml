@@ -94,3 +94,35 @@ spec:
       storage: 1Gi
   storageClassName: ""
   volumeName: autoposter-manualassets-nfs
+---
+# Static PV/PVC so the NFS mount gets mountOptions (inline nfs volumes
+# can't carry them — only PersistentVolume.spec.mountOptions is honored)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: autoposter-assetsbackup-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadWriteMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+    - lookupcache=none
+    - actimeo=1
+  nfs:
+    server: 192.168.0.221
+    path: /mnt/Nakkiallas/Public/autoposter/assetsbackup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: autoposter-assetsbackup-nfs
+spec:
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: autoposter-assetsbackup-nfs
