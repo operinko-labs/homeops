@@ -113,7 +113,7 @@ spec:
         globalMounts:
           - path: /manualassets
       assetsbackup:
-        type: autoposter-assetsbackup-nfs
+        existingClaim: autoposter-assetsbackup-nfs
         globalMounts:
           - path: /assetsbackup
       plexbackup:
