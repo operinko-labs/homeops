@@ -34,6 +34,17 @@ spec:
               # python-plexapi and friends want a writable HOME
               HOME: /tmp
               AUTOPOSTER_CONFIG: /config/autoposter.yaml
+              # ImageMagick sizes its pixel cache from the NODE's RAM (measured
+              # 19.5GiB/39GiB in-pod), not the 6096Mi cgroup — five concurrent
+              # renders OOMKilled the pod (2026-09-02). Cap each magick process
+              # so it spills to the disk-backed /tmp instead; 5 workers ×
+              # 768MiB + app baseline stays under the limit.
+              MAGICK_MEMORY_LIMIT: 768MiB
+              MAGICK_MAP_LIMIT: 1536MiB
+              MAGICK_DISK_LIMIT: 8GiB
+              # 11 OpenMP threads per invocation × 5 workers thrashed the CPU
+              # (the 5237m reconcile storm); renders are throughput work.
+              MAGICK_THREAD_LIMIT: "2"
             envFrom:
               - secretRef:
                   name: "{{ .Release.Name }}-secret"
