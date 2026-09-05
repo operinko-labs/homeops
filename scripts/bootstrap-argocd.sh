@@ -127,7 +127,7 @@ function install_argocd() {
 
     # Install or upgrade ArgoCD
     # renovate: datasource=helm depName=argo-cd registryUrl=https://argoproj.github.io/argo-helm
-    local -r argocd_chart_version=10.6.0
+    local -r argocd_chart_version=10.7.0
 
     log info "Installing ArgoCD with Helm"
     if helm upgrade --install argocd argo/argo-cd \
