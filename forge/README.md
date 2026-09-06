@@ -11,6 +11,7 @@ Design: `docs/superpowers/specs/2026-08-17-forgejo-authoritative-forge-design.md
 
 - `just forge apply-forgejo|apply-runner 1|apply-runner 2|apply-npmplus` — idempotent config pushes
 - `just forge setup` — Forgejo API-level state (org creation, migration of the GitHub repos allowlisted in `setup-forgejo.sh`, push mirrors, Actions secrets)
+- `apply-runner` also installs a weekly `docker-prune.timer` (`docker system prune -af --volumes`, Sun 04:00) on each runner; without it CI leftovers fill the LXC's ZFS refquota and jobs fail with "disk quota exceeded".
 - Provisioning: community-scripts (`ct/forgejo.sh`, `ct/forgejo-runner.sh`) run on meanie; re-provisioning = script + apply.
 - Manual state not covered here (one-off CLI/API/UI steps, not re-run by `just forge setup`):
   - Authentik OIDC auth source: OAuth2/OIDC provider + application created in the Authentik UI (Task 3), then `forgejo admin auth add-oauth --provider openidConnect` run on the forge LXC (scopes `openid,email,profile`) to register it in Forgejo.

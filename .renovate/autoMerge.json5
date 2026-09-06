@@ -22,6 +22,18 @@
       ignoreTests: true,
     },
     {
+      // Tracked by the "Renovate self-update" regex manager (github-releases),
+      // so the github-actions rule above never matches it. Upstream ships
+      // several minors a week; merge them straight to main, no PR.
+      description: "Auto-merge Renovate self-update (minor/patch)",
+      matchDatasources: ["github-releases"],
+      matchPackageNames: ["renovatebot/renovate"],
+      matchUpdateTypes: ["minor", "patch"],
+      automerge: true,
+      automergeType: "branch",
+      ignoreTests: true,
+    },
+    {
       description: "Auto-merge other GitHub Actions (minor/patch)",
       matchManagers: ["github-actions"],
       matchUpdateTypes: ["minor", "patch", "digest"],

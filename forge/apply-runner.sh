@@ -72,6 +72,39 @@ else
   rm /etc/systemd/system/forgejo-runner.service.new
 fi
 
+# --- weekly docker prune (CI leaks volumes/images; ZFS refquota = EDQUOT) --
+cat > /etc/systemd/system/docker-prune.service.new <<'EOF'
+[Unit]
+Description=Prune unused Docker images, volumes and build cache
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker system prune -af --volumes
+EOF
+cat > /etc/systemd/system/docker-prune.timer.new <<'EOF'
+[Unit]
+Description=Weekly Docker prune
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+for u in docker-prune.service docker-prune.timer; do
+  if ! cmp -s /etc/systemd/system/$u.new /etc/systemd/system/$u; then
+    mv /etc/systemd/system/$u.new /etc/systemd/system/$u
+    systemctl daemon-reload
+    CHANGED+=("$u")
+  else
+    rm /etc/systemd/system/$u.new
+  fi
+done
+systemctl is-enabled --quiet docker-prune.timer || { systemctl enable --now docker-prune.timer; CHANGED+=("enabled docker-prune.timer"); }
+
 if ((${#CHANGED[@]})); then
   systemctl enable --now forgejo-runner
   systemctl restart forgejo-runner
