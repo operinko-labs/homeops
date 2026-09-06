@@ -251,7 +251,7 @@ graph TB
     AI_PORT -.->|AI Detection| CAM_GARAGE
 
     %% Servers
-    USW_GARAGE --- nuc
+    USW_GARAGE ---|"2.5GbE USB NIC"| nuc
     USW_AGG === meanie
     USW_AGG === truenas
 
@@ -307,7 +307,7 @@ graph TB
 
 | Host | Hardware | Role | Talos Nodes | Storage |
 |---|---|---|---|---|
-| NUC "proxmox" | Intel N6005 · 24GB RAM | Proxmox | talos2 (CP) | Local |
+| NUC "proxmox" | Intel N6005 · 24GB RAM · 2.5GbE USB NIC | Proxmox | talos2 (CP) | Local |
 | DL360 "meanie" | HP ProLiant Gen9 | Proxmox | talos1 (CP), talos4, talos5 | ZFS pool "tank-zfs" · 8× Samsung PM883 |
 | DL380 "TrueNAS" | HP ProLiant Gen9 | TrueNAS | talos3 (CP), talos6, talos7 | 4×18TB + 4×8TB RAIDZ1 + 970 EVO boot |
 
