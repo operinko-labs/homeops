@@ -29,7 +29,7 @@ spec:
     images:
       app:
         repository: harbor.vaderrp.com/operinko-labs/gpro-backend
-        tag: main-1788616860-sha-0ffd9e9 # {"$imagepolicy": "flux-system:gpro-backend-main:tag"}
+        tag: main-1788654451-sha-bbbb613 # {"$imagepolicy": "flux-system:gpro-backend-main:tag"}
       frontend:
         repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
         tag: main-1788616860-sha-0ffd9e9 # {"$imagepolicy": "flux-system:gpro-frontend-main:tag"}
