@@ -24,11 +24,14 @@
     {
       // Tracked by the "Renovate self-update" regex manager (github-releases),
       // so the github-actions rule above never matches it. Upstream ships
-      // several minors a week; merge them straight to main, no PR.
-      description: "Auto-merge Renovate self-update (minor/patch)",
+      // several releases a day (one PR saw 9 force-pushes in 2 days), so the
+      // branch is only created/updated in a weekly window and merged straight
+      // to main, no PR: one commit and one 1.3GB image pull per runner per week.
+      description: "Auto-merge Renovate self-update (minor/patch), weekly",
       matchDatasources: ["github-releases"],
       matchPackageNames: ["renovatebot/renovate"],
       matchUpdateTypes: ["minor", "patch"],
+      schedule: ["before 6am on sunday"],
       automerge: true,
       automergeType: "branch",
       ignoreTests: true,
