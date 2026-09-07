@@ -32,7 +32,7 @@ spec:
         tag: main-1788755016-sha-4fe055a # {"$imagepolicy": "flux-system:gpro-backend-main:tag"}
       frontend:
         repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
-        tag: main-1788755086-sha-4fe055a # {"$imagepolicy": "flux-system:gpro-frontend-main:tag"}
+        tag: main-1788762313-sha-48f06a3 # {"$imagepolicy": "flux-system:gpro-frontend-main:tag"}
     envSecretName: gpro-dev-secret
     backend:
       replicas: 1
