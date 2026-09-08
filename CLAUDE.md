@@ -119,7 +119,7 @@ The resulting YAML is piped directly to `talosctl apply-config` — there are no
 ### Storage
 
 - **PVC backups**: VolSync with kopia (`kubernetes/components/volsync-kopia/`) — referenced as a Kustomize component in each app's `ks.yaml`
-- **NFS**: media and download mounts from `192.168.0.221` (NAS)
+- **NFS**: media and download mounts from `192.168.7.198` (TrueNAS on the Node VLAN; `192.168.0.221` remains its Default-VLAN address for NUT, syslog and MinIO)
 - **Databases**: CloudNative-PG (Postgres), Dragonfly (Redis-compatible)
 
 ### Container registry

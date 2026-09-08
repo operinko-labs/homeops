@@ -63,7 +63,7 @@ spec:
           - name: hosts
             configBlock: |-
               192.168.0.221 minio.vaderrp.com
-              192.168.0.221 truenas.vaderrp.com
+              192.168.7.198 truenas.vaderrp.com
               fallthrough
           - name: forward
             parameters: . 192.168.7.8 192.168.7.9
