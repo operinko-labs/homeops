@@ -53,7 +53,7 @@ spec:
             "hide": 0,
             "multi": true,
             "includeAll": true,
-            "allValue": ".+",
+            "allValue": "gpro|paikky|leo-cal|ruskonkesateatteri|ruoka",
             "options": [],
             "current": {}
           },

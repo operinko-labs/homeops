@@ -1,0 +1,726 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/grafana.integreatly.org/grafanadashboard_v1beta1.json
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: unifi-logs
+spec:
+  allowCrossNamespaceImport: true
+  instanceSelector:
+    matchLabels:
+      grafana.internal/instance: grafana
+  json: |
+    {
+      "title": "UniFi Network Logs",
+      "uid": "unifi-logs",
+      "description": "UDM Pro Max System Logging / SIEM feed (CEF over syslog) as stored in Loki: threats, firewall blocks, client and device events. Filter by host, category and free text.",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "1m",
+      "timezone": "browser",
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "tags": [
+        "unifi",
+        "loki",
+        "logs",
+        "security"
+      ],
+      "editable": true,
+      "graphTooltip": 1,
+      "links": [],
+      "annotations": {
+        "list": []
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "pluginId": "loki",
+            "label": "Datasource",
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "query": "loki",
+            "refresh": 1,
+            "regex": ""
+          },
+          {
+            "name": "host",
+            "type": "query",
+            "label": "Console / host",
+            "datasource": {
+              "type": "loki",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values({job=\"unifi\"}, host)",
+            "query": "label_values({job=\"unifi\"}, host)",
+            "sort": 1,
+            "refresh": 2,
+            "hide": 0,
+            "multi": true,
+            "includeAll": true,
+            "allValue": ".+",
+            "options": [],
+            "current": {}
+          },
+          {
+            "name": "category",
+            "type": "custom",
+            "label": "Category",
+            "hide": 0,
+            "multi": false,
+            "includeAll": true,
+            "allValue": ".*",
+            "query": "Security,Device,Client,Triggers,Updates,Admin Activity,Critical,Internet,VPN,System",
+            "options": [],
+            "current": {
+              "text": "All",
+              "value": "$__all"
+            }
+          },
+          {
+            "name": "search",
+            "type": "textbox",
+            "label": "Search (regex)",
+            "hide": 0,
+            "query": "",
+            "current": {
+              "text": "",
+              "value": ""
+            },
+            "options": []
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Events in range",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum(count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__range]))",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "justifyMode": "auto",
+            "orientation": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Security events",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum(count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" | category=\"Security\" [$__range]))",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "justifyMode": "auto",
+            "orientation": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "orange",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Threats blocked (IPS)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum(count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" | event=~\"(?i).*(threat|intrusion|ips).*\" [$__range]))",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "justifyMode": "auto",
+            "orientation": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Firewall blocks",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum(count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" | event=~\"(?i).*blocked.*\" [$__range]))",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "justifyMode": "auto",
+            "orientation": "auto"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "yellow",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Events per category",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 4,
+            "w": 16,
+            "h": 9
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (category) (count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__auto]))",
+              "refId": "A",
+              "legendFormat": "{{category}}",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                },
+                "lineWidth": 1
+              },
+              "unit": "short",
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 6,
+          "type": "bargauge",
+          "title": "Top events",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 4,
+            "w": 8,
+            "h": 9
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "topk(12, sum by (event) (count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__range])))",
+              "refId": "A",
+              "legendFormat": "{{event}}",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "namePlacement": "auto",
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-BlYlRd"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 7,
+          "type": "bargauge",
+          "title": "By subcategory",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 13,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "topk(10, sum by (subcategory) (count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__range])))",
+              "refId": "A",
+              "legendFormat": "{{subcategory}}",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "namePlacement": "auto",
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-GrYlRd"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 8,
+          "type": "bargauge",
+          "title": "By severity (CEF 0-10)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 13,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (severity) (count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__range]))",
+              "refId": "A",
+              "legendFormat": "sev {{severity}}",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "namePlacement": "auto",
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-YlRd"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 9,
+          "type": "bargauge",
+          "title": "By device",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 13,
+            "w": 8,
+            "h": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "topk(10, sum by (device) (count_over_time({job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" [$__range])))",
+              "refId": "A",
+              "legendFormat": "{{device}}",
+              "queryType": "instant",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "orientation": "horizontal",
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "namePlacement": "auto",
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "color": {
+                "mode": "continuous-BlPu"
+              }
+            },
+            "overrides": []
+          }
+        },
+        {
+          "id": 10,
+          "type": "logs",
+          "title": "Events",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "w": 24,
+            "h": 14
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" | regexp `^(?P<cef_ver>[^|]*)\\|(?P<vendor>[^|]*)\\|(?P<product>[^|]*)\\|(?P<version>[^|]*)\\|(?P<sig_id>[^|]*)\\|(?P<event>[^|]*)\\|(?P<severity>[^|]*)\\|(?P<ext>.*)$` | regexp `UNIFIcategory=(?P<category>\\S+)` | regexp `UNIFIsubCategory=(?P<subcategory>\\S+)` | regexp `UNIFIdeviceName=(?P<device>.*?) UNIFI` | regexp `msg=(?P<msg>.*)$` | category=~\"$category\" |~ \"(?i)$search\" | line_format \"{{.utc_time}} [{{.category}}/{{.subcategory}}] {{.event}} (sev {{.severity}}) {{.device}} :: {{.msg}}\"",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "showLabels": false,
+            "showCommonLabels": false
+          }
+        },
+        {
+          "id": 11,
+          "type": "logs",
+          "title": "Raw CEF payload",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 35,
+            "w": 24,
+            "h": 10
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"unifi\", host=~\"$host\"} | json | line_format \"{{.cef}}\" |~ \"(?i)$search\"",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "showLabels": false,
+            "showCommonLabels": false
+          }
+        },
+        {
+          "id": 12,
+          "type": "logs",
+          "title": "Other syslog senders (job=syslog)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 45,
+            "w": 24,
+            "h": 10
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "loki",
+                "uid": "${datasource}"
+              },
+              "expr": "{job=\"syslog\"} | json | line_format \"{{.host}} {{.app}}: {{.log}}\" |~ \"(?i)$search\"",
+              "refId": "A",
+              "legendFormat": "",
+              "queryType": "range"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "prettifyLogMessage": false,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending",
+            "showLabels": false,
+            "showCommonLabels": false
+          }
+        }
+      ]
+    }
