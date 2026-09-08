@@ -16,7 +16,7 @@ spec:
     - lookupcache=none
     - actimeo=1
   nfs:
-    server: 192.168.0.221
+    server: 192.168.7.198
     path: /mnt/Nakkiallas/Media/TV
 ---
 apiVersion: v1

@@ -113,13 +113,13 @@ persistence:
       - path: /config/MediaCover
   media:
     type: nfs
-    server: 192.168.0.221
+    server: 192.168.7.198
     path: /mnt/Nakkiallas/Media
     globalMounts:
       - path: /mnt/media
   download:
     type: nfs
-    server: 192.168.0.221
+    server: 192.168.7.198
     path: /mnt/Nakkiallas/Download
     globalMounts:
       - path: /mnt/download
