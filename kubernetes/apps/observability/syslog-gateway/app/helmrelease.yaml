@@ -61,7 +61,7 @@ spec:
                 Mode         udp
                 Listen       0.0.0.0
                 Port         514
-                Parser       syslog-rfc3164
+                Parser       syslog-envelope
                 source_address_key source_ip
                 buffer_max_size 1M
                 buffer_chunk_size 32k
@@ -71,11 +71,19 @@ spec:
                 Mode         tcp
                 Listen       0.0.0.0
                 Port         514
-                Parser       syslog-rfc3164
+                Parser       syslog-envelope
                 source_address_key source_ip
                 buffer_max_size 1M
                 buffer_chunk_size 32k
                 Tag          syslog.tcp
+            [FILTER]
+                Name         parser
+                Match        syslog.*
+                Key_Name     rest
+                Parser       syslog-rfc5424-body
+                Parser       syslog-rfc3164-body
+                Reserve_Data On
+                Preserve_Key Off
             [FILTER]
                 Name         modify
                 Match        syslog.*
@@ -114,14 +122,23 @@ spec:
                 Line_Format  json
                 Retry_Limit  5
           parsers.conf: |
+            # Envelope: only the syslog priority; everything else is parsed by the
+            # parser FILTER below, which tries RFC5424 (UniFi SIEM feed) and then
+            # RFC3164 (classic BSD syslog). No Time_Key anywhere: records are stamped
+            # on arrival, because RFC3164 stamps lack year and zone and Loki rejects
+            # them as "too new"; the original stamp survives as the "timestamp" field.
             [PARSER]
-                Name   syslog-rfc3164
+                Name   syslog-envelope
                 Format regex
-                Regex  ^<(?<pri>\d+)>(?<timestamp>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?<host>[^\s]+)\s(?<app>[^:\s]+)(?:\[(?<procid>[^\]]+)\])?:?\s?(?<log>.*)$
-                # No Time_Key on purpose: RFC3164 timestamps carry neither year nor zone,
-                # so UniFi's local-time stamps parse as UTC (+3h) and Loki rejects them as
-                # "timestamp too new". Records are stamped with arrival time instead; the
-                # original stamp is kept as the plain field "timestamp".
+                Regex  ^<(?<pri>\d+)>(?<rest>.*)$
+            [PARSER]
+                Name   syslog-rfc5424-body
+                Format regex
+                Regex  ^1\s(?<timestamp>\S+)\s(?<host>\S+)\s(?<app>\S+)\s(?<procid>\S+)\s(?<msgid>\S+)\s(?<sd>-|\[.*?\])\s?(?<log>.*)$
+            [PARSER]
+                Name   syslog-rfc3164-body
+                Format regex
+                Regex  ^(?<timestamp>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?<host>[^\s]+)\s(?<app>[^:\s]+)(?:\[(?<procid>[^\]]+)\])?:?\s?(?<log>.*)$
             [PARSER]
                 Name   cef
                 Format regex
