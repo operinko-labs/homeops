@@ -80,6 +80,7 @@ spec:
                 Name         parser
                 Match        syslog.*
                 Key_Name     rest
+                Parser       unifi-siem-body
                 Parser       syslog-rfc5424-body
                 Parser       syslog-rfc3164-body
                 Parser       cef-bare-body
@@ -133,6 +134,13 @@ spec:
                 Name   syslog-envelope
                 Format regex
                 Regex  ^(?:<(?<pri>\d+)>)?\s*(?<rest>.+)$
+            # UniFi OS "System Logging / SIEM" feed, as observed 2026-09-08:
+            #   Sep 08 18:57:35 2026-09-08T18:57:35.378Z Dream Machine Pro CEF:0|Ubiquiti|...
+            # BSD stamp, ISO stamp, console name (may contain spaces), CEF payload.
+            [PARSER]
+                Name   unifi-siem-body
+                Format regex
+                Regex  ^(?<timestamp>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?<utc_time>\d{4}-\d{2}-\d{2}T[0-9:.]+Z)\s(?<host>.+?)\s(?<log>CEF:.*)$
             [PARSER]
                 Name   syslog-rfc5424-body
                 Format regex
