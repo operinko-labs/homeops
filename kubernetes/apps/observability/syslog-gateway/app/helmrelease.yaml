@@ -96,31 +96,23 @@ spec:
                 Reserve_Data On
                 Preserve_Key On
             [OUTPUT]
-                Name         opensearch
+                Name         loki
                 Match        unifi.*
-                Host         192.168.0.221
-                Port         9200
-                Index        logs-unifi
-                Type         _doc
-                Suppress_Type_Name On
-                Logstash_Format On
-                Logstash_Prefix logs-unifi
-                Logstash_DateFormat %Y.%m.%d
-                Replace_Dots On
-                tls          Off
+                Host         loki-gateway.observability.svc.cluster.local
+                Port         80
+                Labels       job=unifi, cluster=taloscluster
+                Label_Keys   $host, $app
+                Line_Format  json
+                Retry_Limit  5
             [OUTPUT]
-                Name         opensearch
+                Name         loki
                 Match        syslog.*
-                Host         192.168.0.221
-                Port         9200
-                Index        logs-syslog
-                Type         _doc
-                Suppress_Type_Name On
-                Logstash_Format On
-                Logstash_Prefix logs-syslog
-                Logstash_DateFormat %Y.%m.%d
-                Replace_Dots On
-                tls          Off
+                Host         loki-gateway.observability.svc.cluster.local
+                Port         80
+                Labels       job=syslog, cluster=taloscluster
+                Label_Keys   $host, $app
+                Line_Format  json
+                Retry_Limit  5
           parsers.conf: |
             [PARSER]
                 Name   syslog-rfc3164
