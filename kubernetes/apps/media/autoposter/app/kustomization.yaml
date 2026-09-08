@@ -9,7 +9,8 @@ resources:
   - httproute.yaml
   - nfs.yaml
   # autoposter-overlays ConfigMap (binaryData-embedded PNGs/font — Flux
-  # excludes *.png from Git artifacts, so configMapGenerator can't be used)
+  # excludes *.png from Git artifacts, so configMapGenerator can't be used).
+  # Seed source for the autoposter-state PVC; not mounted by the app itself.
   - configmap.yaml
 configMapGenerator:
   - name: autoposter-config

@@ -23,6 +23,33 @@ spec:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          # Seed the writable brand volume from the autoposter-overlays ConfigMap,
+          # ONCE, and never over a file that is already there. The ConfigMap bytes
+          # are what every stored render fingerprint in this deployment was computed
+          # against (the font's bytes are hashed into each one), so seeding from any
+          # other copy — the image's own assets/fonts/Comfortaa-Medium.ttf included,
+          # which is a DIFFERENT file — would re-render the whole library.
+          seed-brand:
+            image:
+              repository: ghcr.io/home-operations/busybox
+              tag: 1.38.0
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -eu
+                mkdir -p /app/assets/overlays /app/assets/fonts
+                for f in /seed/*.png; do
+                  [ -e "/app/assets/overlays/$(basename "$f")" ] || cp "$f" /app/assets/overlays/
+                done
+                for f in /seed/*.ttf; do
+                  [ -e "/app/assets/fonts/$(basename "$f")" ] || cp "$f" /app/assets/fonts/
+                done
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
         containers:
           app:
             image:
@@ -99,20 +126,39 @@ spec:
         globalMounts:
           - path: /config
             readOnly: true
-      # Production overlays + font (copied from the Posterizarr pod), placed
-      # where config.yaml's overlays_root/fonts_root point inside the image
-      overlays:
+      # The seed source only. Mounted as a whole directory into the init container
+      # and into nothing else, so the app never reads a ConfigMap file directly.
+      overlays-seed:
         type: configMap
         name: "{{ .Release.Name }}-overlays"
+        advancedMounts:
+          autoposter:
+            seed-brand:
+              - path: /seed
+                readOnly: true
+      # Writable, persistent, and mounted AT THE PATHS config.yaml ALREADY NAMES.
+      # fonts_root and overlays_root are hashed as STRINGS into every art kind's
+      # render_version (config/loader.py), so repointing them would move every
+      # stored fingerprint in the library. They do not move.
+      state:
+        type: persistentVolumeClaim
+        # Single PVC in the release would otherwise be named just "autoposter"
+        suffix: state
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: local-path
+        retain: true
         globalMounts:
-          - path: /app/assets/overlays/overlay.png
-            subPath: overlay.png
-          - path: /app/assets/overlays/bottom-up-fade.png
-            subPath: bottom-up-fade.png
-          - path: /app/assets/overlays/bottom-up-fade-background.png
-            subPath: bottom-up-fade-background.png
-          - path: /app/assets/fonts/Comfortaa-Medium.ttf
-            subPath: Comfortaa-Medium.ttf
+          - path: /app/assets/overlays
+            subPath: overlays
+          - path: /app/assets/fonts
+            subPath: fonts
+          # Row 121 (first-start setup) adds exactly this one entry to this same
+          # volume when it lands. AUTOPOSTER_STATE_DIR already defaults to /state
+          # (config/state.py), and this deployment's environment is complete,
+          # so the mount is inert until a deployment actually needs setup mode.
+          # - path: /state
+          #   subPath: setup
       # Same NFS share Posterizarr writes and Kometa reads (asset tree);
       # static PV/PVC in nfs.yaml carries the sync-related mountOptions
       assets:
