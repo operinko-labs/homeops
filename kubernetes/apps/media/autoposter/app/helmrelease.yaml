@@ -55,7 +55,7 @@ spec:
             image:
               repository: harbor.vaderrp.com/operinko-labs/autoposter
               # Updated by Flux image automation (ImagePolicy flux-system/autoposter)
-              tag: build-1788844628-sha-997836e # {"$imagepolicy": "flux-system:autoposter:tag"}
+              tag: build-1788849508-sha-ca33950 # {"$imagepolicy": "flux-system:autoposter:tag"}
             env:
               TZ: Europe/Helsinki
               # python-plexapi and friends want a writable HOME
@@ -153,12 +153,12 @@ spec:
             subPath: overlays
           - path: /app/assets/fonts
             subPath: fonts
-          # Row 121 (first-start setup) adds exactly this one entry to this same
-          # volume when it lands. AUTOPOSTER_STATE_DIR already defaults to /state
-          # (config/state.py), and this deployment's environment is complete,
-          # so the mount is inert until a deployment actually needs setup mode.
-          # - path: /state
-          #   subPath: setup
+            # Row 121 (first-start setup) adds exactly this one entry to this same
+            # volume when it lands. AUTOPOSTER_STATE_DIR already defaults to /state
+            # (config/state.py), and this deployment's environment is complete,
+            # so the mount is inert until a deployment actually needs setup mode.
+            # - path: /state
+            #   subPath: setup
       # Same NFS share Posterizarr writes and Kometa reads (asset tree);
       # static PV/PVC in nfs.yaml carries the sync-related mountOptions
       assets:
