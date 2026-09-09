@@ -149,9 +149,10 @@ tcpdump -ni eth0 -q 'udp port 53 and dst host 192.168.7.8' | awk '{print $3}' | 
 Known so far: ESPHome garage opener `192.168.55.59` (`dns1: 192.168.7.7`, `dns2: 192.168.7.8`),
 meanie iLO `192.168.0.247`.
 
-Also notable in the inventory: `192.168.2.7` (~27 k queries/month) is from a subnet that does not
-exist on the UDM — most likely the Halli Express site over the site-to-site VPN. It must be
-re-pointed too, or the VPN zone rules must allow it to reach Infra on 53 (they do in §1).
+Also in the inventory: `192.168.2.7` (~27 k queries/month) is the **Teleport** client pool
+(`192.168.2.0/24`) — Olli's phone resolving through home while away. Teleport clients use the
+DNS the UDM hands out, so they follow §3a automatically; the Vpn → Infra rule in §1 lets them
+reach the new servers.
 
 ## 4. Watch, then retire (after a quiet week)
 
