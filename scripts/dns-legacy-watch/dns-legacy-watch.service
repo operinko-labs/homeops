@@ -1,0 +1,13 @@
+[Unit]
+Description=Report clients still using the legacy DNS addresses (to the syslog gateway)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/dns-legacy-watch.sh
+# Override per node if needed, e.g. on ns2 the VIP never lands here:
+# Environment=LEGACY="192.168.7.9"
+Environment=IFACE=eth0
+Environment=DURATION=60
+Environment=SYSLOG_HOST=192.168.7.6
