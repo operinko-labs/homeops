@@ -140,11 +140,23 @@ From Technitium's top-clients (last month, 2026-09-09). **Clients on ns2's list 
 | `192.168.0.13` (phone), `192.168.0.84` (OlliPC), `192.168.0.247` (meanie iLO), `192.168.0.29`, `192.168.0.97` (TDarr), `192.168.0.40` (HA), `192.168.0.183` (PBS), `192.168.3.90/.91` (Proxmox in-band) | occasional; likely secondary-resolver fallbacks — fix when found |
 
 Direct users of `192.168.7.8` cannot be separated from VIP users in Technitium's log (same
-server answers both). Get them with a 10-minute capture on ns1 before §4:
+server answers both). Two ways to see who is still on the old addresses, both feeding Loki:
 
-```sh
-tcpdump -ni eth0 -q 'udp port 53 and dst host 192.168.7.8' | awk '{print $3}' | cut -d. -f1-4 | sort | uniq -c | sort -rn
-```
+1. **Logged allow policy on the UDM (primary, no install).** Right after §3a, add above the
+   existing allows, one per source zone (Internal, IoT, Cameras, Vpn → Internal):
+   *Log legacy DNS* — dst `192.168.7.7`, `192.168.7.8`, `192.168.7.9`, tcp_udp 53, **allow**,
+   **logging on**. Every routed DNS query to an old address then arrives through the SIEM feed
+   as a `Security / Firewall` event naming the client. Grafana: the UniFi Network Logs
+   dashboard, search `Log legacy DNS`, or
+   `sum by (src) (count_over_time({job="unifi"} |= "Log legacy DNS" | json | line_format "{{.cef}}" | regexp `src=(?P<src>\S+)` [24h]))`.
+   Blind spot: hosts on the Node VLAN itself reach the resolvers at layer 2 and never cross the
+   UDM — the Talos nodes and CoreDNS, which are all in git anyway.
+2. **[`scripts/dns-legacy-watch/`](../../scripts/dns-legacy-watch/) on both LXCs (optional).**
+   A 60-second capture every 10 minutes, one syslog line per `(dst, src)` to the gateway
+   (`{job="syslog", app="dns-legacy"}`). Covers the layer-2 blind spot and aggregates instead of
+   logging per query. Use it if the policy log turns out too noisy or you want the in-VLAN view.
+
+Do the manual passes from that list at your own pace.
 
 Known so far: ESPHome garage opener `192.168.55.59` (`dns1: 192.168.7.7`, `dns2: 192.168.7.8`),
 meanie iLO `192.168.0.247`.
@@ -156,8 +168,8 @@ reach the new servers.
 
 ## 4. Watch, then retire (after a quiet week)
 
-1. Daily during the week, on ns1: the tcpdump above for `dst host 192.168.7.8 or 192.168.7.7`,
-   and on ns2 for `192.168.7.9`. Expect the list to shrink to nothing.
+1. Watch the *Log legacy DNS* hits (and the `dns-legacy` stream if installed). Proceed when a
+   7-day window shows nothing but the resolvers talking to each other.
 2. When quiet: move VRRP unicast to VLAN 5 (`unicast_src_ip 192.168.5.8`, peer `192.168.5.9`)
    and drop `192.168.7.7` from `virtual_ipaddress`; reload ns2 then ns1.
 3. Set the LXCs' default gateway to `192.168.5.1` on `net1`, remove `net0` (VLAN 7).
