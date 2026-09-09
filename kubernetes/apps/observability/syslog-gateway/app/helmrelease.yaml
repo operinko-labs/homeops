@@ -81,6 +81,7 @@ spec:
                 Match        syslog.*
                 Key_Name     rest
                 Parser       unifi-siem-body
+                Parser       unifi-device-body
                 Parser       syslog-rfc5424-body
                 Parser       syslog-rfc3164-body
                 Parser       cef-bare-body
@@ -143,6 +144,13 @@ spec:
                 Name   unifi-siem-body
                 Format regex
                 Regex  ^(?<timestamp>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?:(?<utc_time>\d{4}-\d{2}-\d{2}T[0-9:.]+Z)\s)?(?<host>.+?)\s(?<log>CEF:.*)$
+            # UniFi device syslog (APs/switches, "Devices" content in CyberSecure logging):
+            #   Sep  9 10:18:42 Office-U6-Lite 78455867f588,U6-Lite-6.7.58+15850: kernel: [501101.768211] ...
+            # host, then "<mac>,<model>-<fw>", then the real program name and message.
+            [PARSER]
+                Name   unifi-device-body
+                Format regex
+                Regex  ^(?<timestamp>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s(?<host>\S+)\s(?<device_id>[0-9a-fA-F]{12},\S+):\s(?<app>[^:\s\[]+)(?:\[\d+\])?:?\s?(?<log>.*)$
             [PARSER]
                 Name   syslog-rfc5424-body
                 Format regex
