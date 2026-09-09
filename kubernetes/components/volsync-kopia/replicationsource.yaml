@@ -18,6 +18,10 @@ spec:
       fsGroup: ${VOLSYNC_PGID:=1000}
     repository: ${APP}-volsync-secret
     retain:
+      latest: 10
       hourly: 24
       daily: 7
+      weekly: 4
+      monthly: 6
+      yearly: 0 # declared explicitly: unset tiers inherit kopia's defaults (weekly 4, monthly 24, annual 3)
     storageClassName: ${VOLSYNC_STORAGECLASS:=local-path}
