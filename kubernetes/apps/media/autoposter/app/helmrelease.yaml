@@ -55,7 +55,7 @@ spec:
             image:
               repository: harbor.vaderrp.com/operinko-labs/autoposter
               # Updated by Flux image automation (ImagePolicy flux-system/autoposter)
-              tag: build-1788909158-sha-5abd15f # {"$imagepolicy": "flux-system:autoposter:tag"}
+              tag: build-1788937541-sha-9d13723 # {"$imagepolicy": "flux-system:autoposter:tag"}
             env:
               TZ: Europe/Helsinki
               # python-plexapi and friends want a writable HOME
