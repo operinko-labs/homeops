@@ -20,6 +20,13 @@ plex:
   token_refresh_interval_seconds: 43200 # 12 hours
   token_refresh_enabled: true # disable if your token is server-scoped (would just log warnings forever)
 
+jellyfin:
+  url: https://jellyfin.vaderrp.com
+  excluded_libraries: []
+  library_map:
+    "TV Shows": "Shows"
+  replace_thumb_with_backdrop: false
+
 providers:
   order: [TMDB, TVDB, Fanart]
   favourite: TMDB
