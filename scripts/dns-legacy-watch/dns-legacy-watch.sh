@@ -17,7 +17,9 @@ for ip in $LEGACY; do
 done
 
 # tcpdump -q line: "10:18:42.123 IP 192.168.0.221.55254 > 192.168.7.8.53: UDP, length 40"
-timeout "$DURATION" tcpdump -ni "$IFACE" -l -q "port 53 and ($filter)" 2>/dev/null \
+# dst port 53 only (a plain "port 53" also catches upstream resolvers answering our recursion),
+# and never count ns1/ns2 talking to each other (NOTIFY / zone transfers).
+timeout "$DURATION" tcpdump -ni "$IFACE" -l -q "dst port 53 and ($filter) and not (src host 192.168.7.8 or src host 192.168.7.9)" 2>/dev/null \
   | awk '{ src=$3; dst=$5; sub(/\.[0-9]+:?$/, "", src); sub(/\.[0-9]+:?$/, "", dst); c[dst " " src]++ }
          END { for (k in c) print k, c[k] }' \
   | while read -r dst src n; do
