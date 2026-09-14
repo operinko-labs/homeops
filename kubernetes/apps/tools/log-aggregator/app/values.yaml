@@ -18,7 +18,7 @@ controllers:
       app:
         image:
           repository: harbor.vaderrp.com/operinko-labs/log-aggregator
-          tag: 0.3.1
+          tag: 0.3.2
           pullPolicy: Always
         env:
           TZ: Europe/Helsinki

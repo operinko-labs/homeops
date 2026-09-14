@@ -182,6 +182,75 @@ async def get_alert_details(
 
 
 @mcp.tool()
+async def get_alert_history(
+    alertname: Annotated[str, Field(description="Alert name to match, case-insensitive substring (e.g. 'etcdHighCommitDurations')")],
+    days_back: Annotated[int, Field(description="How many days to look back (default: 30)")] = 30,
+    limit: Annotated[int, Field(description="Maximum number of occurrences to return, newest first (default: 200)")] = 200,
+) -> dict[str, Any]:
+    """List every recorded occurrence of one alert, without deduplication.
+
+    list_alerts collapses repeat notifications into a single entry, which hides
+    when each individual spike happened. Use this to get the raw timestamps for
+    a recurring alert, plus two tallies for correlating against scheduled work:
+    by_hour_utc catches daily jobs (backups, maintenance), while
+    by_minute_of_hour catches hourly ones - a job on `0 * * * *` spreads its IO
+    over the minutes that follow, so its spikes share a minute offset rather
+    than a time of day.
+
+    Matching is a case-insensitive substring, so 'etcdhighcommit' matches both
+    the etcdHighCommitDurations and EtcdHighCommitDurations rules.
+    """
+    from sqlalchemy import select
+
+    from .database import async_session_maker
+    from .models import AlertContext
+
+    since = datetime.now(timezone.utc) - timedelta(days=days_back)
+
+    async with async_session_maker() as session:
+        stmt = (
+            select(AlertContext)
+            .where(
+                AlertContext.created_at >= since,
+                AlertContext.alertname.ilike(f"%{alertname}%"),
+            )
+            .order_by(AlertContext.created_at.desc())
+        )
+        result = await session.execute(stmt)
+        alerts = result.scalars().all()
+
+    by_hour_utc: dict[int, int] = {}
+    by_minute_of_hour: dict[int, int] = {}
+    for alert in alerts:
+        fired_utc = alert.fired_at.astimezone(timezone.utc)
+        by_hour_utc[fired_utc.hour] = by_hour_utc.get(fired_utc.hour, 0) + 1
+        by_minute_of_hour[fired_utc.minute] = by_minute_of_hour.get(fired_utc.minute, 0) + 1
+
+    occurrences = [
+        {
+            "fired_at": alert.fired_at.isoformat() if alert.fired_at else None,
+            "received_at": alert.created_at.isoformat() if alert.created_at else None,
+            "alertname": alert.alertname,
+            "namespace": alert.namespace or "unknown",
+            "pod": alert.pod,
+            "status": alert.status,
+            "description": alert.annotations.get("description", "") if alert.annotations else "",
+        }
+        for alert in alerts[:limit]
+    ]
+
+    return {
+        "alertname_filter": alertname,
+        "period_days": days_back,
+        "total_matching": len(alerts),
+        "returned": len(occurrences),
+        "by_hour_utc": dict(sorted(by_hour_utc.items())),
+        "by_minute_of_hour": dict(sorted(by_minute_of_hour.items())),
+        "occurrences": occurrences,
+    }
+
+
+@mcp.tool()
 async def get_pod_logs(
     namespace: Annotated[str, Field(description="Kubernetes namespace")],
     pod: Annotated[str, Field(description="Pod name (can be partial, will match with prefix)")],
