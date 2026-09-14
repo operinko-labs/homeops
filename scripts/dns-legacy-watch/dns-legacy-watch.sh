@@ -20,7 +20,7 @@ done
 # dst port 53 only (a plain "port 53" also catches upstream resolvers answering our recursion),
 # and never count ns1/ns2 talking to each other (NOTIFY / zone transfers).
 timeout "$DURATION" tcpdump -ni "$IFACE" -l -q "dst port 53 and ($filter) and not (src host 192.168.7.8 or src host 192.168.7.9)" 2>/dev/null \
-  | awk '{ src=$3; dst=$5; sub(/\.[0-9]+:?$/, "", src); sub(/\.[0-9]+:?$/, "", dst); c[dst " " src]++ }
+  | awk '$4 == ">" { src=$3; dst=$5; sub(/\.[0-9]+:?$/, "", src); sub(/\.[0-9]+:?$/, "", dst); c[dst " " src]++ }
          END { for (k in c) print k, c[k] }' \
   | while read -r dst src n; do
       logger --rfc3164 -n "$SYSLOG_HOST" -P 514 -t dns-legacy "dst=$dst src=$src count=$n window=${DURATION}s"
