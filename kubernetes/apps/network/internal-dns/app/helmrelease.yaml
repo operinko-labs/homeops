@@ -30,7 +30,7 @@ spec:
     triggerLoopOnEvent: true
     provider: rfc2136
     extraArgs:
-      - --rfc2136-host=192.168.7.8
+      - --rfc2136-host=192.168.5.8
       - --rfc2136-port=53
       - --rfc2136-zone=vaderrp.com
       - --rfc2136-batch-change-size=50

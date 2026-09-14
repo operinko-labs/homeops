@@ -147,7 +147,7 @@ endpoints:
   # the VIP itself would be fine and there is nothing to fail over to.
   - name: technitium VIP
     group: Network
-    url: "192.168.7.7"
+    url: "192.168.5.7"
     interval: 1m
     dns:
       query-name: "vaderrp.com"

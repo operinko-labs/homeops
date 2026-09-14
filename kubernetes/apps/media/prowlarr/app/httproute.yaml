@@ -13,7 +13,7 @@ metadata:
       url: "https://prowlarr.vaderrp.com/ping"
       dns: ""
       client:
-        dns-resolver: "tcp://192.168.7.8:53"
+        dns-resolver: "tcp://192.168.5.8:53"
         timeout: 15s
       conditions:
         - "[STATUS] == 200"
