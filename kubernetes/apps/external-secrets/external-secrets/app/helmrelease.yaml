@@ -20,6 +20,11 @@ spec:
       retries: 3
   values:
     installCRDs: true
+    # Two webhook replicas so the minAvailable: 1 budget in pdb.yaml can be
+    # honoured during node drains; with one replica every drain of its node
+    # stalls on this pod until the VM is stopped underneath it.
+    webhook:
+      replicaCount: 2
     # Without this the controller exports externalsecret_status_condition and
     # nothing scrapes it, so the grafanadashboard alongside this file has been
     # rendering empty and no alert on ExternalSecret health was possible.
