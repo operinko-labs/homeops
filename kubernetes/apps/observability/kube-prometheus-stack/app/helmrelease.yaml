@@ -141,6 +141,11 @@ spec:
         walCompression: true
         enableFeatures:
           - memory-snapshot-on-shutdown
+        # Native histograms are stable in Prometheus 3 but scraping them is opt-in.
+        # Keep classic buckets too so existing rules and dashboards keep working
+        # while the same metrics are also stored as native histograms.
+        scrapeNativeHistograms: true
+        scrapeClassicHistograms: true
         evaluationInterval: 1m
         retention: 14d
         retentionSize: 32GB
