@@ -24,6 +24,11 @@ jobs:
           RENOVATE_AUTODISCOVER: "true"
           RENOVATE_GIT_AUTHOR: "Renovate Bot <renovate@vaderrp.com>"
           RENOVATE_SECRETS: '{"HARBOR_ROBOT_PASSWORD":"${{ secrets.HARBOR_ROBOT_PASSWORD }}"}'
+          # Harbor resolves to RFC1918 addresses. Only admin-level hostRules can
+          # grant internal-host access (repo hostRules can't), so this is what
+          # keeps the registryAliases lookups working once internalHostAccess
+          # defaults to "block". Credentials stay in .renovaterc.json5.
+          RENOVATE_HOST_RULES: '[{"matchHost":"https://harbor.vaderrp.com","allowInternal":true}]'
           # Allow-list for repo-level postUpgradeTasks (gpro regenerates its pnpm
           # lockfile after npm updates — pnpm#10944 checksum workaround until its
           # .pnpmfile.cjs is deleted at TS 7.1).
