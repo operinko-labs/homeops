@@ -23,6 +23,7 @@
     "prEditedNotification",
     "prIgnoreNotification",
   ],
+  allowInternal: true,
   ignorePaths: [
     "**/*.sealed.*",
     "**/sealed-secret.yaml",
