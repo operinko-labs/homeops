@@ -7,6 +7,11 @@ metadata:
 spec:
   type: ClusterIP
   externalIPs: ["172.16.8.11"]
+  # Cilium runs DSR: the pod that takes a connection answers the client
+  # directly, and only talos7 has the WireGuard route back to the VPS. With
+  # the default Cluster policy three of the four Traefik replicas therefore
+  # reply into a black hole. Local keeps tunnel traffic on the local replica.
+  externalTrafficPolicy: Local
   selector:
     app.kubernetes.io/instance: traefik-network
     app.kubernetes.io/name: traefik
