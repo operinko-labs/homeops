@@ -5,6 +5,7 @@ resources:
   - ocirepository.yaml
   - helmrelease.yaml
   - httproute.yaml
+  - httproute-erinko.yaml
   - external-secret.yaml
   - dnsendpoint.yaml
   - configmap.yaml

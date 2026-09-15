@@ -48,4 +48,19 @@ spec:
         certificateRefs:
           - kind: Secret
             name: erinko-fi-production-tls
+    # mail.erinko.fi shares the relay VPS address with webmail.erinko.fi and the
+    # wildcard cert covers both, so browsers coalesce JMAP requests onto the
+    # webmail HTTP/2 connection. Serve the hostname here and hand it to Stalwart.
+    - name: https-erinko-mail
+      protocol: HTTPS
+      port: 443
+      hostname: "mail.erinko.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: erinko-fi-production-tls
 
