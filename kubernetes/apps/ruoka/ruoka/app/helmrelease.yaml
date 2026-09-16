@@ -32,7 +32,7 @@ spec:
           git-sync-init:
             image: &gitSyncImage
               repository: registry.k8s.io/git-sync/git-sync
-              tag: v4.7.0
+              tag: v4.7.1
             # Same configuration as the sidecar, but clone once and exit.
             args: ["--one-time"]
             env: &gitSyncEnv
