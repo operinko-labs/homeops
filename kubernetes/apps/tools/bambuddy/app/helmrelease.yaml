@@ -23,7 +23,7 @@ spec:
           app:
             image:
               repository: ghcr.io/maziggy/bambuddy
-              tag: 1.2.5.1@sha256:1a6b150100f536b585015aa1347b1b0062e20280913aae1d9d6703d9149df224
+              tag: 1.2.5.5@sha256:dc627d618cc3d3252ae4ab33af74c4679c66a9a06e0e3bbb7aefa32d1a4d4a07
             env:
               TZ: Europe/Helsinki
               PORT: &port 8000
