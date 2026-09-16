@@ -43,7 +43,7 @@ controllers:
       install-runner-binary:
         image:
           repository: code.forgejo.org/forgejo/runner
-          tag: "13.0.0"
+          tag: "13.1.0"
         command: ["/bin/sh", "-c"]
         args:
           - cp /bin/forgejo-runner /shared/forgejo-runner && chmod +x /shared/forgejo-runner
