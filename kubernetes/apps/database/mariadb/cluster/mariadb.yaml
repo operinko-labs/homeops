@@ -10,7 +10,7 @@ spec:
     name: mariadb-root
     key: password
 
-  image: mariadb:12.3
+  image: mariadb:13.0
   port: 3306
 
   env:
