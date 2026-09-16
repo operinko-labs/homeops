@@ -13,7 +13,7 @@ jobs:
     container:
       # Bumped by the "Renovate self-update" custom manager via github-releases;
       # the docker datasource can't resolve this one - see .renovaterc.json5.
-      image: ghcr.io/renovatebot/renovate:44.94.0
+      image: ghcr.io/renovatebot/renovate:44.94.2
     steps:
       - name: Run Renovate
         env:
