@@ -1,18 +1,13 @@
 customization:
     extraKernelArgs:
-        - -init_on_alloc # Less security, faster puter
-        - -init_on_free # Less security, faster puter
-        - -selinux # Less security, faster puter
-        - apparmor=0
-        - init_on_alloc=0
-        - init_on_free=0
         - mitigations=off
-        - security=0
         - talos.auditd.disabled=1
         - sysctl.kernel.kexec_load_disabled=1
     systemExtensions:
         officialExtensions:
             - siderolabs/intel-ucode
             - siderolabs/iscsi-tools
+            - siderolabs/nfsrahead
             - siderolabs/nut-client
             - siderolabs/qemu-guest-agent
+    bootloader: grub
