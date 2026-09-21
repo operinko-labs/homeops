@@ -50,3 +50,16 @@ spec:
   database: ruoka
   table: "*"
   username: ruoka
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: medikabalans
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: medikabalans
+  table: "*"
+  username: medikabalans

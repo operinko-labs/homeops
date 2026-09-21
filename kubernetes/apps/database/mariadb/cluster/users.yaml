@@ -54,3 +54,17 @@ spec:
     name: mariadb-ruoka
     key: password
   maxUserConnections: 20
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: medikabalans
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: medikabalans
+  passwordSecretKeyRef:
+    name: mariadb-medikabalans
+    key: password
+  maxUserConnections: 20
