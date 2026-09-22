@@ -1,0 +1,20 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+# CI pushes `main-<unix epoch>-sha-<short>` alongside the plain `sha-<short>`
+# tag, which carries no order; this policy filters on the branch prefix and
+# orders on the epoch. The sha-* tags are ignored here but keep working for
+# manual pins.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: kyronautopalvelu
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: kyronautopalvelu
+  filterTags:
+    pattern: '^main-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

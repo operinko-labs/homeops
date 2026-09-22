@@ -1,0 +1,12 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagerepository_v1.json
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: kyronautopalvelu
+  namespace: flux-system
+spec:
+  image: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
+  interval: 1m
+  secretRef:
+    name: harbor-image-reflector

@@ -11,4 +11,6 @@ resources:
   - imagepolicy-gpro.yaml
   - imagerepository-medikabalans.yaml
   - imagepolicy-medikabalans.yaml
+  - imagerepository-kyronautopalvelu.yaml
+  - imagepolicy-kyronautopalvelu.yaml
   - imageupdateautomation.yaml

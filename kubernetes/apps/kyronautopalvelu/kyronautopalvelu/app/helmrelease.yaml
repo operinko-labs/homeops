@@ -1,0 +1,49 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kyronautopalvelu
+  namespace: kyronautopalvelu
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: drupal
+    namespace: kyronautopalvelu
+  values:
+    initContainer:
+      # The database starts empty: the init container installs the site from
+      # config/sync on the first start, and from then on only updates and
+      # imports. It never reinstalls a database that has tables.
+      autoInstall: true
+    nginx:
+      resources:
+        limits:
+          memory: 128Mi
+    phpFpm:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 512Mi
+    image:
+      repository: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
+      # Updated by Flux image automation (ImagePolicy flux-system/kyronautopalvelu).
+      # The placeholder is replaced by the first main-* build CI pushes.
+      tag: main-0-sha-0000000 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
+    hostname: kyronautopalvelu.erinko.fi
+    cfargotunnelTarget: external.vaderrp.com
+    secretName: kyronautopalvelu-settings-local
+    # Health check on the drupal-ping endpoint rather than the gatus-sidecar
+    # default of "/".
+    httproute:
+      annotations:
+        gatus.home-operations.com/enabled: "true"
+        gatus.home-operations.com/endpoint: |
+          group: Default
+          url: "https://kyronautopalvelu.erinko.fi/_ping.php"
+          conditions:
+            - "[STATUS] == 200"
+            - "[BODY] == pat(CONGRATULATIONS*)"
+    volsync:
+      enabled: false

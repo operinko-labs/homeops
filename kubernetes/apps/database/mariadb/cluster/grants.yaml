@@ -63,3 +63,16 @@ spec:
   database: medikabalans
   table: "*"
   username: medikabalans
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: kyronautopalvelu
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  privileges: ["ALL PRIVILEGES"]
+  database: kyronautopalvelu
+  table: "*"
+  username: kyronautopalvelu

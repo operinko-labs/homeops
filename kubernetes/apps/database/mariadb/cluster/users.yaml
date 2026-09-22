@@ -68,3 +68,17 @@ spec:
     name: mariadb-medikabalans
     key: password
   maxUserConnections: 20
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: kyronautopalvelu
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb
+  name: kyronautopalvelu
+  passwordSecretKeyRef:
+    name: mariadb-kyronautopalvelu
+    key: password
+  maxUserConnections: 20
