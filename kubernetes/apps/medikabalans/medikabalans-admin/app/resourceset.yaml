@@ -33,6 +33,7 @@ spec:
         name: medikabalans-admin-<< inputs.branch >>
         namespace: medikabalans
       spec:
+        deletionPolicy: Orphan
         interval: 5m
         prune: true
         wait: true
