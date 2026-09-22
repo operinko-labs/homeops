@@ -9,4 +9,6 @@ resources:
   - imagepolicy.yaml
   - imagerepository-gpro.yaml
   - imagepolicy-gpro.yaml
+  - imagerepository-medikabalans.yaml
+  - imagepolicy-medikabalans.yaml
   - imageupdateautomation.yaml

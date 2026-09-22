@@ -1,0 +1,45 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: medikabalans-admin
+  namespace: medikabalans
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: drupal
+    namespace: medikabalans
+  values:
+    nginx:
+      resources:
+        limits:
+          memory: 128Mi
+    phpFpm:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 512Mi
+    image:
+      repository: harbor.vaderrp.com/operinko-labs/medikabalans
+      # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
+      tag: sha-1ccee55 # {"$imagepolicy": "flux-system:medikabalans:tag"}
+    hostname: medikabalans.erinko.fi
+    cfargotunnelTarget: external.vaderrp.com
+    secretName: medikabalans-admin-settings-local
+    # The front page is now the public site's home, so override the
+    # gatus-sidecar auto-generated "/" check with the drupal-ping endpoint,
+    # which is the actual health check.
+    httproute:
+      annotations:
+        gatus.home-operations.com/enabled: "true"
+        gatus.home-operations.com/endpoint: |
+          group: Default
+          url: "https://medikabalans.erinko.fi/_ping.php"
+          conditions:
+            - "[STATUS] == 200"
+            - "[BODY] == pat(CONGRATULATIONS*)"
+    volsync:
+      enabled: false

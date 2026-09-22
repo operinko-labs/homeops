@@ -1,0 +1,13 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: drupal
+  namespace: medikabalans
+spec:
+  interval: 1h
+  url: oci://harbor.vaderrp.com/operinko-labs/drupal
+  ref:
+    semver: ">=0.1.0"
+  secretRef:
+    name: harbor-pull-secret

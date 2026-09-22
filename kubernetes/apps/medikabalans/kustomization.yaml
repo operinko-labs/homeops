@@ -4,6 +4,6 @@ kind: Kustomization
 namespace: medikabalans
 resources:
   - namespace.yaml
-  - ./medikabalans-admin/ks.yaml
+  - ./medikabalans/ks.yaml
 components:
   - ../../components/common
