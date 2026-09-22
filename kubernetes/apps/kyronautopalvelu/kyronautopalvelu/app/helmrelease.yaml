@@ -15,6 +15,9 @@ spec:
       # config/sync on the first start, and from then on only updates and
       # imports. It never reinstalls a database that has tables.
       autoInstall: true
+      # Imports the Finnish interface translations after every config import,
+      # the theme's own translations/fi.po included.
+      localeUpdate: true
     nginx:
       resources:
         limits:
