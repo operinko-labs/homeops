@@ -38,3 +38,10 @@ spec:
               key: apitoken
         selector:
           dnsZones: ["ruskonkesateatteri.fi"]
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cert-manager-secret
+              key: apitoken
+        selector:
+          dnsZones: ["medikabalans.fi"]

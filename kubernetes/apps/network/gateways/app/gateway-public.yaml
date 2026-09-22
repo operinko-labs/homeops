@@ -80,3 +80,27 @@ spec:
         certificateRefs:
           - kind: Secret
             name: ruskonkesateatteri-fi-production-tls
+    - name: https-medikabalans
+      protocol: HTTPS
+      port: 443
+      hostname: "*.medikabalans.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: medikabalans-fi-production-tls
+    - name: https-medikabalans-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "medikabalans.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: medikabalans-fi-production-tls

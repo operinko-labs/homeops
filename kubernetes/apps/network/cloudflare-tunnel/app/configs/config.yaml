@@ -19,4 +19,8 @@ ingress:
     service: *svc
   - hostname: "*.ruskonkesateatteri.fi"
     service: *svc
+  - hostname: "medikabalans.fi"
+    service: *svc
+  - hostname: "*.medikabalans.fi"
+    service: *svc
   - service: http_status:404
