@@ -26,12 +26,11 @@ spec:
       # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
       tag: main-1790099351-sha-8e88df2 # {"$imagepolicy": "flux-system:medikabalans:tag"}
     hostname: medikabalans.erinko.fi
-    # The real domain, ahead of the cutover: the demo host stays the primary
-    # (probes, cron, sitemap) until DNS moves; www redirects to the apex.
-    extraHostnames:
-      - medikabalans.fi
-    wwwHostname: www.medikabalans.fi
-    wwwRedirectHostname: medikabalans.fi
+    # Go-live, once the client has signed off: hostname becomes medikabalans.fi,
+    # wwwHostname www.medikabalans.fi (redirects to the apex), and the demo
+    # host moves to extraHostnames or goes. Until then the real domain is not
+    # routed, whatever DNS says; the listeners, certificate and tunnel rules
+    # are already in place.
     cfargotunnelTarget: external.vaderrp.com
     secretName: medikabalans-admin-settings-local
     # The front page is now the public site's home, so override the
