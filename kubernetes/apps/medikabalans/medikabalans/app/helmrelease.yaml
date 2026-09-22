@@ -24,7 +24,7 @@ spec:
     image:
       repository: harbor.vaderrp.com/operinko-labs/medikabalans
       # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
-      tag: main-1790097960-sha-418d098 # {"$imagepolicy": "flux-system:medikabalans:tag"}
+      tag: main-1790099351-sha-8e88df2 # {"$imagepolicy": "flux-system:medikabalans:tag"}
     hostname: medikabalans.erinko.fi
     cfargotunnelTarget: external.vaderrp.com
     secretName: medikabalans-admin-settings-local
