@@ -1,0 +1,25 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/monitoring.coreos.com/prometheusrule_v1.json
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mariadb-ha
+spec:
+  groups:
+    - name: mariadb-ha
+      rules:
+        # The operator promotes the most up-to-date replica on failover, with
+        # no node preference, so the primary can end up on talos7's spinning
+        # disk. It keeps working there; this is a reminder to fail back.
+        - alert: MariaDBPrimaryOnBulkStorage
+          annotations:
+            summary: mariadb-ha primary is running on the HDD-backed replica
+            description: >-
+              mariadb-ha-2 (talos7, TrueNAS HDD) has been primary for 30 minutes.
+              Switch back to a meanie SSD pod once it is ready:
+              `just kube mariadb-switchover 0` (or 1).
+          expr: |-
+            kube_pod_labels{namespace="database", pod="mariadb-ha-2", label_k8s_mariadb_com_role="primary"} == 1
+          for: 30m
+          labels:
+            severity: warning

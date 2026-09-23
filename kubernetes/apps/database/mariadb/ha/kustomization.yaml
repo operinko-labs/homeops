@@ -5,3 +5,4 @@ resources:
   - ./pvcs.yaml
   - ./mariadb.yaml
   - ./backup.yaml
+  - ./prometheusrule.yaml
