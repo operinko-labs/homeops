@@ -1,0 +1,119 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/k8s.mariadb.com/mariadb_v1alpha1.json
+# Replicated successor to the standalone `mariadb`: one primary plus two
+# semi-sync replicas, on local-path volumes pinned per index (see pvcs.yaml).
+# Writes go to mariadb-ha-primary; mariadb-ha-secondary load-balances reads
+# across the replicas (read_only).
+#
+# Primary placement: pod 0 (talos4) is primary by default. Before draining the
+# primary's node, switch over with `just kube mariadb-switchover <index>`.
+# After an unplanned failover the operator promotes whichever replica is
+# furthest ahead, which can be pod 2 on talos7's spinning disk. Switch back to
+# 0 or 1 once one of them is ready.
+#
+# replication.primary.podIndex is left out on purpose: the operator rewrites
+# it on failover, and a value in git would make Flux revert that and force a
+# switchover back to a pod that may be down.
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb-ha
+  namespace: database
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb-root
+    key: password
+
+  image: mariadb:13.0
+  port: 3306
+  replicas: 3
+
+  replication:
+    enabled: true
+    replica:
+      # New and broken replicas are rebuilt from a physical backup of a
+      # healthy replica, taken from this template
+      bootstrapFrom:
+        physicalBackupTemplateRef:
+          name: mariadb-ha-replica-bootstrap
+      recovery:
+        enabled: true
+
+  # Seeded from the standalone instance's physical backups. Only read when the
+  # cluster is first created; the closest backup to now is picked.
+  bootstrapFrom:
+    backupContentType: Physical
+    s3:
+      bucket: mariadb
+      prefix: backup
+      endpoint: minio.vaderrp.com:9000
+      region: us-east-1
+      accessKeyIdSecretKeyRef:
+        name: mariadb-s3-secret
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-s3-secret
+        key: secret-access-key
+      tls:
+        enabled: true
+
+  env:
+    # Run mariadb-upgrade automatically when the datadir predates the image.
+    # Without this a major image bump serves an un-upgraded datadir silently
+    # (11.4 -> 12.3 sat that way until upgraded by hand on 2026-08-16).
+    - name: MARIADB_AUTO_UPGRADE
+      value: "1"
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+  storage:
+    size: 20Gi
+    storageClassName: local-path
+
+  affinity:
+    antiAffinityEnabled: true
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+  myCnf: |
+    [mysqld]
+    character-set-server  = utf8mb4
+    collation-server      = utf8mb4_unicode_ci
+    max_allowed_packet    = 256M
+    # Drupal requires READ COMMITTED; MariaDB default is REPEATABLE READ
+    transaction_isolation = READ-COMMITTED
+
+  metrics:
+    enabled: true
+    exporter:
+      # mysqld-exporter runs as nobody (65534); satisfy restricted PSS so the
+      # apiserver stops logging "would violate" warnings on every reconcile
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+    serviceMonitor:
+      interval: 1m

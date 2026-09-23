@@ -44,3 +44,36 @@ spec:
   interval: 30m
   retryInterval: 1m
   timeout: 10m
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &app mariadb-ha
+  namespace: &namespace database
+spec:
+  targetNamespace: *namespace
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: *app
+  dependsOn:
+    # mariadb-root and mariadb-s3-secret are created by mariadb-cluster
+    - name: mariadb-cluster
+  path: ./kubernetes/apps/database/mariadb/ha
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  # Health-check only the MariaDB: the replica-bootstrap PhysicalBackup is a
+  # suspended template and may never report Ready
+  healthChecks:
+    - apiVersion: k8s.mariadb.com/v1alpha1
+      kind: MariaDB
+      name: mariadb-ha
+      namespace: *namespace
+  interval: 30m
+  retryInterval: 1m
+  # Bootstrapping restores a physical backup from S3 before the first pod is
+  # ready, so this needs more headroom than mariadb-cluster
+  timeout: 30m

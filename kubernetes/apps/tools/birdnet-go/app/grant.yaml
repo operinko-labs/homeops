@@ -5,6 +5,7 @@ metadata:
   name: birdnet
   namespace: tools
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
     namespace: database

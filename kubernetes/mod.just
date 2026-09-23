@@ -19,6 +19,12 @@ browse-pvc namespace claim:
 delete-ks ns ks:
     just kube render-local-ks "{{ ns }}" "{{ ks }}" | kubectl delete -f /dev/stdin
 
+[doc('Switch the mariadb-ha primary to another pod index')]
+mariadb-switchover index:
+    kubectl -n database patch mariadb mariadb-ha --type merge -p '{"spec":{"replication":{"primary":{"podIndex":{{ index }}}}}}'
+    kubectl -n database wait mariadb mariadb-ha --for=jsonpath='{.status.currentPrimaryPodIndex}'={{ index }} --timeout=5m
+    kubectl -n database wait mariadb mariadb-ha --for=condition=Ready --timeout=5m
+
 [doc('Open a shell on a node')]
 node-shell node:
     kubectl debug node/{{ node }} -n default -it --image="mirror.gcr.io/alpine:latest" --profile sysadmin

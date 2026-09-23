@@ -1,0 +1,52 @@
+---
+# Data volumes for the mariadb-ha StatefulSet, created ahead of it so that each
+# pod index lands on a known node. The StatefulSet adopts a PVC that already
+# carries its volumeClaimTemplate name (storage-<mariadb>-<index>), and
+# local-path provisions on the node named in selected-node instead of waiting
+# for the scheduler to pick one. The operator runs pods with Parallel
+# management, so affinity alone could not decide which index went where.
+#
+#   mariadb-ha-0  talos4  meanie SSD    primary by default
+#   mariadb-ha-1  talos5  meanie SSD    preferred switchover target
+#   mariadb-ha-2  talos7  TrueNAS HDD   off-host copy; fail back if it is promoted
+#
+# Moving an index to another node means deleting its PVC and letting the
+# operator rebuild the replica (replication.replica.recovery).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-mariadb-ha-0
+  annotations:
+    volume.kubernetes.io/selected-node: talos4
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-mariadb-ha-1
+  annotations:
+    volume.kubernetes.io/selected-node: talos5
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-mariadb-ha-2
+  annotations:
+    volume.kubernetes.io/selected-node: talos7
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi

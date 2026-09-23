@@ -1,0 +1,76 @@
+---
+# Scheduled physical backup, daily at 02:30 (the standalone instance keeps
+# 02:00 until it is retired). Taken from a ready replica (target defaults to
+# Replica), so the primary carries no backup load. Kept under its own prefix:
+# bootstrapFrom in mariadb.yaml reads `backup/`, the standalone's backups.
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: PhysicalBackup
+metadata:
+  name: mariadb-ha-backup
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb-ha
+  schedule:
+    cron: "30 2 * * *"
+    suspend: false
+  storage:
+    s3:
+      bucket: mariadb
+      prefix: mariadb-ha
+      endpoint: minio.vaderrp.com:9000
+      region: us-east-1
+      accessKeyIdSecretKeyRef:
+        name: mariadb-s3-secret
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-s3-secret
+        key: secret-access-key
+      tls:
+        enabled: true
+  timeout: 1h
+  podAffinity: true
+  # Immutable once created: resizing means deleting this PhysicalBackup and
+  # letting Flux recreate it
+  stagingStorage:
+    persistentVolumeClaim:
+      # tns-iscsi (not local-path): podAffinity pins the job to whichever
+      # replica is backed up, so the PVC must be attachable on any node
+      storageClassName: tns-iscsi
+      resources:
+        requests:
+          storage: 5Gi
+      accessModes:
+        - ReadWriteOnce
+---
+# Template for rebuilding replicas (replication.replica.bootstrapFrom). Never
+# runs on its own; the operator creates a PhysicalBackup from it when a replica
+# is added or recovered.
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: PhysicalBackup
+metadata:
+  name: mariadb-ha-replica-bootstrap
+  namespace: database
+spec:
+  mariaDbRef:
+    name: mariadb-ha
+    waitForIt: false
+  schedule:
+    suspend: true
+  target: PreferReplica
+  storage:
+    s3:
+      bucket: mariadb
+      prefix: mariadb-ha-replica-bootstrap
+      endpoint: minio.vaderrp.com:9000
+      region: us-east-1
+      accessKeyIdSecretKeyRef:
+        name: mariadb-s3-secret
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: mariadb-s3-secret
+        key: secret-access-key
+      tls:
+        enabled: true
+  maxRetention: 168h
+  timeout: 1h

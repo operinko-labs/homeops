@@ -2,14 +2,19 @@
 # hietamakidojo (suspended client, domain lapsed 2026). The User and Grant were
 # removed with the rest of their resources; this schema is kept deliberately so
 # the site can be restored if they come back. Nothing references it — do not
-# "clean up" as an orphan. Deleting this CR drops the data: cleanupPolicy is
-# unset, and the operator defaults to Delete.
+# "clean up" as an orphan.
+#
+# Every Database, User and Grant here sets cleanupPolicy: Skip, so deleting the
+# CR leaves the schema, user or grant in place. The mariadb-ha cutover relies on
+# this: mariaDbRef is immutable, so moving a resource to another MariaDB means
+# deleting and recreating its CR.
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: Database
 metadata:
   name: aikido8
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: aikido8
@@ -22,6 +27,7 @@ metadata:
   name: ruskonkesateatteri
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: ruskonkesateatteri
@@ -34,6 +40,7 @@ metadata:
   name: leo
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: leo
@@ -46,6 +53,7 @@ metadata:
   name: dmarc
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: dmarc
@@ -58,6 +66,7 @@ metadata:
   name: ruoka
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: ruoka
@@ -70,6 +79,7 @@ metadata:
   name: medikabalans
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: medikabalans
@@ -82,6 +92,7 @@ metadata:
   name: kyronautopalvelu
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: kyronautopalvelu

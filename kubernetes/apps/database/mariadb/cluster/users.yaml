@@ -5,6 +5,7 @@ metadata:
   name: ruskonkesateatteri
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: ruskonkesateatteri
@@ -19,6 +20,7 @@ metadata:
   name: leo
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: leo
@@ -33,6 +35,7 @@ metadata:
   name: dmarc
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: dmarc
@@ -47,6 +50,7 @@ metadata:
   name: ruoka
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: ruoka
@@ -61,6 +65,7 @@ metadata:
   name: medikabalans
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: medikabalans
@@ -75,6 +80,7 @@ metadata:
   name: kyronautopalvelu
   namespace: database
 spec:
+  cleanupPolicy: Skip
   mariaDbRef:
     name: mariadb
   name: kyronautopalvelu
