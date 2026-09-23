@@ -39,23 +39,12 @@ spec:
       recovery:
         enabled: true
 
-  # Seeded from the standalone instance's physical backups. Only read when the
-  # cluster is first created; the closest backup to now is picked.
-  bootstrapFrom:
-    backupContentType: Physical
-    s3:
-      bucket: mariadb
-      prefix: backup
-      endpoint: minio.vaderrp.com:9000
-      region: us-east-1
-      accessKeyIdSecretKeyRef:
-        name: mariadb-s3-secret
-        key: access-key-id
-      secretAccessKeySecretKeyRef:
-        name: mariadb-s3-secret
-        key: secret-access-key
-      tls:
-        enabled: true
+  # No bootstrapFrom: the cluster starts empty and the data is loaded with
+  # mariadb-dump at cutover. The standalone's physical backups cannot seed a
+  # replicated cluster: it runs without a binlog, so they carry no GTID
+  # position (binlog_pos is empty) and the operator retries replica setup
+  # forever. Backups taken from this cluster do carry one, so a disaster
+  # restore can use bootstrapFrom with the mariadb/mariadb-ha/ prefix.
 
   env:
     # Run mariadb-upgrade automatically when the datadir predates the image.

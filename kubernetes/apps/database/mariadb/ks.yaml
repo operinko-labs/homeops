@@ -74,6 +74,6 @@ spec:
       namespace: *namespace
   interval: 30m
   retryInterval: 1m
-  # Bootstrapping restores a physical backup from S3 before the first pod is
-  # ready, so this needs more headroom than mariadb-cluster
-  timeout: 30m
+  # Three pods set up one after another, plus replication, need more headroom
+  # than mariadb-cluster
+  timeout: 15m

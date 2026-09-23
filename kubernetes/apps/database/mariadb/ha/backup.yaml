@@ -1,8 +1,8 @@
 ---
 # Scheduled physical backup, daily at 02:30 (the standalone instance keeps
 # 02:00 until it is retired). Taken from a ready replica (target defaults to
-# Replica), so the primary carries no backup load. Kept under its own prefix:
-# bootstrapFrom in mariadb.yaml reads `backup/`, the standalone's backups.
+# Replica), so the primary carries no backup load. Kept under its own prefix,
+# apart from the standalone's `backup/`.
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: PhysicalBackup
 metadata:
