@@ -29,16 +29,6 @@ machine:
         - os:admin
       enabled: true
     {% endif %}
-  files:
-    - op: overwrite
-      path: /etc/nfsmount.conf
-      permissions: 0o644
-      content: |
-        [ NFSMount_Global_Options ]
-        nfsvers: 4.2
-        hard: True
-        nconnect: 16
-        noatime: True
   install:
     disk: /dev/sda
     image: factory.talos.dev/metal-installer/c0ffd3f955ccbf8853e2905290e152aa377a6c6393b527d90050067986f98d3e:v1.14.1
@@ -181,6 +171,17 @@ kind: OOMConfig
 triggerExpression: "false"
 cgroupRankingExpression: "0.0"
 sampleInterval: "5s"
+---
+apiVersion: v1alpha1
+kind: EtcFileConfig
+name: nfsmount.conf
+mode: 0o644
+contents: |
+  [ NFSMount_Global_Options ]
+  nfsvers: 4.2
+  hard: True
+  nconnect: 16
+  noatime: True
 ---
 apiVersion: v1alpha1
 kind: RegistryMirrorConfig
