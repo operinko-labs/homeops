@@ -24,7 +24,7 @@ spec:
     image:
       repository: harbor.vaderrp.com/operinko-labs/medikabalans
       # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
-      tag: main-1790187354-sha-ac5349a # {"$imagepolicy": "flux-system:medikabalans:tag"}
+      tag: main-1790187980-sha-c1c83e1 # {"$imagepolicy": "flux-system:medikabalans:tag"}
     hostname: medikabalans.erinko.fi
     # Go-live, once the client has signed off: hostname becomes medikabalans.fi,
     # wwwHostname www.medikabalans.fi (redirects to the apex), and the demo
