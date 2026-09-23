@@ -7,7 +7,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: ruskonkesateatteri
   passwordSecretKeyRef:
     name: mariadb-ruskonkesateatteri
@@ -22,7 +22,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: leo
   passwordSecretKeyRef:
     name: mariadb-leo
@@ -37,7 +37,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: dmarc
   passwordSecretKeyRef:
     name: mariadb-dmarc
@@ -52,7 +52,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: ruoka
   passwordSecretKeyRef:
     name: mariadb-ruoka
@@ -67,7 +67,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: medikabalans
   passwordSecretKeyRef:
     name: mariadb-medikabalans
@@ -82,7 +82,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: kyronautopalvelu
   passwordSecretKeyRef:
     name: mariadb-kyronautopalvelu

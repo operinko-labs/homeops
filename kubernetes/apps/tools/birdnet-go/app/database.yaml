@@ -9,7 +9,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
     namespace: database
   name: birdnet
   characterSet: utf8mb4

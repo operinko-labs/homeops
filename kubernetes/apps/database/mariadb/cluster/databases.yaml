@@ -16,7 +16,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: aikido8
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -29,7 +29,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: ruskonkesateatteri
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -42,7 +42,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: leo
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -55,7 +55,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: dmarc
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -68,7 +68,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: ruoka
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -81,7 +81,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: medikabalans
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
@@ -94,7 +94,7 @@ metadata:
 spec:
   cleanupPolicy: Skip
   mariaDbRef:
-    name: mariadb
+    name: mariadb-ha
   name: kyronautopalvelu
   characterSet: utf8mb4
   collate: utf8mb4_unicode_ci
