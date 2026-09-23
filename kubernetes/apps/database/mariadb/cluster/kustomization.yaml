@@ -4,8 +4,6 @@ kind: Kustomization
 resources:
   - ./external-secrets.yaml
   - ./external-secret-s3.yaml
-  - ./mariadb.yaml
   - ./databases.yaml
   - ./users.yaml
   - ./grants.yaml
-  - ./backup.yaml

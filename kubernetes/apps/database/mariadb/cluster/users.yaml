@@ -32,21 +32,6 @@ spec:
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: User
 metadata:
-  name: dmarc
-  namespace: database
-spec:
-  cleanupPolicy: Skip
-  mariaDbRef:
-    name: mariadb-ha
-  name: dmarc
-  passwordSecretKeyRef:
-    name: mariadb-dmarc
-    key: password
-  maxUserConnections: 20
----
-apiVersion: k8s.mariadb.com/v1alpha1
-kind: User
-metadata:
   name: ruoka
   namespace: database
 spec:

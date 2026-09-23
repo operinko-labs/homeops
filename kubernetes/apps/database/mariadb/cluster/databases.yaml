@@ -50,19 +50,6 @@ spec:
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: Database
 metadata:
-  name: dmarc
-  namespace: database
-spec:
-  cleanupPolicy: Skip
-  mariaDbRef:
-    name: mariadb-ha
-  name: dmarc
-  characterSet: utf8mb4
-  collate: utf8mb4_unicode_ci
----
-apiVersion: k8s.mariadb.com/v1alpha1
-kind: Database
-metadata:
   name: ruoka
   namespace: database
 spec:

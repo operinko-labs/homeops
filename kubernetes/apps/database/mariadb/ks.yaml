@@ -40,7 +40,19 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  wait: true
+  # Health-check only the Secrets mariadb-ha needs, not wait: true. The
+  # Database/User/Grant CRs here only become Ready once mariadb-ha is up, and
+  # mariadb-ha depends on this Kustomization, so waiting on them would deadlock
+  # a fresh bootstrap.
+  healthChecks:
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: mariadb-root
+      namespace: *namespace
+    - apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      name: mariadb-s3-secret
+      namespace: *namespace
   interval: 30m
   retryInterval: 1m
   timeout: 10m

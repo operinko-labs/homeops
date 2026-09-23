@@ -30,20 +30,6 @@ spec:
 apiVersion: k8s.mariadb.com/v1alpha1
 kind: Grant
 metadata:
-  name: dmarc
-  namespace: database
-spec:
-  cleanupPolicy: Skip
-  mariaDbRef:
-    name: mariadb-ha
-  privileges: ["ALL PRIVILEGES"]
-  database: dmarc
-  table: "*"
-  username: dmarc
----
-apiVersion: k8s.mariadb.com/v1alpha1
-kind: Grant
-metadata:
   name: ruoka
   namespace: database
 spec:
