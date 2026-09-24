@@ -23,4 +23,8 @@ ingress:
     service: *svc
   - hostname: "*.medikabalans.fi"
     service: *svc
+  - hostname: "kyronautopalvelu.fi"
+    service: *svc
+  - hostname: "*.kyronautopalvelu.fi"
+    service: *svc
   - service: http_status:404

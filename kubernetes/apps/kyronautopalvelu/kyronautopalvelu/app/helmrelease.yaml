@@ -35,6 +35,11 @@ spec:
       # The placeholder is replaced by the first main-* build CI pushes.
       tag: main-1790245845-sha-844a948 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
     hostname: kyronautopalvelu.erinko.fi
+    # Go-live, once the client has signed off: hostname becomes
+    # kyronautopalvelu.fi, wwwHostname www.kyronautopalvelu.fi (redirects to
+    # the apex), and the demo host moves to extraHostnames or goes. Until then
+    # the real domain is not routed, whatever DNS says; the listeners,
+    # certificate and tunnel rules are already in place.
     cfargotunnelTarget: external.vaderrp.com
     secretName: kyronautopalvelu-settings-local
     # Health check on the drupal-ping endpoint rather than the gatus-sidecar

@@ -104,3 +104,27 @@ spec:
         certificateRefs:
           - kind: Secret
             name: medikabalans-fi-production-tls
+    - name: https-kyronautopalvelu
+      protocol: HTTPS
+      port: 443
+      hostname: "*.kyronautopalvelu.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: kyronautopalvelu-fi-production-tls
+    - name: https-kyronautopalvelu-apex
+      protocol: HTTPS
+      port: 443
+      hostname: "kyronautopalvelu.fi"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: kyronautopalvelu-fi-production-tls
