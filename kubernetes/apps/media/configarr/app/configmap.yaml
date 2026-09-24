@@ -33,6 +33,16 @@ data:
               - name: WEB-1080p
                 score: 100
 
+          # Dolby Vision profile 5 has no HDR10 base layer; Plex can't play or
+          # tone-map it. Ultra-HD exists only on the server (not managed here).
+          - trash_ids:
+              - 9b27ab6498ec0f31a3353992e19434ca # DV (w/o HDR fallback)
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -20000
+              - name: Ultra-HD
+                score: -20000
+
     # Radarr Configuration
     radarr:
       instance1:
@@ -55,3 +65,18 @@ data:
             assign_scores_to:
               - name: HD Bluray + WEB
                 score: 100
+
+          # Dolby Vision profile 5 has no HDR10 base layer; Plex can't play or
+          # tone-map it. Any, Ultra-HD and the Nordic profile exist only on the
+          # server (not managed here); Any holds most movies and allows 2160p.
+          - trash_ids:
+              - 923b6abef9b17f937fab56cfcf89e1f1 # DV (w/o HDR fallback)
+            assign_scores_to:
+              - name: HD Bluray + WEB
+                score: -20000
+              - name: HD Bluray + WEB - Nordic
+                score: -20000
+              - name: Any
+                score: -20000
+              - name: Ultra-HD
+                score: -20000
