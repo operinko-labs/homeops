@@ -21,7 +21,9 @@ delete-ks ns ks:
 
 [doc('Switch the mariadb-ha primary to another pod index')]
 mariadb-switchover index:
-    kubectl -n database patch mariadb mariadb-ha --type merge -p '{"spec":{"replication":{"primary":{"podIndex":{{ index }}}}}}'
+    # Patch as the operator: Flux reverts fields owned by kubectl on its next
+    # reconcile, which drops podIndex back to 0 and forces a switchover.
+    kubectl -n database patch mariadb mariadb-ha --field-manager=mariadb-operator --type merge -p '{"spec":{"replication":{"primary":{"podIndex":{{ index }}}}}}'
     kubectl -n database wait mariadb mariadb-ha --for=jsonpath='{.status.currentPrimaryPodIndex}'={{ index }} --timeout=5m
     kubectl -n database wait mariadb mariadb-ha --for=condition=Ready --timeout=5m
 
