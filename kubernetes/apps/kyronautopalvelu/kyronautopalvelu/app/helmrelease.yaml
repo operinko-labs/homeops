@@ -33,7 +33,7 @@ spec:
       repository: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
       # Updated by Flux image automation (ImagePolicy flux-system/kyronautopalvelu).
       # The placeholder is replaced by the first main-* build CI pushes.
-      tag: main-1790238121-sha-cce2221 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
+      tag: main-1790244114-sha-ddff686 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
     hostname: kyronautopalvelu.erinko.fi
     cfargotunnelTarget: external.vaderrp.com
     secretName: kyronautopalvelu-settings-local
