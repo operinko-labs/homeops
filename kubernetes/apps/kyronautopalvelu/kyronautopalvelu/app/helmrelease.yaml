@@ -33,7 +33,7 @@ spec:
       repository: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
       # Updated by Flux image automation (ImagePolicy flux-system/kyronautopalvelu).
       # The placeholder is replaced by the first main-* build CI pushes.
-      tag: main-1790245845-sha-844a948 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
+      tag: main-1790247046-sha-7f31208 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
     hostname: kyronautopalvelu.erinko.fi
     # Go-live, once the client has signed off: hostname becomes
     # kyronautopalvelu.fi, wwwHostname www.kyronautopalvelu.fi (redirects to
