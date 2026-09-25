@@ -46,7 +46,8 @@ data:
     # Radarr Configuration
     radarr:
       instance1:
-        base_url: http://radarr.media.svc.cluster.local.
+        # No trailing dot: Radarr 6 answers 400 to a "radarr.media.svc.cluster.local." Host header.
+        base_url: http://radarr.media.svc.cluster.local
         api_key: !secret RADARR_API_KEY
         quality_definition:
           type: movie
