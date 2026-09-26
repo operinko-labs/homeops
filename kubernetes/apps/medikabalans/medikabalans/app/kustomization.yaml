@@ -6,4 +6,5 @@ resources:
   - ocirepository.yaml
   - helmrelease.yaml
   - externalsecret-settings.yaml
+  - externalsecret-dragonfly.yaml
   - externalsecret-harbor-pull-secret.yaml

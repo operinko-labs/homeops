@@ -47,3 +47,10 @@ spec:
             - "[BODY] == pat(CONGRATULATIONS*)"
     volsync:
       enabled: false
+    # The site's own Dragonfly (chart >= 0.7.19), at
+    # medikabalans-admin-dragonfly.medikabalans.svc:6379.
+    dragonfly:
+      enabled: true
+      passwordSecret:
+        name: medikabalans-dragonfly
+        key: password
