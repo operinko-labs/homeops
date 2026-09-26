@@ -1,6 +1,6 @@
 ---
-# 0.7.16 is the first chart version with initContainer.autoInstall, which the
-# first start of this site depends on.
+# 0.7.22: the site's own Dragonfly (0.7.19) with its NetworkPolicy, on top of
+# initContainer.autoInstall (0.7.16), which the first start depended on.
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
@@ -10,6 +10,6 @@ spec:
   interval: 1h
   url: oci://harbor.vaderrp.com/operinko-labs/drupal
   ref:
-    semver: ">=0.7.16"
+    semver: ">=0.7.22"
   secretRef:
     name: harbor-pull-secret

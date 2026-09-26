@@ -7,3 +7,4 @@ resources:
   - helmrelease.yaml
   - externalsecret-settings.yaml
   - externalsecret-harbor-pull-secret.yaml
+  - externalsecret-dragonfly.yaml

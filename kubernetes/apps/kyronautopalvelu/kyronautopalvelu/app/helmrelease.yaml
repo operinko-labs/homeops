@@ -53,5 +53,13 @@ spec:
           conditions:
             - "[STATUS] == 200"
             - "[BODY] == pat(CONGRATULATIONS*)"
+    # The site's own Dragonfly (chart >= 0.7.19), at
+    # kyronautopalvelu-dragonfly.kyronautopalvelu.svc:6379; since 0.7.22 its
+    # NetworkPolicy admits only this namespace and the operator.
+    dragonfly:
+      enabled: true
+      passwordSecret:
+        name: kyronautopalvelu-dragonfly
+        key: password
     volsync:
       enabled: false
