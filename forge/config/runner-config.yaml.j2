@@ -3,7 +3,7 @@ log:
   level: info
 runner:
   file: /etc/forgejo-runner/.runner
-  capacity: 2
+  capacity: 3  # sized for 6 cores / 12 GB runner LXCs
   timeout: 3h
   labels:
     - "ubuntu-latest:docker://ghcr.io/catthehacker/ubuntu:act-latest"
