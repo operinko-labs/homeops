@@ -72,6 +72,8 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
+        # 2.0 ships /app as root:tainer(1001) 0750; UID stays 1000 to own the PVC data
+        supplementalGroups: [1001]
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
 
