@@ -20,11 +20,6 @@ spec:
     - --proactor_threads=2
     - --cluster_mode=emulated
     - --default_lua_flags=allow-undeclared-keys
-    # Lock BullMQ scripts per {hashtag} instead of per key, so hashtagged
-    # queues can run on separate threads. Scoped to gpro's key prefixes
-    # (gpro-dev:, gpro-prod:) so other tenants keep plain key-level locking.
-    - --lock_on_hashtags
-    - --locktag_prefix=gpro-
   authentication:
     passwordFromSecret:
       name: dragonfly-secret
