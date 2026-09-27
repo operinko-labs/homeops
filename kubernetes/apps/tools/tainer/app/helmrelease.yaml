@@ -30,6 +30,9 @@ spec:
             env:
               TZ: Europe/Helsinki
               APP_URL: https://tainer.vaderrp.com
+            envFrom:
+              - secretRef:
+                  name: tainer-secret
             probes:
               liveness:
                 enabled: true
