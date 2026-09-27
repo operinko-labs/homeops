@@ -45,6 +45,10 @@ spec:
               value: "3000"
             - name: GPRO_API_BASE_URL
               value: https://gpro.net
+            - name: SHUTDOWN_TIMEOUT_MS
+              # API pods keep the default 30 s grace period; finish (or force-exit
+              # with a log line) before the kubelet's SIGKILL.
+              value: "25000"
           envFrom:
             - secretRef:
                 name: {{ .Values.envSecretName }}

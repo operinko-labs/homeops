@@ -18,6 +18,7 @@ spec:
         {{- include "gpro.componentSelectorLabels" (dict "context" . "component" "worker") | nindent 8 }}
     spec:
       {{- include "gpro.podDnsConfig" . | nindent 6 }}
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
       containers:
         - name: worker
           image: {{ include "gpro.image" (dict "root" . "image" .Values.images.app) }}
