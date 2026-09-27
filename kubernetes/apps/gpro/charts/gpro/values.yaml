@@ -56,6 +56,9 @@ frontend:
 
 worker:
   replicas: 1
+  # Must exceed the worker's SHUTDOWN_TIMEOUT_MS (120 s default) so BullMQ can
+  # drain in-flight jobs before the kubelet sends SIGKILL.
+  terminationGracePeriodSeconds: 130
   autoscaling:
     enabled: false
     minReplicas: 2
