@@ -14,12 +14,13 @@ data:
 
     # GDRIVE_TOKEN must be the single-line JSON from `rclone authorize "drive"`
     cat > /tmp/rclone.conf <<EOF
-    [minio]
+    [s3]
     type = s3
-    provider = Minio
-    endpoint = https://minio.vaderrp.com:9000
-    access_key_id = $MINIO_ACCESS_KEY
-    secret_access_key = $MINIO_SECRET_KEY
+    provider = Other
+    endpoint = https://s3.vaderrp.com:9000
+    region = us-east-1
+    access_key_id = $S3_ACCESS_KEY
+    secret_access_key = $S3_SECRET_KEY
 
     [gdrive]
     type = drive
@@ -40,7 +41,7 @@ data:
     rc=0
     for bucket in $BUCKETS; do
       echo "=== syncing $bucket ==="
-      rclone --config /tmp/rclone.conf sync "minio:$bucket" "crypt:$bucket" \
+      rclone --config /tmp/rclone.conf sync "s3:$bucket" "crypt:$bucket" \
         --fast-list --transfers 4 --stats 1m --stats-log-level NOTICE || rc=1
     done
     exit $rc

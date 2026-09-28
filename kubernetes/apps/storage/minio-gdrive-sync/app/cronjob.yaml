@@ -21,7 +21,7 @@ spec:
               command: ["/bin/sh", "/scripts/sync.sh"]
               env:
                 - name: BUCKETS
-                  value: "cloudnative-pg mariadb kopia volsync parsedmarc n8n stalwart"
+                  value: "cloudnative-pg mariadb volsync parsedmarc n8n"
               envFrom:
                 - secretRef:
                     name: minio-gdrive-sync
