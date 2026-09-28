@@ -64,6 +64,7 @@ spec:
             configBlock: |-
               192.168.0.221 minio.vaderrp.com
               192.168.7.198 truenas.vaderrp.com
+              192.168.7.198 s3.vaderrp.com
               fallthrough
           - name: forward
             parameters: . 192.168.5.8 192.168.5.9
