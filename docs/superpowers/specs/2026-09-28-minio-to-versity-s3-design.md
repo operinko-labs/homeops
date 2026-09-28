@@ -129,13 +129,19 @@ Common pattern, per consumer:
 
 | # | Consumer | Specifics | Downtime |
 |---|---|---|---|
-| 1 | parsedmarc | Update Vaultwarden fields (incl. `aws_endpoint`), force-sync ES | none |
-| 2 | n8n | User updates the S3 credential in the n8n UI | none |
-| 3 | mariadb | Switch both `PhysicalBackup`s in `database/mariadb/ha/backup.yaml` (+ new secret) outside the nightly backup window | none |
-| 4 | Harbor | Pre-copy; scale registry to 0; final sync; switch `regionendpoint` + creds; scale up. Tag links are mutable files. Verify Talos's registry mirrors fall back to upstream while Harbor is down. | minutes |
-| 5 | VolSync | KopiaUI stays shut down (already repointed to `s3.vaderrp.com` by the user); `just kube volsync suspend` + suspend the kopia maintenance CronJob; final sync; switch both SOPS secrets; resume; reconnect KopiaUI with the new `volsync` keys, preferably as its own identity (e.g. `ollie@desktop`) instead of `volsync@maintenance` so it never runs maintenance | ~1 hourly snapshot |
+| 1 | VolSync | KopiaUI stays shut down (already repointed to `s3.vaderrp.com` by the user); `just kube volsync suspend` + suspend the kopia maintenance CronJob; final sync; switch both SOPS secrets; resume; reconnect KopiaUI with the new `volsync` keys, preferably as its own identity (e.g. `ollie@desktop`) instead of `volsync@maintenance` so it never runs maintenance | ~1 hourly snapshot |
+| 2 | parsedmarc | Update Vaultwarden fields (incl. `aws_endpoint`), force-sync ES | none |
+| 3 | n8n | User updates the S3 credential in the n8n UI | none |
+| 4 | mariadb | Switch both `PhysicalBackup`s in `database/mariadb/ha/backup.yaml` (+ new secret) outside the nightly backup window | none |
+| 5 | Harbor | Pre-copy; scale registry to 0; final sync; switch `regionendpoint` + creds; scale up. Tag links are mutable files. Verify Talos's registry mirrors fall back to upstream while Harbor is down. | minutes |
 | 6 | CNPG | Switch `endpointURL` in `objectstore.yaml` and `objectstore18.yaml`, keep `serverName`s (`postgres17-v8`, `postgres18-v1`) so the recovery window is continuous; catch up. Verify immediately that WAL archiving continues (the plugin's empty-archive check is expected to run only at bootstrap) and that a WAL restore works. | none |
 | 7 | minio-gdrive-sync | Point the rclone `minio` remote at `s3.vaderrp.com:9000` with the `gdrive-sync` account; drop `kopia` and `stalwart` from `BUCKETS` (their Drive copies stay). First run with `--dry-run` must show no mass re-upload (rclone preserved mtimes in metadata during the copy); if it does, stop and redesign. | none |
+
+VolSync goes first and on day one (2026-09-28): the desktop KopiaUI
+autostarts on reboot and is already pointed at `s3.vaderrp.com`, so the
+target setup (datasets, app, certificate, DNS, MinIO rebind) plus the
+`volsync` account and cutover must all land that day. Fallback if it slips:
+point KopiaUI back at `minio.vaderrp.com` or disable its autostart.
 
 Target: all cutovers within about a week, since offsite sync lags for
 already-moved buckets until step 7.
