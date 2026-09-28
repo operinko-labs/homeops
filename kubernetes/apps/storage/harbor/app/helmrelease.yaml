@@ -68,7 +68,7 @@ spec:
         disableredirect: true
         s3:
           region: us-east-1
-          regionendpoint: https://minio.vaderrp.com:9000
+          regionendpoint: https://s3.vaderrp.com:9000
     portal:
       image:
         tag: v2.15.1
