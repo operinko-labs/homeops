@@ -100,7 +100,9 @@ only a few seconds of restart are visible.
 
 ## Accounts
 
-Root keys: admin only, stored in Vaultwarden. One Versity account per
+Root keys: admin only, stored in Vaultwarden item `9ae12023-3bdf-48b3-a626-f47044c6f43b`
+(fields `root_access_key`, `root_secret_key`, `volsync_access_key`,
+`volsync_secret_key`); later phases add each consumer's keys there. One Versity account per
 consumer (role `user`, owner of its bucket via `admin create-bucket --owner`),
 keys stored in Vaultwarden:
 
@@ -109,7 +111,7 @@ keys stored in Vaultwarden:
 | `cnpg` | `cloudnative-pg` | `cloudnative-pg-secret` (SOPS, `database/cloudnative-pg/app/operator/secret.sops.yaml`) |
 | `mariadb` | `mariadb` | `mariadb-s3-secret` ← Vaultwarden `ed32aa71` (shared `ncpg-access` key) |
 | `harbor` | `harbor` | Vaultwarden `84fb75c3` fields `aws_access_key`/`aws_secret_key` |
-| `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the in-cluster kopia web UI (`storage/kopia/app/config.sops.yaml` + `secret.sops.yaml`), the desktop KopiaUI, and four `*-volsync-secret`s in the `leo_cal` and `ruskonkesateatteri` app repos (deployed via ResourceSet from their own git repos, not homeops) — those four still point at MinIO and must be switched in their repos, preceded by an `rclone copy minio:volsync s3:volsync` merge |
+| `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the in-cluster kopia web UI (`storage/kopia/app/config.sops.yaml` + `secret.sops.yaml`), the desktop KopiaUI, and four `*-volsync-secret`s of the leo-cal and ruskonkesateatteri sites — ExternalSecrets in their app repos that read every value from Vaultwarden item `a03efec6` (`ruskonkesateatteri-secret`); switched 2026-09-28 by editing that item (after an `rclone copy minio:volsync s3:volsync` merge). After a Vaultwarden edit, `POST /sync` on `bitwarden-eso-provider:8087` before force-syncing ExternalSecrets |
 | `parsedmarc` | `parsedmarc` | Vaultwarden `f736bb43` (`aws_*` fields incl. `aws_endpoint`) |
 | `n8n` | `n8n` | n8n credential in the n8n UI (not in git) |
 | `gdrive-sync` | read-only on all six | Vaultwarden `ed32aa71` via minio-gdrive-sync external-secret |
@@ -178,7 +180,6 @@ mariadb:
    `Nakkiallas/s3test` bake-off dataset and apps if still present.
 6. Update CLAUDE.md (TrueNAS `.221` no longer hosts MinIO) and the
    minio-gdrive-sync design doc references.
-7. Remove the orphaned `network/technitium` ReplicationSource, its
-   `technitium-volsync-secret` and its PVC — left behind when in-cluster
-   Technitium was removed (#1635) and currently paused, pointing at MinIO.
-   Subject to explicit user confirmation before deletion.
+7. ~~Remove the orphaned `network/technitium` leftovers~~ — done 2026-09-28
+   (user-approved): RS, RD, both PVCs, `technitium-*` secrets and the orphan
+   `technitium-ns1-production` Certificate deleted.
