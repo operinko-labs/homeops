@@ -159,3 +159,15 @@ endpoints:
         send-on-resolved: true
         failure-threshold: 3
         success-threshold: 5
+  - name: S3 gateway
+    group: Storage
+    url: "https://s3.vaderrp.com:9000/healthz"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+    alerts:
+      - type: ntfy
+        send-on-resolved: true
+        failure-threshold: 3
+        success-threshold: 5

@@ -10,7 +10,6 @@ resources:
   - rbac.yaml
   - prometheusrule.yaml
   - storj-configmap.yaml
-  - s3-configmap.yaml
   - vpa.yaml
 configMapGenerator:
   - name: gatus-config
