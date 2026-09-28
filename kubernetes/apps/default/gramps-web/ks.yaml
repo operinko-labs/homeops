@@ -1,0 +1,35 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gramps-web
+  namespace: flux-system
+spec:
+  targetNamespace: default
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: gramps-web
+  path: "./kubernetes/apps/default/gramps-web/app"
+  prune: true
+  dependsOn:
+    - name: volsync
+      namespace: storage
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false # Default false for speed, enable for critical
+  components:
+    - ../../../../components/volsync-kopia
+  interval: 30m
+  retryInterval: 1m
+  timeout: 5m
+  postBuild:
+    substitute:
+      APP: gramps-web
+      VOLSYNC_COPYMETHOD: Direct
+      VOLSYNC_CAPACITY: 10Gi
+      VOLSYNC_STORAGECLASS: local-path
+      # Image runs as root (GRAMPSHOME=/root), so PVC contents are root-owned
+      VOLSYNC_PUID: "0"
+      VOLSYNC_PGID: "0"

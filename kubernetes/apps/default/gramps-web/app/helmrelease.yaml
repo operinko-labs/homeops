@@ -1,0 +1,154 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gramps-web
+  namespace: default
+spec:
+  interval: 15m
+  chartRef:
+    kind: OCIRepository
+    name: gramps-web
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      gramps-web:
+        # App and Celery worker share one pod: both need the RWO PVC and a
+        # common /tmp (uploads land there before the worker imports them)
+        containers:
+          app:
+            image: &image
+              repository: ghcr.io/gramps-project/grampsweb
+              tag: 26.9.1@sha256:ac4db1ba963f5d2604e6b9a34be50c5a2c37271699f5a6df93c9492ecc8870e5
+            env: &env
+              TZ: Europe/Helsinki
+              GRAMPSWEB_TREE: Gramps Web
+              GRAMPSWEB_BASE_URL: https://gramps.erinko.fi
+              GRAMPSWEB_REGISTRATION_DISABLED: "true"
+              # Own Valkey: shared Dragonfly is db0-only and paperless already
+              # uses the default `celery` queue there
+              GRAMPSWEB_CELERY_CONFIG__broker_url: redis://gramps-web-valkey:6379/0
+              GRAMPSWEB_CELERY_CONFIG__result_backend: redis://gramps-web-valkey:6379/0
+              GRAMPSWEB_RATELIMIT_STORAGE_URI: redis://gramps-web-valkey:6379/1
+              GRAMPSWEB_OIDC_ENABLED: "true"
+              GRAMPSWEB_OIDC_NAME: Authentik
+              GRAMPSWEB_OIDC_ISSUER: https://auth.vaderrp.com/application/o/gramps/
+              GRAMPSWEB_OIDC_GROUP_OWNER: gramps-owners
+              GRAMPSWEB_OIDC_GROUP_EDITOR: gramps-editors
+              GRAMPSWEB_OIDC_GROUP_MEMBER: gramps-members
+              # Stalwart's cert doesn't cover the Service name; Gramps'
+              # starttls() doesn't verify, so the in-cluster hop is fine
+              GRAMPSWEB_EMAIL_HOST: stalwart-mail.mail.svc.cluster.local
+              GRAMPSWEB_EMAIL_PORT: "587"
+              GRAMPSWEB_EMAIL_USE_STARTTLS: "true"
+              GRAMPSWEB_DEFAULT_FROM_EMAIL: Gramps Web <gramps@erinko.fi>
+              GUNICORN_NUM_WORKERS: "2"
+            envFrom: &envFrom
+              - secretRef:
+                  name: gramps-web-secret
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &port 5000
+                  initialDelaySeconds: 30
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *probes
+            resources:
+              requests:
+                cpu: 50m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+          celery:
+            image: *image
+            args:
+              - celery
+              - -A
+              - gramps_webapi.celery
+              - worker
+              - --loglevel=INFO
+              - --concurrency=2
+            env: *env
+            envFrom: *envFrom
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 25m
+                memory: 256Mi
+              limits:
+                memory: 2Gi
+      valkey:
+        containers:
+          app:
+            image:
+              repository: docker.io/valkey/valkey
+              tag: 9.1.2-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+            # Broker + rate-limit counters only; nothing worth persisting
+            args: ["--save", "", "--appendonly", "no"]
+            probes:
+              liveness: &valkeyProbes
+                enabled: true
+              readiness: *valkeyProbes
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+    service:
+      app:
+        controller: gramps-web
+        ports:
+          http:
+            port: *port
+      valkey:
+        controller: valkey
+        ports:
+          redis:
+            port: 6379
+    persistence:
+      data:
+        existingClaim: gramps-web
+        advancedMounts:
+          gramps-web:
+            app: &mounts
+              - path: /root/.gramps/grampsdb
+                subPath: grampsdb
+              - path: /app/users
+                subPath: users
+              - path: /app/media
+                subPath: media
+              - path: /app/indexdir
+                subPath: indexdir
+              - path: /app/thumbnail_cache
+                subPath: thumbnail_cache
+              - path: /app/cache
+                subPath: cache
+            celery: *mounts
+      tmp:
+        type: emptyDir
+        advancedMounts:
+          gramps-web:
+            app: &tmp
+              - path: /tmp
+            celery: *tmp
