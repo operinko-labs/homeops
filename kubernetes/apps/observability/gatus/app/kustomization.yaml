@@ -9,7 +9,6 @@ resources:
   - httproute.yaml
   - rbac.yaml
   - prometheusrule.yaml
-  - storj-configmap.yaml
   - vpa.yaml
 configMapGenerator:
   - name: gatus-config
