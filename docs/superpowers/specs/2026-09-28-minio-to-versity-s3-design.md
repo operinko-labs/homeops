@@ -1,7 +1,7 @@
 # MinIO → Versity S3 Gateway migration — design
 
 Date: 2026-09-28
-Status: phase 1 (target setup + VolSync) and phase 2 for parsedmarc, mariadb, Harbor and CNPG done 2026-09-28; n8n, gdrive-sync and decommission pending
+Status: phases 1 and 2 done 2026-09-28 (every consumer reads/writes s3.vaderrp.com; MinIO idle); soak + decommission pending
 
 ## Purpose
 
@@ -113,8 +113,8 @@ keys stored in Vaultwarden:
 | `harbor` (existing MinIO key reused) | `harbor` | Vaultwarden `84fb75c3-a5fd-4c28-97d3-ca0a4d240ef5` fields `aws_access_key`/`aws_secret_key`; switched 2026-09-28 (registry down 19:36–20:01Z for the final sync) |
 | `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the in-cluster kopia web UI (`storage/kopia/app/config.sops.yaml` + `secret.sops.yaml`), the desktop KopiaUI, and four `*-volsync-secret`s of the leo-cal and ruskonkesateatteri sites — ExternalSecrets in their app repos that read every value from Vaultwarden item `a03efec6` (`ruskonkesateatteri-secret`); switched 2026-09-28 by editing that item (after an `rclone copy minio:volsync s3:volsync` merge). After a Vaultwarden edit, `POST /sync` on `bitwarden-eso-provider:8087` before force-syncing ExternalSecrets |
 | `volsync` (reused) | `parsedmarc` | Vaultwarden `c9dd1a68-a9b3-471b-be19-ec3181ebebee` (`aws_*` fields incl. `aws_endpoint`); switched 2026-09-28 |
-| `n8n` | `n8n` | n8n credential in the n8n UI (not in git) |
-| `gdrive-sync` | read-only on all six | Vaultwarden `ed32aa71` via minio-gdrive-sync external-secret |
+| `n8n-access-key` (fresh key) | `n8n` | n8n credential in the n8n UI (not in git); switched 2026-09-28, verified with a manual workflow run |
+| `gdrive-sync` | read-only bucket policy (GetObject/ListBucket/GetBucketLocation) on cloudnative-pg, mariadb, volsync, parsedmarc, n8n | Vaultwarden `9ae12023-3bdf-48b3-a626-f47044c6f43b` fields `gdrive_sync_access_key`/`gdrive_sync_secret_key`; switched 2026-09-28, dry run = 5,670 new files / 660 deletes, no mass re-upload |
 
 `gdrive-sync` read access is granted with a bucket policy on each bucket.
 Separating mariadb and gdrive-sync from the shared `ncpg-access` key is part
