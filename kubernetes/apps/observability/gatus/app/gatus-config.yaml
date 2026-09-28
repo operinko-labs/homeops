@@ -171,7 +171,8 @@ endpoints:
         send-on-resolved: true
         failure-threshold: 3
         success-threshold: 5
-  # Storj node on TrueNAS: web UI via Cloudflare (external) and local DNS (internal), plus the QUIC port
+  # Storj node on TrueNAS: web UI via Cloudflare (external) and local DNS (internal).
+  # No QUIC check: a QUIC listener never answers Gatus's raw UDP probe, so it always times out.
   - name: Storj Web UI (external)
     group: Storage
     url: "https://storj.vaderrp.com/"
@@ -196,18 +197,3 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
-  - name: Storj QUIC Port (external)
-    group: Storage
-    url: "udp://storj.vaderrp.com:28967"
-    interval: 5m
-    client:
-      dns-resolver: tcp://1.1.1.1:53
-      timeout: 10s
-    body: "ping"
-    conditions:
-      - "[CONNECTED] == true"
-    alerts:
-      - type: ntfy
-        send-on-resolved: true
-        failure-threshold: 5
-        success-threshold: 3
