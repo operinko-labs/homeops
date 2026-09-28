@@ -21,6 +21,16 @@ spec:
           memory: 192Mi
         limits:
           memory: 512Mi
+      # php-fpm itself runs as www-data, so `kubectl exec` lands as the pool
+      # user and nothing done there leaves root-owned files (chart >= 0.7.26;
+      # the image has no root-only entrypoint since syslog went over UDP).
+      securityContext:
+        runAsUser: 82
+        runAsGroup: 82
+    # Drupal's syslog goes over UDP to the gateway (netsyslog in the
+    # drupal-php-fpm v3 image), host label medikabalans-admin in Loki.
+    syslog:
+      host: syslog-gateway.observability.svc.cluster.local
     image:
       repository: harbor.vaderrp.com/operinko-labs/medikabalans
       # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
