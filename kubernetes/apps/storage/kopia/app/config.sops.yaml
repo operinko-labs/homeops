@@ -1,29 +1,24 @@
 apiVersion: v1
 kind: Secret
 metadata:
-    name: kopia-config
-    labels:
-        reconcile.fluxcd.io/watch: Enabled
+  name: kopia-config
+  labels:
+    reconcile.fluxcd.io/watch: Enabled
 stringData:
-    repository.config: ENC[AES256_GCM,data:Vfye/v60VS79AZmq4hEN++y2M6zCiZBwmQrnN2c37IDUtoY2oRK7KR3OzBgAcG2NZRf3r1idVSl9uggfi2ZEIqqaIa+6ezYOCBtaJ8zguATcX44P62aTsLK5UpMQdsUGhAZeIsyCQmPsifICPmSkvg4AY0dVb8b7tafTF+L8tmlShTD7vyxSnrFX3NUerWLKOC/01Bs7wyVV7G7F/l57n5DN5fQJcT5eyK8nIJp3S2XkKWCWGKC2jBmt9zHWRpFXG0MQZCpv73HXvFIvtQkGPoFln0QW/fguBEjXME9JnSHOwyMHcnLNJpCAeURgjHErYNy9L5KSwh4b3jIJolRAh8QWqmJwGyg6E5/7vf7JYvaL7Kq0XQ9u24FVeQCdIXlaLQtQ06Bsn0LPDuCjKPcFWhXs/ZhWaRtt6OMhFM36YgNx42jnOoyvTTgHF+/X9Cj8XaL9mOxL2g==,iv:i3kfm/5zlgBT3ge17ergXWTaz5eyMscq9rzpCcqlJgM=,tag:W4rOeTaWMWf8cN+Z1baDlw==,type:str]
+  repository.config: ENC[AES256_GCM,data:kqGjTEOaisFQxJcHKnSArrE55TsuXFKY3fT93J2KGWqpHhCUz9uDVDwLJV1qjOqvMpB2YsxVNRejeNw9w2GndfbgzJQK+4Zo/1Q86KcRXey+943oStl6Tyn/BMBWMLhz4e1TEu+xeU4mXvuRUQT/za3Tpzr0DiTdqDwRHnfpGHiccfzcT9u1jie2bTx7u6WT1lKBClp6pJ23HIeyayXOkQz223s7hG1w9n+pOp0S4jncQEEFMir2K1swBIqp8cpYCd+ORV8yBunuIYTMnG+SwcCO0Y8DtA2Ntk8PgesoV9IS8KT1J8aEetRGQm5JRBev+h7jY4joqlTS8S8RUgsSVoVTIDHLES/KigrbKsi/ZcpFBGa4WUJYrAXQxEtuf4/kzvMMD/cHBnmgrZPxxawtShsSc5tkO8JwmveDVMHrt7fg0GUQQNK6tPyEMSlrh9xWywzrh93CqxGXgKvf6XwExH++dxzULEp1bLhxuHrgPDk=,iv:aK5x8TwzmLgzmcDyfeOTnB1n4vVPWb4FZzg1zsItNE8=,tag:PdR9ADfeyMFKJGat4IUntw==,type:str]
 sops:
-    kms: []
-    gcp_kms: []
-    azure_kv: []
-    hc_vault: []
-    age:
-        - recipient: age18hklnzlqlz0y7tf8gzeh2slv8vxnlyvjcn7e38xsd744s3t9hf0su4lwpx
-          enc: |
-            -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBpWkd2SERWVlc5MFJkTTB1
-            NDVZSFBMMVhtWkpJYUp2WjNFdStJZ213Rm5FCjc4UjN4U0JuSmtHTlZneHNpazdH
-            ZlFkdSsrc0pSd3VGVER0WWZzUzBnOFEKLS0tIDk4b0E4ZVFkOHBMNzQ5U1hoTEM2
-            c08va3BDSmY1VVE5dExXTytPS0N4MTQK+wJLtMacoA7jPHhU9v7EKpNz7M3hOxFK
-            77IK7xFh84WzhGNmvF8pKACrPNA3F+acv9Q9NF9dqFuzMPEO9ZbrUg==
-            -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-01-26T21:45:09Z"
-    mac: ENC[AES256_GCM,data:ak7VlHlq37f/L5SRu+NqV6H6uk2SE7f5C1safLRFdvqy0k22Tq1pOP6JCedBmfHM+aQimKinZZQuc5Y4DcV312jKadjugDPSj2A21i9wTIYb1iLxJCL0Ikwuro5efq+DH9FDbkwsiBFS0f7xsfyuF4vLI35Fo5pm/sYtIxE30ik=,iv:I6xSmLvM8zrX617VDRuHOOw0lhmbEkaMaDunZ7cChcI=,tag:n5lLrEqvWnip93kPAjHsHg==,type:str]
-    pgp: []
-    encrypted_regex: ^(data|stringData)$
-    mac_only_encrypted: true
-    version: 3.11.0
+  age:
+    - recipient: age18hklnzlqlz0y7tf8gzeh2slv8vxnlyvjcn7e38xsd744s3t9hf0su4lwpx
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBpWkd2SERWVlc5MFJkTTB1
+        NDVZSFBMMVhtWkpJYUp2WjNFdStJZ213Rm5FCjc4UjN4U0JuSmtHTlZneHNpazdH
+        ZlFkdSsrc0pSd3VGVER0WWZzUzBnOFEKLS0tIDk4b0E4ZVFkOHBMNzQ5U1hoTEM2
+        c08va3BDSmY1VVE5dExXTytPS0N4MTQK+wJLtMacoA7jPHhU9v7EKpNz7M3hOxFK
+        77IK7xFh84WzhGNmvF8pKACrPNA3F+acv9Q9NF9dqFuzMPEO9ZbrUg==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2026-09-28T15:15:28Z"
+  mac: ENC[AES256_GCM,data:ugmuLIYf9gFPvkV4zltvNhvevQKl+9fuNAtDgoJzObvVGv3bD2Q+EaMioO51h6NrZUgEtSBCgHGqLxHbQW5gsYpxxrXH4QH7WQffgCPjjxhilbcacegQHH0kIa5i56qTvVmboMwLBjWKnsYTbWriNrcR4+xG8rypUc0LvrKAR8k=,iv:JQV957VYdB2ojssw2LjbQZ3JIwJ5U/XxyTVts3UVE+0=,tag:cIvMCdrIVXSc+yj9Mwq/YA==,type:str]
+  encrypted_regex: ^(data|stringData)$
+  mac_only_encrypted: true
+  version: 3.11.0
