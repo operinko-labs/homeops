@@ -11,7 +11,7 @@ spec:
   # Direct mapping from barmanObjectStore configuration
   configuration:
     destinationPath: s3://cloudnative-pg/
-    endpointURL: https://minio.vaderrp.com:9000
+    endpointURL: https://s3.vaderrp.com:9000
     # Note: serverName is now specified in the Cluster resource plugin parameters
     s3Credentials:
       accessKeyId:
