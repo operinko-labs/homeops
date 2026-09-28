@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: s3-gatus-ep
+  namespace: observability
+  labels:
+    gatus.io/enabled: "true"
+data:
+  config.yaml: |
+    endpoints:
+      - name: "S3 gateway"
+        group: Storage
+        url: "https://s3.vaderrp.com:9000/healthz"
+        interval: 5m
+        client:
+          timeout: 15s
+        conditions:
+          - "[STATUS] == 200"
+          - "[CERTIFICATE_EXPIRATION] > 240h"
+        alerts:
+          - type: pushover
+            send-on-resolved: true
+            failure-threshold: 3
+            success-threshold: 5

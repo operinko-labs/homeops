@@ -1,0 +1,12 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/externaldns.k8s.io/dnsendpoint_v1alpha1.json
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: s3
+spec:
+  # Versity S3 gateway on TrueNAS (Node VLAN). No route.scope label: internal-dns only.
+  endpoints:
+    - dnsName: s3.vaderrp.com
+      recordType: A
+      targets: ["192.168.7.198"]
