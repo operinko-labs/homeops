@@ -31,6 +31,9 @@ spec:
             env: &env
               TZ: Europe/Helsinki
               GRAMPSWEB_TREE: Gramps Web
+              # Resolve the tree by dirname: by-name lookup auto-creates on miss,
+              # and the app + Celery processes raced into two same-named trees
+              GRAMPSWEB_TREE_ID: 3c371e03-025f-460b-817e-b6de0b59654c
               GRAMPSWEB_BASE_URL: https://gramps.erinko.fi
               GRAMPSWEB_REGISTRATION_DISABLED: "true"
               # Own Valkey: shared Dragonfly is db0-only and paperless already
