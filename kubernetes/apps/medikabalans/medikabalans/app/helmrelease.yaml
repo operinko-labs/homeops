@@ -33,6 +33,13 @@ spec:
     # are already in place.
     cfargotunnelTarget: external.vaderrp.com
     secretName: medikabalans-admin-settings-local
+    # drush (init container and cron job) runs as php-fpm's www-data, so what
+    # it creates in the files volume stays writable for the site: as root it
+    # left the image style and upload folders unwritable (chart >= 0.7.25;
+    # the files volume was chowned to 82 on 2026-09-28).
+    drushSecurityContext:
+      runAsUser: 82
+      runAsGroup: 82
     # The front page is now the public site's home, so override the
     # gatus-sidecar auto-generated "/" check with the drupal-ping endpoint,
     # which is the actual health check.
