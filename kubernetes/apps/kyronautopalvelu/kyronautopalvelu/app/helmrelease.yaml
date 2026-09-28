@@ -42,6 +42,10 @@ spec:
     # certificate and tunnel rules are already in place.
     cfargotunnelTarget: external.vaderrp.com
     secretName: kyronautopalvelu-settings-local
+    # Drupal's syslog goes over UDP to syslog-gateway (netsyslog in the
+    # drupal-php-fpm v3 image, chart >= 0.7.27); in Loki as host=kyronautopalvelu.
+    syslog:
+      host: syslog-gateway.observability.svc.cluster.local
     # Health check on the drupal-ping endpoint rather than the gatus-sidecar
     # default of "/".
     httproute:
