@@ -52,9 +52,9 @@ keda state:
 
 [doc('Suspend or resume VolSync')]
 volsync state:
-    flux -n volsync-system {{ state }} kustomization volsync
-    flux -n volsync-system {{ state }} helmrelease volsync
-    kubectl -n volsync-system scale deployment volsync --replicas {{ if state != "suspend" { "1" } else { "0" } }}
+    flux -n storage {{ state }} kustomization volsync
+    flux -n storage {{ state }} helmrelease volsync
+    kubectl -n storage scale deployment volsync --replicas {{ if state != "suspend" { "1" } else { "0" } }}
 
 [doc('Restore VolSync app')]
 volsync-restore ns app previous='0':
