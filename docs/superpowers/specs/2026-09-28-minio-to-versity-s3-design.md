@@ -1,7 +1,7 @@
 # MinIO → Versity S3 Gateway migration — design
 
 Date: 2026-09-28
-Status: phase 1 (target setup + VolSync) done 2026-09-28; phases 2+ pending
+Status: phase 1 (target setup + VolSync) and phase 2 for parsedmarc, mariadb, Harbor and CNPG done 2026-09-28; n8n, gdrive-sync and decommission pending
 
 ## Purpose
 
@@ -108,11 +108,11 @@ keys stored in Vaultwarden:
 
 | Account | Bucket | Current credential source |
 |---|---|---|
-| `cnpg` | `cloudnative-pg` | `cloudnative-pg-secret` (SOPS, `database/cloudnative-pg/app/operator/secret.sops.yaml`) |
-| `mariadb` | `mariadb` | `mariadb-s3-secret` ← Vaultwarden `ed32aa71` (shared `ncpg-access` key) |
-| `harbor` | `harbor` | Vaultwarden `84fb75c3` fields `aws_access_key`/`aws_secret_key` |
+| `ncpg-access` (user reused the existing MinIO key, owns `cloudnative-pg` + `mariadb`) | `cloudnative-pg` | `cloudnative-pg-secret` (SOPS, `database/cloudnative-pg/app/operator/secret.sops.yaml`); switched 2026-09-28 by endpoint change only |
+| `ncpg-access` | `mariadb` | `mariadb-s3-secret` ← Vaultwarden `ed32aa71-d74b-43bc-a467-aaa2569f532f`; switched 2026-09-28. PhysicalBackup `spec.storage` is immutable: change = push + delete both PhysicalBackups so Flux recreates them (recreates the tns-iscsi staging PVC — under TrueNAS load tns-csi timed out, left a half-made zvol and crash-looped until it was deleted) |
+| `harbor` (existing MinIO key reused) | `harbor` | Vaultwarden `84fb75c3-a5fd-4c28-97d3-ca0a4d240ef5` fields `aws_access_key`/`aws_secret_key`; switched 2026-09-28 (registry down 19:36–20:01Z for the final sync) |
 | `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the in-cluster kopia web UI (`storage/kopia/app/config.sops.yaml` + `secret.sops.yaml`), the desktop KopiaUI, and four `*-volsync-secret`s of the leo-cal and ruskonkesateatteri sites — ExternalSecrets in their app repos that read every value from Vaultwarden item `a03efec6` (`ruskonkesateatteri-secret`); switched 2026-09-28 by editing that item (after an `rclone copy minio:volsync s3:volsync` merge). After a Vaultwarden edit, `POST /sync` on `bitwarden-eso-provider:8087` before force-syncing ExternalSecrets |
-| `parsedmarc` | `parsedmarc` | Vaultwarden `f736bb43` (`aws_*` fields incl. `aws_endpoint`) |
+| `volsync` (reused) | `parsedmarc` | Vaultwarden `c9dd1a68-a9b3-471b-be19-ec3181ebebee` (`aws_*` fields incl. `aws_endpoint`); switched 2026-09-28 |
 | `n8n` | `n8n` | n8n credential in the n8n UI (not in git) |
 | `gdrive-sync` | read-only on all six | Vaultwarden `ed32aa71` via minio-gdrive-sync external-secret |
 
