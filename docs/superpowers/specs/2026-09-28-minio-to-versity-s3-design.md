@@ -1,7 +1,7 @@
 # MinIO → Versity S3 Gateway migration — design
 
 Date: 2026-09-28
-Status: approved (pending implementation plan)
+Status: phase 1 (target setup + VolSync) done 2026-09-28; phases 2+ pending
 
 ## Purpose
 
@@ -77,8 +77,10 @@ Backups carry their own retention; the offsite copy is minio-gdrive-sync.
 - API `192.168.7.198:9000`, WebUI `:9001`, admin `:9002` — bound to the Node
   VLAN address (host IP) so cluster traffic stays on-VLAN and skips UDM
   inter-VLAN routing/IPS.
-- Certificate: new TrueNAS ACME certificate for `s3.vaderrp.com` (same DNS
-  authenticator as `minio_acme`), used for API, WebUI and admin.
+- Certificate: TrueNAS ACME certificate `s3_acme2` (id 11) for
+  `s3.vaderrp.com`, issued from CSR `s3_key2` (id 10) via Let's Encrypt using
+  authenticator 1 (`vaderrp_cf`, same as `minio_acme`), `renew_days` 10. Used
+  for API, WebUI and admin.
 - Global flags: `--iam-dir /iam`,
   `--webui-gateways https://s3.vaderrp.com:9000`,
   `--webui-admin-gateways https://s3.vaderrp.com:9002`,
@@ -107,7 +109,7 @@ keys stored in Vaultwarden:
 | `cnpg` | `cloudnative-pg` | `cloudnative-pg-secret` (SOPS, `database/cloudnative-pg/app/operator/secret.sops.yaml`) |
 | `mariadb` | `mariadb` | `mariadb-s3-secret` ← Vaultwarden `ed32aa71` (shared `ncpg-access` key) |
 | `harbor` | `harbor` | Vaultwarden `84fb75c3` fields `aws_access_key`/`aws_secret_key` |
-| `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the desktop KopiaUI |
+| `volsync` | `volsync` | SOPS: `components/volsync-kopia/secret.sops.yaml` and `storage/volsync/maintenance/secret.sops.yaml`; also the in-cluster kopia web UI (`storage/kopia/app/config.sops.yaml` + `secret.sops.yaml`), the desktop KopiaUI, and four `*-volsync-secret`s in the `leo_cal` and `ruskonkesateatteri` app repos (deployed via ResourceSet from their own git repos, not homeops) — those four still point at MinIO and must be switched in their repos, preceded by an `rclone copy minio:volsync s3:volsync` merge |
 | `parsedmarc` | `parsedmarc` | Vaultwarden `f736bb43` (`aws_*` fields incl. `aws_endpoint`) |
 | `n8n` | `n8n` | n8n credential in the n8n UI (not in git) |
 | `gdrive-sync` | read-only on all six | Vaultwarden `ed32aa71` via minio-gdrive-sync external-secret |
@@ -129,7 +131,7 @@ Common pattern, per consumer:
 
 | # | Consumer | Specifics | Downtime |
 |---|---|---|---|
-| 1 | VolSync | KopiaUI stays shut down (already repointed to `s3.vaderrp.com` by the user); `just kube volsync suspend` + suspend the kopia maintenance CronJob; final sync; switch both SOPS secrets; resume; reconnect KopiaUI with the new `volsync` keys, preferably as its own identity (e.g. `ollie@desktop`) instead of `volsync@maintenance` so it never runs maintenance | ~1 hourly snapshot |
+| 1 | VolSync | KopiaUI stays shut down (already repointed to `s3.vaderrp.com` by the user); `just kube volsync suspend` does NOT apply here — it targets `volsync-system`, which this cluster doesn't use. The procedure that actually worked: `flux -n storage suspend kustomization volsync volsync-maintenance kopia`; `flux -n storage suspend helmrelease volsync kopia`; patch `KopiaMaintenance daily` `spec.enabled=false`; scale deployments `volsync` and `kopia` to 0; final `rclone sync`; push the switched SOPS secrets; resume in reverse (helmreleases, then kustomizations, then `KopiaMaintenance.enabled=true`); scale `volsync` and `kopia` deployments back to 1 by hand (Flux does not restore replica counts on resume); reconcile all Kustomizations so components re-render with the new secrets; reconnect KopiaUI with the new `volsync` keys, preferably as its own identity (e.g. `ollie@desktop`) instead of `volsync@maintenance` so it never runs maintenance | ~1 hourly snapshot |
 | 2 | parsedmarc | Update Vaultwarden fields (incl. `aws_endpoint`), force-sync ES | none |
 | 3 | n8n | User updates the S3 credential in the n8n UI | none |
 | 4 | mariadb | Switch both `PhysicalBackup`s in `database/mariadb/ha/backup.yaml` (+ new secret) outside the nightly backup window | none |
@@ -152,9 +154,11 @@ written to Versity after the switch can be `rclone copy`'d back.
 
 ## Monitoring
 
-- Gatus external endpoint for `https://s3.vaderrp.com:9000/healthz` in the
-  observability Gatus config (same shape as `storj-configmap.yaml`): status 200
-  and certificate expiry > 240h, pushover alerts.
+- Gatus endpoint for `https://s3.vaderrp.com:9000/healthz` lives directly in
+  `kubernetes/apps/observability/gatus/app/gatus-config.yaml` (the file the
+  HelmRelease actually mounts — a `gatus.io/enabled` ConfigMap, the shape
+  `storj-configmap.yaml` uses, is never loaded by anything): status 200 and
+  certificate expiry > 240h, alerting via the existing `ntfy` provider.
 - Backup health keeps coming from the consumers (CNPG archiving, VolSync,
   mariadb backups).
 - No statsd exporter for now.
@@ -174,3 +178,7 @@ mariadb:
    `Nakkiallas/s3test` bake-off dataset and apps if still present.
 6. Update CLAUDE.md (TrueNAS `.221` no longer hosts MinIO) and the
    minio-gdrive-sync design doc references.
+7. Remove the orphaned `network/technitium` ReplicationSource, its
+   `technitium-volsync-secret` and its PVC — left behind when in-cluster
+   Technitium was removed (#1635) and currently paused, pointing at MinIO.
+   Subject to explicit user confirmation before deletion.
