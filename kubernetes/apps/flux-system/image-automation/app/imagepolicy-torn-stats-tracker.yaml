@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/image.toolkit.fluxcd.io/imagepolicy_v1.json
+# CI pushes `build-<unix epoch>-sha-<short>` alongside the plain `sha-<short>`
+# and `latest` tags, which carry no order; this policy orders on the epoch.
+# The sha-* and latest tags are ignored here but keep working for manual pins.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: torn-stats-tracker
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: torn-stats-tracker
+  filterTags:
+    pattern: '^build-(?P<ts>\d+)-sha-[a-f0-9]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc
