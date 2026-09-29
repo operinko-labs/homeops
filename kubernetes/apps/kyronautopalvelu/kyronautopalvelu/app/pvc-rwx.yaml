@@ -1,0 +1,28 @@
+---
+# The site's files on TrueNAS over NFS (tns-nfs), shared between pods: a
+# rollout starts the new pod before the old one stops (drupal chart >= 0.8.0,
+# storage.*.existingClaim). They replaced the chart's local-path claims, which
+# had no copy anywhere else; backups are TrueNAS snapshots.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kyronautopalvelu-files-rwx
+  namespace: kyronautopalvelu
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: tns-nfs
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kyronautopalvelu-private-rwx
+  namespace: kyronautopalvelu
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: tns-nfs
+  resources:
+    requests:
+      storage: 2Gi

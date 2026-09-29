@@ -5,6 +5,7 @@ namespace: kyronautopalvelu
 resources:
   - ocirepository.yaml
   - helmrelease.yaml
+  - pvc-rwx.yaml
   - externalsecret-settings.yaml
   - externalsecret-harbor-pull-secret.yaml
   - externalsecret-dragonfly.yaml
