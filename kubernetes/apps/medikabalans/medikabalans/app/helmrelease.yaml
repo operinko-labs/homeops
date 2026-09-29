@@ -64,6 +64,22 @@ spec:
             - "[BODY] == pat(CONGRATULATIONS*)"
     volsync:
       enabled: false
+    # The files on TrueNAS over NFS (pvc-rwx.yaml), shared by the pods, so a
+    # rollout starts the new pod before the old one stops (chart >= 0.8.0).
+    # That needs the cache prefix keyed on DRUPAL_RELEASE (settings.local.php)
+    # and Varnish emptied once the rollout is done. Backups are TrueNAS
+    # snapshots of Nakkiallas/Nodepool/nfs.
+    storage:
+      files:
+        storageClassName: tns-nfs
+        accessMode: ReadWriteMany
+        existingClaim: medikabalans-files-rwx
+      private:
+        storageClassName: tns-nfs
+        accessMode: ReadWriteMany
+        existingClaim: medikabalans-private-rwx
+    varnish:
+      banAfterRollout: true
     # The site's own Dragonfly (chart >= 0.7.19), at
     # medikabalans-admin-dragonfly.medikabalans.svc:6379.
     dragonfly:
