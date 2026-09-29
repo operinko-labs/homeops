@@ -13,4 +13,6 @@ resources:
   - imagepolicy-medikabalans.yaml
   - imagerepository-kyronautopalvelu.yaml
   - imagepolicy-kyronautopalvelu.yaml
+  - imagerepository-torn-stats-tracker.yaml
+  - imagepolicy-torn-stats-tracker.yaml
   - imageupdateautomation.yaml
