@@ -25,6 +25,7 @@ spec:
       namespace: network
   hostnames:
     - email-users.vaderrp.com
+    - email-users.erinko.fi
   rules:
     - matches:
         - path:
