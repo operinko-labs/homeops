@@ -1,0 +1,28 @@
+---
+# The site's files on TrueNAS over NFS (tns-nfs), shared between pods: a
+# rollout starts the new pod before the old one stops (drupal chart >= 0.8.0,
+# storage.*.existingClaim). They replaced the chart's local-path claims on
+# talos5, which had no copy anywhere else.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medikabalans-files-rwx
+  namespace: medikabalans
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: tns-nfs
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: medikabalans-private-rwx
+  namespace: medikabalans
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: tns-nfs
+  resources:
+    requests:
+      storage: 2Gi

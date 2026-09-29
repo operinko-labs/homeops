@@ -5,6 +5,7 @@ namespace: medikabalans
 resources:
   - ocirepository.yaml
   - helmrelease.yaml
+  - pvc-rwx.yaml
   - externalsecret-settings.yaml
   - externalsecret-dragonfly.yaml
   - externalsecret-harbor-pull-secret.yaml
