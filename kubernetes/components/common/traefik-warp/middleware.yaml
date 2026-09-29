@@ -6,8 +6,14 @@ metadata:
 spec:
   plugin:
     traefikwarp:
-      # Auto-detect provider based on socket IP (Cloudflare or CloudFront)
-      provider: auto
+      # Cloudflare only. Every instance fetches its provider's CIDR lists
+      # synchronously when Traefik builds it, and Traefik rebuilds every
+      # router's middlewares on each config reload. `auto` also fetched the
+      # CloudFront list (~2s each, a CDN nothing here uses), so the ~12 routers
+      # using this middleware held each reload for ~25s: after a pod
+      # restart Traefik kept routing to the dead pod IP (502), then to no
+      # server at all (503), for up to a minute.
+      provider: cloudflare
       # Automatically refresh CDN CIDR ranges
       autoRefresh: true
       # Refresh interval (default: 12h, using 24h for less overhead)
