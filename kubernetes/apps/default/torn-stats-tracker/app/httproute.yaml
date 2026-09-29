@@ -11,7 +11,7 @@ metadata:
     gatus.home-operations.com/enabled: "true"
     gatus.home-operations.com/endpoint: |
       group: Default
-      url: "https://torn-stats.shadowmorph.info/healthz"
+      url: "https://torn-tracker.shadowmorph.info/healthz"
       conditions:
         - "[STATUS] == 200"
         - "[BODY].status == ok"
@@ -22,7 +22,7 @@ spec:
       name: gateway-public
       namespace: network
   hostnames:
-    - torn-stats.shadowmorph.info
+    - torn-tracker.shadowmorph.info
   rules:
     # No auth middleware: the app has its own viewer/admin password login
     - matches:
