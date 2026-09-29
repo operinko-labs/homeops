@@ -32,6 +32,12 @@ spec:
               repository: harbor.vaderrp.com/operinko-labs/torn-stats-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-stats-tracker)
               tag: build-1790689061-sha-b217e07 # {"$imagepolicy": "flux-system:torn-stats-tracker:tag"}
+            env:
+              # cloudflared -> Traefik: Traefik appends the cloudflared pod IP
+              # after the visitor IP traefik-warp sets from CF-Connecting-IP,
+              # so the visitor is two hops in (1 recorded the tunnel pod for
+              # everyone, sharing one login rate limit)
+              TRUST_PROXY_HOPS: "2"
             envFrom:
               - secretRef:
                   name: torn-stats-tracker-secret
