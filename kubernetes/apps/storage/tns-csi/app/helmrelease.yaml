@@ -44,3 +44,21 @@ spec:
         allowVolumeExpansion: true
         parameters:
           zfs.compression: lz4
+      # Shared (ReadWriteMany) volumes: iSCSI is a block device, one node
+      # at a time, so anything several pods mount at once is NFS. The
+      # dataset stays on TrueNAS when its claim goes (deleteStrategy), and
+      # is named after the claim so it is recognisable there.
+      - name: tns-nfs
+        enabled: true
+        protocol: nfs
+        pool: Nakkiallas
+        parentDataset: Nakkiallas/Nodepool/nfs
+        server: truenas.vaderrp.com
+        reclaimPolicy: Delete
+        deleteStrategy: retain
+        volumeBindingMode: Immediate
+        allowVolumeExpansion: true
+        nameTemplate: "{{ .PVCNamespace }}-{{ .PVCName }}"
+        commentTemplate: "{{ .PVCNamespace }}/{{ .PVCName }}"
+        parameters:
+          zfs.compression: lz4
