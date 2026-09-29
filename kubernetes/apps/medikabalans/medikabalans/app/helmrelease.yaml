@@ -35,12 +35,12 @@ spec:
       repository: harbor.vaderrp.com/operinko-labs/medikabalans
       # Updated by Flux image automation (ImagePolicy flux-system/medikabalans)
       tag: main-1790670436-sha-ec9bb44 # {"$imagepolicy": "flux-system:medikabalans:tag"}
-    hostname: medikabalans.erinko.fi
-    # Go-live, once the client has signed off: hostname becomes medikabalans.fi,
-    # wwwHostname www.medikabalans.fi (redirects to the apex), and the demo
-    # host moves to extraHostnames or goes. Until then the real domain is not
-    # routed, whatever DNS says; the listeners, certificate and tunnel rules
-    # are already in place.
+    hostname: medikabalans.fi
+    wwwHostname: www.medikabalans.fi
+    # The old demo host 301s everything, robots.txt included, to the apex
+    # (chart >= 0.7.28), so its deny-all robots no longer exists anywhere.
+    redirectHostnames:
+      - medikabalans.erinko.fi
     cfargotunnelTarget: external.vaderrp.com
     secretName: medikabalans-admin-settings-local
     # drush (init container and cron job) runs as php-fpm's www-data, so what
@@ -58,7 +58,7 @@ spec:
         gatus.home-operations.com/enabled: "true"
         gatus.home-operations.com/endpoint: |
           group: Default
-          url: "https://medikabalans.erinko.fi/_ping.php"
+          url: "https://medikabalans.fi/_ping.php"
           conditions:
             - "[STATUS] == 200"
             - "[BODY] == pat(CONGRATULATIONS*)"
