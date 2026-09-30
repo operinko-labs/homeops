@@ -1,0 +1,41 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: torn-illicit
+  namespace: default
+  labels:
+    route.scope: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      group: Default
+      url: "https://torn-illicit.shadowmorph.info/healthz"
+      conditions:
+        - "[STATUS] == 200"
+        - "[BODY].status == ok"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+  hostnames:
+    - torn-illicit.shadowmorph.info
+  rules:
+    # No auth middleware: the app has its own viewer/admin password login
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        # Real visitor IP for the app's per-IP login rate limit
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: traefik-warp
+      backendRefs:
+        - name: torn-illicit
+          port: 3000
