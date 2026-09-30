@@ -37,6 +37,9 @@ spec:
               # so the visitor is two hops in (1 recorded the tunnel pod for
               # everyone, sharing one login rate limit)
               TRUST_PROXY_HOPS: "2"
+              # Hourly snapshots, so "to now" ranges include today's gains; the
+              # 00:00 one stays each day's baseline. torn-stats-tracker stays daily.
+              SNAPSHOT_INTERVAL_MINUTES: "60"
             envFrom:
               - secretRef:
                   name: torn-illicit-secret
