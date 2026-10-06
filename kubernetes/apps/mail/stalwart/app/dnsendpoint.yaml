@@ -21,3 +21,18 @@ spec:
       providerSpecific:
         - name: external-dns.alpha.kubernetes.io/cloudflare-proxied
           value: "false"
+    # DMARC external report authorization (RFC 7489 7.1): these domains send
+    # aggregate reports to postmaster@erinko.fi, and receivers only deliver
+    # them when erinko.fi publishes <domain>._report._dmarc.erinko.fi.
+    - dnsName: "vaderrp.com._report._dmarc.erinko.fi"
+      recordType: TXT
+      targets: ["v=DMARC1"]
+    - dnsName: "shadowmorph.info._report._dmarc.erinko.fi"
+      recordType: TXT
+      targets: ["v=DMARC1"]
+    - dnsName: "medikabalans.fi._report._dmarc.erinko.fi"
+      recordType: TXT
+      targets: ["v=DMARC1"]
+    - dnsName: "kyronautopalvelu.fi._report._dmarc.erinko.fi"
+      recordType: TXT
+      targets: ["v=DMARC1"]
