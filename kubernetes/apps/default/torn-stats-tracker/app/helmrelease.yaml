@@ -37,6 +37,7 @@ spec:
               # so the visitor is two hops in (1 recorded the tunnel pod for
               # everyone, sharing one login rate limit)
               TRUST_PROXY_HOPS: "2"
+              EXPORT_TOKEN: true
             envFrom:
               - secretRef:
                   name: torn-stats-tracker-secret
