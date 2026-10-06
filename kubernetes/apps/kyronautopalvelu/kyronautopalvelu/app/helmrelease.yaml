@@ -34,12 +34,12 @@ spec:
       # Updated by Flux image automation (ImagePolicy flux-system/kyronautopalvelu).
       # The placeholder is replaced by the first main-* build CI pushes.
       tag: main-1790623354-sha-6a00903 # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
-    hostname: kyronautopalvelu.erinko.fi
-    # Go-live, once the client has signed off: hostname becomes
-    # kyronautopalvelu.fi, wwwHostname www.kyronautopalvelu.fi (redirects to
-    # the apex), and the demo host moves to extraHostnames or goes. Until then
-    # the real domain is not routed, whatever DNS says; the listeners,
-    # certificate and tunnel rules are already in place.
+    hostname: kyronautopalvelu.fi
+    wwwHostname: www.kyronautopalvelu.fi
+    # The old demo host 301s everything, robots.txt included, to the apex
+    # (chart >= 0.7.28), so its deny-all robots no longer exists anywhere.
+    redirectHostnames:
+      - kyronautopalvelu.erinko.fi
     cfargotunnelTarget: external.vaderrp.com
     secretName: kyronautopalvelu-settings-local
     # Drupal's syslog goes over UDP to syslog-gateway (netsyslog in the
@@ -53,7 +53,7 @@ spec:
         gatus.home-operations.com/enabled: "true"
         gatus.home-operations.com/endpoint: |
           group: Default
-          url: "https://kyronautopalvelu.erinko.fi/_ping.php"
+          url: "https://kyronautopalvelu.fi/_ping.php"
           conditions:
             - "[STATUS] == 200"
             - "[BODY] == pat(CONGRATULATIONS*)"
