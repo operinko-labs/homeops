@@ -33,6 +33,9 @@ spec:
       - --gateway-name=gateway-public
       - --label-filter=route.scope=external
     triggerLoopOnEvent: true
+    # TXT for the DMARC report authorizations in mail/stalwart; external-dns
+    # only touches TXT records it owns through the k8s. registry.
+    managedRecordTypes: ["A", "AAAA", "CNAME", "TXT"]
     policy: sync
     sources: ["crd", "gateway-httproute"]
     txtPrefix: k8s.
