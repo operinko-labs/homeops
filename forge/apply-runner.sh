@@ -29,6 +29,23 @@ if ! pkg_installed docker-ce; then
   CHANGED+=("installed docker-ce + qemu-user-static")
 fi
 
+# --- docker address pools ---------------------------------------------------
+# Per-job networks (container.network: "") draw from the default pools, whose
+# tail is 192.168.0.0/16 in /20s and would shadow LAN subnets. Keep them all in
+# 172.16.0.0/12 as /24s (4096 networks). Restarting docker kills running jobs.
+cat > /etc/docker/daemon.json.new <<'EOF'
+{
+  "default-address-pools": [{ "base": "172.16.0.0/12", "size": 24 }]
+}
+EOF
+if ! cmp -s /etc/docker/daemon.json.new /etc/docker/daemon.json; then
+  mv /etc/docker/daemon.json.new /etc/docker/daemon.json
+  systemctl restart docker
+  CHANGED+=("/etc/docker/daemon.json")
+else
+  rm /etc/docker/daemon.json.new
+fi
+
 # --- runner config -----------------------------------------------------------
 mkdir -p /etc/forgejo-runner
 if ! cmp -s "$STAGING/config.yaml" /etc/forgejo-runner/config.yaml 2>/dev/null; then

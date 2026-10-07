@@ -11,6 +11,8 @@ runner:
 cache:
   enabled: true
 container:
-  network: bridge
+  # "" = the runner creates a network per job (service containers resolve by
+  # name) and removes it when the job ends; weekly docker-prune catches strays
+  network: ""
   docker_host: unix:///var/run/docker.sock
   force_pull: false
