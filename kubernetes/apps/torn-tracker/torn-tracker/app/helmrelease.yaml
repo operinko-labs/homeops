@@ -34,15 +34,6 @@ spec:
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
               tag: build-1791356021-sha-2161339 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
-            env:
-              # Cutover import only: remove with IMPORT_TOKEN once migrate
-              # has logged "imported history from the old tool"
-              IMPORT_FROM_URL: http://torn-stats-tracker.default.svc.cluster.local:3000/export
-              IMPORT_TOKEN:
-                valueFrom:
-                  secretKeyRef:
-                    name: torn-tracker-secret
-                    key: EXPORT_TOKEN
             envFrom: &envFrom
             - secretRef:
                 name: torn-tracker-secret
@@ -86,9 +77,8 @@ spec:
               limits:
                 memory: 256Mi
       collector:
-        # Owns the snapshot schedules: never more than 1. Held at 0 until the
-        # cutover import has run, since the import refuses once a snapshot exists
-        replicas: 0
+        # Owns the snapshot schedules: never more than 1
+        replicas: 1
         strategy: Recreate
         annotations: *annotations
         initContainers: *initContainers
