@@ -39,7 +39,9 @@ spec:
                 valueFrom:
                   secretKeyRef:
                     name: torn-tracker-pg-app
-                    key: uri
+                    # FQDN: pods get ndots:1 and musl never applies the
+                    # search list to a dotted name like <svc>.default
+                    key: fqdn-uri
               # Cutover import only: remove with IMPORT_TOKEN once migrate
               # has logged "imported history from the old tool"
               IMPORT_FROM_URL: http://torn-stats-tracker.default.svc.cluster.local:3000/export
