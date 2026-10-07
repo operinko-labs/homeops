@@ -32,7 +32,7 @@ spec:
             image: &image
               repository: harbor.vaderrp.com/operinko-labs/torn-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
-              tag: latest # {"$imagepolicy": "flux-system:torn-tracker:tag"}
+              tag: build-1791356021-sha-2161339 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
             env:
               DATABASE_URL: &databaseUrl
@@ -44,8 +44,8 @@ spec:
               # has logged "imported history from the old tool"
               IMPORT_FROM_URL: http://torn-stats-tracker.default.svc.cluster.local:3000/export
             envFrom: &envFrom
-              - secretRef:
-                  name: torn-tracker-secret
+            - secretRef:
+                name: torn-tracker-secret
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
