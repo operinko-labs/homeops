@@ -15,4 +15,6 @@ resources:
   - imagepolicy-kyronautopalvelu.yaml
   - imagerepository-torn-stats-tracker.yaml
   - imagepolicy-torn-stats-tracker.yaml
+  - imagerepository-torn-tracker.yaml
+  - imagepolicy-torn-tracker.yaml
   - imageupdateautomation.yaml

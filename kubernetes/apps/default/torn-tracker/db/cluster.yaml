@@ -1,0 +1,71 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: torn-tracker-pg
+spec:
+  instances: 1
+  # TimescaleDB comes from the extension image below (mounted as an image
+  # volume); the base image must share its Debian suite (trixie)
+  imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: restart
+  storage:
+    size: 10Gi
+    storageClass: tns-iscsi
+    resizeInUseVolumes: true
+
+  # Writes the torn-tracker-pg-app Secret (uri = the app's DATABASE_URL)
+  bootstrap:
+    initdb:
+      database: torn_tracker
+      owner: torn_tracker
+
+  postgresql:
+    shared_preload_libraries:
+      - timescaledb
+    extensions:
+      - name: timescaledb-oss
+        image:
+          reference: ghcr.io/cloudnative-pg/timescaledb-oss:2.30.1-18-trixie
+    parameters:
+      timescaledb.telemetry_level: "off"
+      max_locks_per_transaction: "128"
+      max_connections: "100"
+      shared_buffers: 128MB
+      archive_timeout: "60"
+  enablePDB: false
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/bulk-storage
+                operator: In
+                values:
+                  - "true"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  monitoring:
+    enablePodMonitor: true
+
+  env:
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+    - name: AWS_REGION
+      value: "us-east-1"
+    - name: AWS_S3_FORCE_PATH_STYLE
+      value: "true"
+
+  plugins:
+    - enabled: true
+      isWALArchiver: true
+      name: barman-cloud.cloudnative-pg.io
+      parameters:
+        barmanObjectName: torn-tracker-pg
+        serverName: torn-tracker-pg-v1

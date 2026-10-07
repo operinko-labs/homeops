@@ -1,0 +1,147 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: torn-tracker
+  namespace: default
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: torn-tracker
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      api:
+        # The sign-in and admin-unlock rate limiters are in memory
+        replicas: 1
+        strategy: Recreate
+        annotations: &annotations
+          # Secret changes only apply on restart
+          reloader.stakater.com/auto: "true"
+        # Every role migrates first: migrations and the one-off import each
+        # run under a PostgreSQL advisory lock, so overlapping runs are safe
+        initContainers: &initContainers
+          migrate:
+            image: &image
+              repository: harbor.vaderrp.com/operinko-labs/torn-tracker
+              # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
+              tag: latest # {"$imagepolicy": "flux-system:torn-tracker:tag"}
+            args: ["migrate"]
+            env:
+              DATABASE_URL: &databaseUrl
+                valueFrom:
+                  secretKeyRef:
+                    name: torn-tracker-pg-app
+                    key: uri
+              # Cutover import only: remove with IMPORT_TOKEN once migrate
+              # has logged "imported history from the old tool"
+              IMPORT_FROM_URL: http://torn-stats-tracker.default.svc.cluster.local:3000/export
+            envFrom: &envFrom
+              - secretRef:
+                  name: torn-tracker-secret
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 10m
+                memory: 96Mi
+              limits:
+                memory: 256Mi
+        containers:
+          app:
+            image: *image
+            args: ["api"]
+            env:
+              DATABASE_URL: *databaseUrl
+              # cloudflared -> Traefik: the visitor is two hops in, as for
+              # torn-stats-tracker
+              TRUST_PROXY_HOPS: "2"
+            envFrom: *envFrom
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  # Stays 200 while Torn or the database is down
+                  httpGet:
+                    path: /healthz
+                    port: &port 3000
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *probes
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: 10m
+                memory: 96Mi
+              limits:
+                memory: 256Mi
+      collector:
+        # Owns the snapshot schedules: never more than 1. Held at 0 until the
+        # cutover import has run, since the import refuses once a snapshot exists
+        replicas: 0
+        strategy: Recreate
+        annotations: *annotations
+        initContainers: *initContainers
+        containers:
+          app:
+            image: *image
+            args: ["collector"]
+            env:
+              DATABASE_URL: *databaseUrl
+            envFrom: *envFrom
+            # No HTTP port; watch /healthz on the api instead
+            probes: &noProbes
+              liveness: {enabled: false}
+              readiness: {enabled: false}
+              startup: {enabled: false}
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: 10m
+                memory: 96Mi
+              limits:
+                memory: 256Mi
+      modeler:
+        replicas: 1
+        strategy: Recreate
+        annotations: *annotations
+        initContainers: *initContainers
+        containers:
+          app:
+            image: *image
+            args: ["modeler"]
+            env:
+              DATABASE_URL: *databaseUrl
+            envFrom: *envFrom
+            probes: *noProbes
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: 10m
+                memory: 96Mi
+              # Loads the whole observation history every pass: raise as it grows
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+    service:
+      app:
+        controller: api
+        ports:
+          http:
+            port: *port

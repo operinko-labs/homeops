@@ -1,0 +1,41 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: torn-tracker
+  namespace: default
+  labels:
+    route.scope: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      group: Default
+      url: "https://torn-tracker-beta.shadowmorph.info/healthz"
+      conditions:
+        - "[STATUS] == 200"
+        - "[BODY].status == ok"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+  hostnames:
+    - torn-tracker-beta.shadowmorph.info
+  rules:
+    # No auth middleware: members sign in with their own Torn API key
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        # Real visitor IP for the app's per-IP login rate limit
+        - type: ExtensionRef
+          extensionRef:
+            group: traefik.io
+            kind: Middleware
+            name: traefik-warp
+      backendRefs:
+        - name: torn-tracker
+          port: 3000

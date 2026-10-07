@@ -1,0 +1,17 @@
+---
+# yaml-language-server: $schema=https://crd.movishell.pl/postgresql.cnpg.io/database_v1.json
+# Adopts the initdb database so the operator (as superuser) owns the
+# extension; the app's own CREATE EXTENSION IF NOT EXISTS is then a no-op
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: torn-tracker-pg-torn-tracker
+spec:
+  name: torn_tracker
+  owner: torn_tracker
+  cluster:
+    name: torn-tracker-pg
+  extensions:
+    - name: timescaledb
+      # Keep in step with the extension image tag in cluster.yaml
+      version: "2.30.1"

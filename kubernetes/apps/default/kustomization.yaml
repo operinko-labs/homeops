@@ -11,5 +11,6 @@ resources:
   - ./homepage/ks.yaml
   - ./torn-illicit/ks.yaml
   - ./torn-stats-tracker/ks.yaml
+  - ./torn-tracker/ks.yaml
 components:
   - ../../components/common
