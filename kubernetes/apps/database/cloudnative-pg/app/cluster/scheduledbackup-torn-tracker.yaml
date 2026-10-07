@@ -4,6 +4,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
   name: &cluster torn-tracker-pg
+  namespace: database
 spec:
   schedule: "0 30 0 * * *"
   immediate: true

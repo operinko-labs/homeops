@@ -3,6 +3,7 @@ apiVersion: barmancloud.cnpg.io/v1
 kind: ObjectStore
 metadata:
   name: torn-tracker-pg
+  namespace: database
 spec:
   retentionPolicy: 30d
   configuration:
@@ -10,10 +11,10 @@ spec:
     endpointURL: https://s3.vaderrp.com:9000
     s3Credentials:
       accessKeyId:
-        name: torn-tracker-pg-s3
+        name: cloudnative-pg-secret
         key: aws-access-key-id
       secretAccessKey:
-        name: torn-tracker-pg-s3
+        name: cloudnative-pg-secret
         key: aws-secret-access-key
     data:
       compression: snappy

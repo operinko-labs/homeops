@@ -5,14 +5,19 @@ resources:
   - ./hook-rbac.yaml
   - ./cluster17.yaml
   - ./cluster18.yaml
+  - ./cluster-torn-tracker.yaml
   - ./database-autoposter.yaml
   - ./database-stalwart.yaml
+  - ./database-torn-tracker.yaml
   - ./external-secret-stalwart.yaml
+  - ./external-secret-torn-tracker.yaml
   - ./secret-autoposter-user.sops.yaml
   - ./gatus.yaml
   - ./objectstore.yaml
   - ./objectstore18.yaml
+  - ./objectstore-torn-tracker.yaml
   - ./prometheusrule.yaml
   - ./scheduledbackup.yaml
   - ./scheduledbackup18.yaml
+  - ./scheduledbackup-torn-tracker.yaml
   - ./service.yaml

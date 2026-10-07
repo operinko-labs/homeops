@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: torn-tracker
-  namespace: default
+  namespace: torn-tracker
 spec:
   interval: 30m
   chartRef:
@@ -35,16 +35,14 @@ spec:
               tag: build-1791356021-sha-2161339 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
             env:
-              DATABASE_URL: &databaseUrl
-                valueFrom:
-                  secretKeyRef:
-                    name: torn-tracker-pg-app
-                    # FQDN: pods get ndots:1 and musl never applies the
-                    # search list to a dotted name like <svc>.default
-                    key: fqdn-uri
               # Cutover import only: remove with IMPORT_TOKEN once migrate
               # has logged "imported history from the old tool"
               IMPORT_FROM_URL: http://torn-stats-tracker.default.svc.cluster.local:3000/export
+              IMPORT_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: torn-tracker-secret
+                    key: EXPORT_TOKEN
             envFrom: &envFrom
             - secretRef:
                 name: torn-tracker-secret
@@ -63,7 +61,6 @@ spec:
             image: *image
             args: ["api"]
             env:
-              DATABASE_URL: *databaseUrl
               # cloudflared -> Traefik: the visitor is two hops in, as for
               # torn-stats-tracker
               TRUST_PROXY_HOPS: "2"
@@ -99,8 +96,6 @@ spec:
           app:
             image: *image
             args: ["collector"]
-            env:
-              DATABASE_URL: *databaseUrl
             envFrom: *envFrom
             # No HTTP port; watch /healthz on the api instead
             probes: &noProbes
@@ -123,8 +118,6 @@ spec:
           app:
             image: *image
             args: ["modeler"]
-            env:
-              DATABASE_URL: *databaseUrl
             envFrom: *envFrom
             probes: *noProbes
             securityContext: *securityContext

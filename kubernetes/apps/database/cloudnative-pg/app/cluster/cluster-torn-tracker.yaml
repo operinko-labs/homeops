@@ -4,6 +4,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: torn-tracker-pg
+  namespace: database
 spec:
   instances: 1
   # TimescaleDB comes from the extension image below (mounted as an image
@@ -16,11 +17,27 @@ spec:
     storageClass: tns-iscsi
     resizeInUseVolumes: true
 
-  # Writes the torn-tracker-pg-app Secret (uri = the app's DATABASE_URL)
+  postgresUID: 26
+  postgresGID: 26
+
   bootstrap:
     initdb:
       database: torn_tracker
       owner: torn_tracker
+      secret:
+        name: torn-tracker-pg-user
+
+  # Keeps the role's password in step with Vaultwarden after bootstrap
+  managed:
+    roles:
+      - name: torn_tracker
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: torn-tracker-pg-user
 
   postgresql:
     shared_preload_libraries:
@@ -68,4 +85,4 @@ spec:
       name: barman-cloud.cloudnative-pg.io
       parameters:
         barmanObjectName: torn-tracker-pg
-        serverName: torn-tracker-pg-v1
+        serverName: torn-tracker-pg-v2

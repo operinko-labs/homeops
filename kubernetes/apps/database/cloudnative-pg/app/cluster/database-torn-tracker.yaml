@@ -5,7 +5,8 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: torn-tracker-pg-torn-tracker
+  name: torn-tracker-db
+  namespace: database
 spec:
   name: torn_tracker
   owner: torn_tracker
