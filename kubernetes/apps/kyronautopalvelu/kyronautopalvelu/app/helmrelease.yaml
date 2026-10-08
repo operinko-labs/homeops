@@ -40,6 +40,10 @@ spec:
     # (chart >= 0.7.28), so its deny-all robots no longer exists anywhere.
     redirectHostnames:
       - kyronautopalvelu.erinko.fi
+    # Plain-HTTP visitors get a 301 to HTTPS, read from Cloudflare's CF-Visitor
+    # header (chart >= 0.8.3). The www and demo hosts redirect to the HTTPS
+    # apex already, whatever scheme the visitor used.
+    httpsRedirect: true
     cfargotunnelTarget: external.vaderrp.com
     secretName: kyronautopalvelu-settings-local
     # Drupal's syslog goes over UDP to syslog-gateway (netsyslog in the
