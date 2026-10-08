@@ -35,8 +35,8 @@ spec:
               tag: build-1791451614-sha-09ce579 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
             envFrom: &envFrom
-            - secretRef:
-                name: torn-tracker-secret
+              - secretRef:
+                  name: torn-tracker-secret
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
