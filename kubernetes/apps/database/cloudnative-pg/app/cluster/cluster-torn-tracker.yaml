@@ -6,12 +6,14 @@ metadata:
   name: torn-tracker-pg
   namespace: database
 spec:
-  instances: 1
+  # Primary + replica on separate nodes, so image/plugin updates switch over
+  # (a few seconds) instead of restarting the only instance
+  instances: 2
   # TimescaleDB comes from the extension image below (mounted as an image
   # volume); the base image must share its Debian suite (trixie)
   imageName: ghcr.io/cloudnative-pg/postgresql:18-minimal-trixie
   primaryUpdateStrategy: unsupervised
-  primaryUpdateMethod: restart
+  primaryUpdateMethod: switchover
   storage:
     size: 20Gi
     storageClass: tns-iscsi
@@ -54,6 +56,9 @@ spec:
       archive_timeout: "60"
   enablePDB: false
   affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
