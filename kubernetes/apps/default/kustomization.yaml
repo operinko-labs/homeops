@@ -10,6 +10,5 @@ resources:
   - ./gramps-web/ks.yaml
   - ./homepage/ks.yaml
   - ./torn-illicit/ks.yaml
-  - ./torn-stats-tracker/ks.yaml
 components:
   - ../../components/common

@@ -52,8 +52,8 @@ spec:
             image: *image
             args: ["api"]
             env:
-              # cloudflared -> Traefik: the visitor is two hops in, as for
-              # torn-stats-tracker
+              # cloudflared -> Traefik (traefik-warp sets the visitor IP from
+              # CF-Connecting-IP): the visitor is two hops in
               TRUST_PROXY_HOPS: "2"
             envFrom: *envFrom
             probes:

@@ -11,7 +11,7 @@ metadata:
     gatus.home-operations.com/enabled: "true"
     gatus.home-operations.com/endpoint: |
       group: Default
-      url: "https://torn-tracker-beta.shadowmorph.info/healthz"
+      url: "https://torn-tracker.shadowmorph.info/healthz"
       conditions:
         - "[STATUS] == 200"
         - "[BODY].status == ok"
@@ -22,7 +22,7 @@ spec:
       name: gateway-public
       namespace: network
   hostnames:
-    - torn-tracker-beta.shadowmorph.info
+    - torn-tracker.shadowmorph.info
   rules:
     # No auth middleware: members sign in with their own Torn API key
     - matches:
@@ -39,3 +39,29 @@ spec:
       backendRefs:
         - name: torn-tracker
           port: 3000
+---
+# The beta's address, kept so old links and installed PWAs land on the hub
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: torn-tracker-beta-redirect
+  namespace: torn-tracker
+  labels:
+    route.scope: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+  hostnames:
+    - torn-tracker-beta.shadowmorph.info
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: torn-tracker.shadowmorph.info
+            statusCode: 301
