@@ -120,6 +120,28 @@ spec:
                 memory: 96Mi
               limits:
                 memory: 256Mi
+      gateway:
+        # Holds the Discord Gateway connection: never more than 1, and
+        # Recreate so two never connect at once during a rollout
+        replicas: 1
+        strategy: Recreate
+        annotations: *annotations
+        initContainers: *initContainers
+        containers:
+          app:
+            image: *image
+            args: ["gateway"]
+            envFrom: *envFrom
+            # Serves nothing; a failed start shows as CrashLoopBackOff
+            probes: *noProbes
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              # discord.js keeps a guild cache (one ~100-member server)
+              limits:
+                memory: 384Mi
       modeler:
         replicas: 1
         strategy: Recreate
