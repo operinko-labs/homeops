@@ -39,7 +39,7 @@ spec:
             image: &image
               repository: harbor.vaderrp.com/operinko-labs/torn-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
-              tag: build-1792071355-sha-9f08d8b # {"$imagepolicy": "flux-system:torn-tracker:tag"}
+              tag: build-1792079905-sha-9c92ad9 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
             envFrom: &envFrom
             - secretRef:
