@@ -41,9 +41,9 @@ spec:
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
               tag: build-1792097854-sha-5a46f54 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
-            envFrom: &envFrom
-            - secretRef:
-                name: torn-tracker-secret
+            # Flow style on purpose: Flux image automation re-indents block
+            # lists in this file (yamllint rejects that) but keeps flow ones
+            envFrom: &envFrom [{secretRef: {name: torn-tracker-secret}}]
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
