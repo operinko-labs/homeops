@@ -21,7 +21,14 @@ spec:
       api:
         # The sign-in and admin-unlock rate limiters are in memory
         replicas: 1
-        strategy: Recreate
+        # The old pod serves until the new one has migrated and is Ready, so
+        # a rollout never leaves Traefik with no endpoint ("no available
+        # server"). The two overlap for seconds, which only splits the
+        # in-memory rate limiters briefly.
+        strategy: RollingUpdate
+        rollingUpdate:
+          surge: 1
+          unavailable: 0
         annotations: &annotations
           # Secret changes only apply on restart
           reloader.stakater.com/auto: "true"
@@ -32,11 +39,11 @@ spec:
             image: &image
               repository: harbor.vaderrp.com/operinko-labs/torn-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
-              tag: build-1791503446-sha-8f7253a # {"$imagepolicy": "flux-system:torn-tracker:tag"}
+              tag: build-1792097854-sha-5a46f54 # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
-            envFrom: &envFrom
-            - secretRef:
-                name: torn-tracker-secret
+            # Flow style on purpose: Flux image automation re-indents block
+            # lists in this file (yamllint rejects that) but keeps flow ones
+            envFrom: &envFrom [{secretRef: {name: torn-tracker-secret}}]
             securityContext: &securityContext
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
@@ -52,23 +59,37 @@ spec:
             image: *image
             args: ["api"]
             env:
-              # cloudflared -> Traefik: the visitor is two hops in, as for
-              # torn-stats-tracker
+              # cloudflared -> Traefik (traefik-warp sets the visitor IP from
+              # CF-Connecting-IP): the visitor is two hops in
               TRUST_PROXY_HOPS: "2"
             envFrom: *envFrom
+            # Keep serving while Traefik drops this endpoint, then SIGTERM
+            # closes the server gracefully
+            lifecycle:
+              preStop:
+                sleep:
+                  seconds: 5
             probes:
-              liveness: &probes
+              liveness:
                 enabled: true
                 custom: true
                 spec:
                   # Stays 200 while Torn or the database is down
-                  httpGet:
+                  httpGet: &healthz
                     path: /healthz
                     port: &port 3000
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 3
-              readiness: *probes
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  # Quick, so a rollout hands over within seconds
+                  httpGet: *healthz
+                  periodSeconds: 5
+                  timeoutSeconds: 5
+                  failureThreshold: 3
             securityContext: *securityContext
             resources:
               requests:
@@ -99,6 +120,28 @@ spec:
                 memory: 96Mi
               limits:
                 memory: 256Mi
+      gateway:
+        # Holds the Discord Gateway connection: never more than 1, and
+        # Recreate so two never connect at once during a rollout
+        replicas: 1
+        strategy: Recreate
+        annotations: *annotations
+        initContainers: *initContainers
+        containers:
+          app:
+            image: *image
+            args: ["gateway"]
+            envFrom: *envFrom
+            # Serves nothing; a failed start shows as CrashLoopBackOff
+            probes: *noProbes
+            securityContext: *securityContext
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              # discord.js keeps a guild cache (one ~100-member server)
+              limits:
+                memory: 384Mi
       modeler:
         replicas: 1
         strategy: Recreate
