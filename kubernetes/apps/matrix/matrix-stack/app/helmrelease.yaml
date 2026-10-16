@@ -1,0 +1,117 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: matrix
+spec:
+  interval: 30m
+  # First install runs the init-secrets, config-check and DB migration hooks
+  timeout: 15m
+  chartRef:
+    kind: OCIRepository
+    name: matrix-stack
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  postRenderers:
+    - kustomize:
+        patches:
+          # Traefik runs with kubernetesIngress disabled; routing lives in
+          # httproute.yaml instead
+          - target:
+              kind: Ingress
+            patch: |
+              $patch: delete
+              apiVersion: networking.k8s.io/v1
+              kind: Ingress
+              metadata:
+                name: unused
+  values:
+    serverName: erinko.fi
+
+    # Only the MatrixRTC appservice registration is left for it to generate;
+    # everything that must survive comes from matrix-secrets
+    initSecrets:
+      enabled: true
+
+    postgres:
+      enabled: false
+    hookshot:
+      enabled: false
+    elementAdmin:
+      enabled: false
+    matrixRTC:
+      enabled: false
+
+    synapse:
+      image:
+        registry: harbor.vaderrp.com
+        repository: operinko-labs/synapse
+        tag: ${SYNAPSE_TAG}
+      ingress:
+        host: matrix.erinko.fi
+      postgres:
+        host: postgres18-rw.database.svc.cluster.local
+        port: 5432
+        user: synapse
+        database: synapse
+        sslMode: prefer
+        password:
+          secret: matrix-secrets
+          secretKey: synapse_db_password
+      media:
+        storage:
+          existingClaim: synapse
+      signingKey:
+        secret: matrix-secrets
+        secretKey: signing_key
+      macaroon:
+        secret: matrix-secrets
+        secretKey: macaroon
+      registrationSharedSecret:
+        secret: matrix-secrets
+        secretKey: registration_shared_secret
+      additional:
+        s3:
+          configSecret: matrix-secrets
+          configSecretKey: synapse-s3.yaml
+
+    matrixAuthenticationService:
+      ingress:
+        host: account.erinko.fi
+      postgres:
+        host: postgres18-rw.database.svc.cluster.local
+        port: 5432
+        user: mas
+        database: mas
+        sslMode: prefer
+        password:
+          secret: matrix-secrets
+          secretKey: mas_db_password
+      encryptionSecret:
+        secret: matrix-secrets
+        secretKey: encryption_secret
+      synapseSharedSecret:
+        secret: matrix-secrets
+        secretKey: synapse_shared_secret
+      privateKeys:
+        rsa:
+          secret: matrix-secrets
+          secretKey: private_key_rsa
+        ecdsaPrime256v1:
+          secret: matrix-secrets
+          secretKey: private_key_ecdsa_p256
+      additional:
+        auth:
+          configSecret: matrix-secrets
+          configSecretKey: mas-auth.yaml
+
+    elementWeb:
+      ingress:
+        host: chat.erinko.fi
