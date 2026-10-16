@@ -71,7 +71,7 @@ once the first account exists.
 | Synapse media cache PVC | `local-path` + `volsync-kopia` |
 | Image build | `.forgejo/workflows/build-synapse.yaml`, tag from `apps/synapse/VERSION` |
 
-Disabled chart components: Hookshot, the bundled Postgres, `initSecrets`.
+Disabled chart components: Hookshot, Element Admin, the bundled Postgres.
 
 ## Database
 
@@ -234,7 +234,7 @@ homeops changes go straight to main, one commit per phase.
    `mas-cli` account and Authentik SSO both log in on Element Web and
    Element X; an uploaded image appears in the bucket; Federation Tester
    passes; join a small federated room (avoid huge public rooms — DB bloat).
-5. Calls: MatrixRTC on, `service-livekit-wg.yaml`, VPS haproxy + nftables
+5. Calls: MatrixRTC on, chart `exposedServices` (ClusterIP + `externalIPs: ["172.16.8.12"]`) plus the `postRenderers` `externalTrafficPolicy: Local` patch, VPS haproxy + nftables
    (user applies). Verify: a call between a LAN client and a phone on mobile
    data.
 6. Gatus endpoints; confirm offsite sync of `synapse-media`.
