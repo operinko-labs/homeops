@@ -1,0 +1,76 @@
+---
+# Synapse writes media to S3 synchronously and also keeps a local copy
+# (store_local). This removes local copies not accessed for 30 days once they
+# are confirmed in S3. Manual run:
+#   kubectl -n matrix create job --from=cronjob/synapse-s3-drain synapse-s3-drain-manual
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: synapse-s3-drain
+spec:
+  schedule: "30 3 * * *"
+  timeZone: Europe/Helsinki
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          # RWO local-path PVC: must land on Synapse's node
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/name: synapse-main
+                  topologyKey: kubernetes.io/hostname
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10091
+            runAsGroup: 10091
+            fsGroup: 10091
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: drain
+              image: harbor.vaderrp.com/operinko-labs/synapse:${SYNAPSE_TAG}
+              workingDir: /work
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  cp /secrets/database.yaml /work/database.yaml
+                  s3_media_upload --no-progress update /media/media_store 30d
+                  s3_media_upload --no-progress upload /media/media_store synapse-media \
+                    --delete --endpoint-url https://s3.vaderrp.com:9000
+              env:
+                - {name: AWS_DEFAULT_REGION, value: us-east-1}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom: {secretKeyRef: {name: matrix-secrets, key: AWS_ACCESS_KEY_ID}}
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom: {secretKeyRef: {name: matrix-secrets, key: AWS_SECRET_ACCESS_KEY}}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: ["ALL"]}
+              resources:
+                requests: {cpu: 10m, memory: 128Mi}
+                limits: {memory: 512Mi}
+              volumeMounts:
+                - {name: media, mountPath: /media}
+                - {name: work, mountPath: /work}
+                - name: secrets
+                  mountPath: /secrets/database.yaml
+                  subPath: database.yaml
+                  readOnly: true
+          volumes:
+            - name: media
+              persistentVolumeClaim:
+                claimName: synapse
+            - name: work
+              emptyDir: {}
+            - name: secrets
+              secret:
+                secretName: matrix-secrets
