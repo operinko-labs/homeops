@@ -8,7 +8,7 @@ export DEBIAN_FRONTEND=noninteractive
 CHANGED=()
 
 # --- packages ---------------------------------------------------------------
-PACKAGES=(haproxy postfix wireguard fail2ban unattended-upgrades needrestart)
+PACKAGES=(haproxy postfix wireguard fail2ban unattended-upgrades needrestart nftables)
 missing=()
 for pkg in "${PACKAGES[@]}"; do
   dpkg -s "$pkg" &>/dev/null || missing+=("$pkg")
@@ -84,7 +84,7 @@ if install_file homeops-rtc-nat.service /etc/systemd/system/homeops-rtc-nat.serv
   systemctl daemon-reload
   rtc_changed=1
 fi
-if ((rtc_changed)); then
+if ((rtc_changed)) || ! systemctl is-active --quiet homeops-rtc-nat; then
   nft -c -f /etc/nftables.d/homeops-rtc.nft
   systemctl restart homeops-rtc-nat.service
 fi
