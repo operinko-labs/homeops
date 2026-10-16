@@ -43,6 +43,22 @@ spec:
         createrole: false
         passwordSecret:
           name: postgres18-autoposter-user
+      - name: synapse
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgres18-synapse-user
+      - name: mas
+        ensure: present
+        login: true
+        superuser: false
+        createdb: false
+        createrole: false
+        passwordSecret:
+          name: postgres18-mas-user
 
   postgresql:
     parameters:

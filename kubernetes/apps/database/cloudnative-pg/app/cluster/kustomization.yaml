@@ -7,9 +7,11 @@ resources:
   - ./cluster18.yaml
   - ./cluster-torn-tracker.yaml
   - ./database-autoposter.yaml
+  - ./database-matrix.yaml
   - ./database-stalwart.yaml
   - ./database-torn-tracker.yaml
   - ./external-secret-stalwart.yaml
+  - ./external-secret-matrix.yaml
   - ./external-secret-torn-tracker.yaml
   - ./secret-autoposter-user.sops.yaml
   - ./gatus.yaml
