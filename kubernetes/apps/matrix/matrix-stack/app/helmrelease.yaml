@@ -54,8 +54,15 @@ spec:
       enabled: false
     hookshot:
       enabled: false
+    # LAN-only admin console; route on gateway-internal in httproute.yaml
     elementAdmin:
-      enabled: false
+      ingress:
+        host: matrix-admin.vaderrp.com
+    # Lets users find each other by email via vector.im (Element reads it from
+    # the client well-known and, for Element Web, from its own config)
+    wellKnownDelegation:
+      additional:
+        client: '{"m.identity_server": {"base_url": "https://vector.im"}}'
     matrixRTC:
       enabled: true
       ingress:
@@ -145,3 +152,5 @@ spec:
     elementWeb:
       ingress:
         host: chat.erinko.fi
+      additional:
+        identity-server: '{"default_server_config": {"m.identity_server": {"base_url": "https://vector.im"}}}'
