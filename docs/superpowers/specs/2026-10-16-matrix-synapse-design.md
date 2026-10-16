@@ -1,7 +1,7 @@
 # Matrix (Synapse + MAS + Element) on ESS Community — design
 
 Date: 2026-10-16
-Status: design approved 2026-10-16; implementation plan pending
+Status: server side implemented 2026-10-16 (plan docs/superpowers/plans/2026-10-16-matrix-synapse.md); user checks pending (logins, media in S3, federated room, reset mail, just vps apply, call test)
 Supersedes: PR #1439 (`feature/matrix-synapse`, opened 2026-06-05, never functional)
 
 ## Purpose
@@ -69,7 +69,7 @@ once the first account exists.
 | Postgres: roles `synapse`, `mas` on `postgres18` | `database` ns |
 | Media: bucket `synapse-media` | Versity `s3.vaderrp.com` |
 | Synapse media cache PVC | `local-path` + `volsync-kopia` |
-| Image build | `.forgejo/workflows/build-synapse.yaml`, tag from `apps/synapse/VERSION` |
+| Image build | `.forgejo/workflows/build-synapse.yaml`, built from `apps/synapse/VERSION`; the deployed tag is `SYNAPSE_TAG` (ks.yaml postBuild substitution) |
 
 Disabled chart components: Hookshot, Element Admin, the bundled Postgres.
 
@@ -128,9 +128,11 @@ pastes them into Vaultwarden and POSTs `/sync` on `bitwarden-eso-provider`.
 - `synapse.additional` fragment:
   `media_storage_providers: [{module: s3_storage_provider.S3StorageProviderBackend, store_local: true, store_remote: true, store_synchronous: true, config: {endpoint_url: https://s3.vaderrp.com, bucket: synapse-media, ...}}]`.
 - Drain CronJob (from the PR, adapted to the ESS media PVC): daily
-  `s3_media_upload update <media dir> 30d` then `upload --delete`, so the local
-  cache keeps ~30 days. The PVC is RWO on `local-path`; the job co-schedules on
-  Synapse's node.
+  `s3_media_upload update <media dir> 7d` then `upload --delete`, so the local
+  cache keeps ~7 days (`store_synchronous` puts every file in S3 before the
+  client gets a reply, so the local copy is only a cache and must not fill the
+  10Gi PVC). The job is bounded by `activeDeadlineSeconds: 7200`. The PVC is
+  RWO on `local-path`; the job co-schedules on Synapse's node.
 - Offsite: confirm `synapse-media` is included in the GDrive offsite sync after
   the MinIO → Versity move.
 
@@ -143,6 +145,8 @@ pastes them into Vaultwarden and POSTs `/sync` on `bitwarden-eso-provider`.
   URI `https://account.erinko.fi/upstream/callback/<provider id>`, username
   from `preferred_username`.
 - Open registration off.
+- Chart 26.10.1 does not emit `org.matrix.msc2965.authentication` in the
+  client well-known; clients discover MAS via `/_matrix/client/v1/auth_metadata`.
 
 ## Networking
 
@@ -198,7 +202,7 @@ Gatus endpoints in `gatus-config.yaml` (not annotations), ntfy alerts:
 
 - `https://matrix.erinko.fi/_matrix/client/versions` → 200
 - `https://erinko.fi/.well-known/matrix/server` → body contains `matrix.erinko.fi`
-- `https://account.erinko.fi/health` → 200
+- `https://account.erinko.fi/.well-known/openid-configuration` → 200
 - `https://chat.erinko.fi` → 200
 - hourly `https://federationtester.matrix.org/api/report?server_name=erinko.fi`
   → `[BODY].FederationOK == true`
@@ -216,7 +220,8 @@ Chart ServiceMonitors enabled where offered (Synapse, MAS, HAProxy, LiveKit).
   so it only moves once the image exists. `synapse-s3-storage-provider` is
   version-pinned in the Dockerfile.
 - Review step for every chart bump: the chart's own Synapse pin no longer
-  applies, so check `VERSION` is not behind what the new chart expects.
+  applies, so check `apps/synapse/VERSION` (which the deployed `SYNAPSE_TAG`
+  is built from) is not behind the chart's Synapse pin.
 
 ## Rollout
 
@@ -249,5 +254,5 @@ two databases. `server_name` cannot be changed after the first account.
   into "connects", with TCP-level quality. Cost when needed: VPS haproxy SNI
   passthrough rule `turn.erinko.fi` → `172.16.8.12:30003`, a DNS-only
   `turn.erinko.fi` → `212.147.241.182` record, a `turn.erinko.fi` Certificate
-  in `matrix`, `exposedServices.turnTLS` on, port 30003 on the WG service.
+  in `matrix`, `exposedServices.turnTLS` on (ClusterIP + externalIPs, same as rtcTcp).
 - Hookshot / bridges, Element Admin, Synapse workers.
