@@ -32,6 +32,16 @@ spec:
               kind: Ingress
               metadata:
                 name: unused
+          # Cilium DSR: only talos7 can answer over wg0, so tunnel traffic must
+          # stay on the local SFU (same reason as service-traefik-wg.yaml). The
+          # chart only sets this for NodePort/LoadBalancer.
+          - target:
+              kind: Service
+              name: matrix-matrix-rtc-sfu-(tcp|muxed-udp)
+            patch: |
+              - op: add
+                path: /spec/externalTrafficPolicy
+                value: Local
   values:
     serverName: erinko.fi
 
@@ -47,7 +57,27 @@ spec:
     elementAdmin:
       enabled: false
     matrixRTC:
-      enabled: false
+      enabled: true
+      ingress:
+        host: mrtc.erinko.fi
+      livekitAuth:
+        secret:
+          secret: matrix-secrets
+          secretKey: livekit_secret
+      sfu:
+        # Media reaches the SFU via the VPS; clients must be told its address
+        useStunToDiscoverPublicIP: false
+        manualIP: 212.147.241.182
+        # Only talos7 has wg0 (the tunnel to the VPS)
+        nodeSelector:
+          kubernetes.io/hostname: talos7
+        exposedServices:
+          rtcTcp:
+            portType: ClusterIP
+            externalIPs: ["172.16.8.12"]
+          rtcMuxedUdp:
+            portType: ClusterIP
+            externalIPs: ["172.16.8.12"]
 
     synapse:
       image:
