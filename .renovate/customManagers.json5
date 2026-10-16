@@ -6,6 +6,7 @@
       description: "Process annotated dependencies",
       managerFilePatterns: [
         "/\\.env(?:\\.j2)?$/",
+        "/(^|/)Dockerfile$/",
         "/\\.sh(?:\\.j2)?$/",
         "/\\.yaml(?:\\.j2)?$/",
       ],
@@ -46,6 +47,17 @@
       ],
       depNameTemplate: "renovatebot/renovate",
       datasourceTemplate: "github-releases",
+    },
+    {
+      customType: "regex",
+      // Upstream base for the custom Synapse image. Once CI has pushed the
+      // new Harbor tag, SYNAPSE_TAG in kubernetes/apps/matrix/matrix-stack/ks.yaml
+      // follows via its own `# renovate:` comment.
+      description: "Synapse image VERSION",
+      managerFilePatterns: ["/^apps/synapse/VERSION$/"],
+      matchStrings: ["^(?<currentValue>v\\S+)"],
+      depNameTemplate: "oci.element.io/synapse",
+      datasourceTemplate: "docker",
     },
   ],
 }
