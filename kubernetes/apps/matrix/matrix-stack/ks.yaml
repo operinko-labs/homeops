@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: matrix-stack
+  namespace: flux-system
+spec:
+  targetNamespace: matrix
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: matrix-stack
+  path: "./kubernetes/apps/matrix/matrix-stack/app"
+  prune: true
+  dependsOn:
+    - name: volsync
+      namespace: storage
+    - name: cloudnative-pg
+      namespace: database
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false
+  components:
+    - ../../../../components/volsync-kopia
+  interval: 30m
+  retryInterval: 1m
+  timeout: 15m
+  postBuild:
+    substitute:
+      # PVC is the Synapse media cache; the chart mounts it via existingClaim
+      APP: synapse
+      VOLSYNC_COPYMETHOD: Direct
+      VOLSYNC_CAPACITY: 10Gi
+      VOLSYNC_STORAGECLASS: local-path
+      # ESS runs Synapse as 10091:10091
+      VOLSYNC_PUID: "10091"
+      VOLSYNC_PGID: "10091"
+      # Custom image (apps/synapse); used by the HelmRelease and the drain CronJob
+      # renovate: datasource=docker depName=harbor.vaderrp.com/operinko-labs/synapse
+      SYNAPSE_TAG: v1.163.0
