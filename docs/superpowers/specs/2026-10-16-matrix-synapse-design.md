@@ -91,11 +91,14 @@ Disabled chart components: Hookshot, the bundled Postgres, `initSecrets`.
 
 ## Secrets
 
-Everything comes from one Vaultwarden item `matrix` via `bitwarden-fields`;
-the chart's `initSecrets` job is off. Reason: chart-generated keys would exist
-only in etcd, and losing the signing key (federation identity) or the MAS
-encryption secret / private keys (all sessions, stored upstream tokens) is
-costly.
+Everything that matters comes from one Vaultwarden item `matrix` via
+`bitwarden-fields`. The chart's `initSecrets` job stays **on**, but with every
+secret below supplied it only generates the MatrixRTC appservice registration
+and `SYNAPSE_EXTRA` into `matrix-generated` — throwaway values the chart can
+regenerate. Disabling it fails rendering ("Secret configuration at
+matrixRTC.appserviceRegistration is not present"). The signing key, MAS
+encryption secret and private keys are never chart-generated: losing those
+would break federation trust or every session.
 
 Fields:
 
@@ -165,9 +168,12 @@ labelled `route.scope: external` so external-dns creates proxied records.
 Same pattern as Stalwart / `service-traefik-wg.yaml`:
 
 - SFU pinned to talos7 (`matrixRTC.sfu.nodeSelector`) — only talos7 has `wg0`.
-- Chart `exposedServices.rtcTcp` / `rtcMuxedUdp` set to `ClusterIP`; a new
-  `service-livekit-wg.yaml` with `externalIPs: ["172.16.8.12"]`,
-  `externalTrafficPolicy: Local`, TCP 30001 + UDP 30002 to the SFU pod.
+- Chart `exposedServices.rtcTcp` / `rtcMuxedUdp`: `portType: ClusterIP`,
+  `externalIPs: ["172.16.8.12"]` (the chart supports both). The chart only
+  emits `externalTrafficPolicy` for NodePort/LoadBalancer, so a HelmRelease
+  `postRenderers` JSON patch adds `externalTrafficPolicy: Local` to
+  `matrix-matrix-rtc-sfu-tcp` and `matrix-matrix-rtc-sfu-muxed-udp`. No
+  separate Service file.
 - `useStunToDiscoverPublicIP: false`, `manualIP: 212.147.241.182`.
 - VPS (`vps/` module, applied by the user with `just vps …`):
   - haproxy `frontend ft_rtc_tcp` `:30001` → `172.16.8.12:30001`.
@@ -184,7 +190,7 @@ Same pattern as Stalwart / `service-traefik-wg.yaml`:
 | Synapse + MAS DBs | `postgres18` barman |
 | Signing key, all secrets | Vaultwarden `matrix` item |
 | Media | Versity bucket (+ offsite sync, to confirm) |
-| Synapse media cache PVC | `volsync-kopia` (`Direct`, PUID/PGID 991) |
+| Synapse media cache PVC | `volsync-kopia` (`Direct`, PUID/PGID 10091) |
 
 ## Monitoring
 
@@ -202,9 +208,13 @@ Chart ServiceMonitors enabled where offered (Synapse, MAS, HAProxy, LiveKit).
 ## Upgrades
 
 - Chart: `OCIRepository` on `matrix-stack`, Renovate-managed.
-- Synapse image: `apps/synapse/VERSION` is the single source of truth (build
-  arg + image tag); a Renovate regex manager tracks `ghcr.io/element-hq/synapse`.
-  `synapse-s3-storage-provider` is version-pinned in the Dockerfile.
+- Synapse image: `apps/synapse/VERSION` is tracked by a Renovate regex manager
+  against `oci.element.io/synapse` (the registry the chart itself uses); CI
+  builds the Harbor tag on merge. The deployed tag is `SYNAPSE_TAG` in the
+  app's Flux Kustomization (postBuild substitution, used by the HelmRelease and
+  the drain CronJob), tracked against `harbor.vaderrp.com/operinko-labs/synapse`,
+  so it only moves once the image exists. `synapse-s3-storage-provider` is
+  version-pinned in the Dockerfile.
 - Review step for every chart bump: the chart's own Synapse pin no longer
   applies, so check `VERSION` is not behind what the new chart expects.
 
