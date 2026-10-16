@@ -1,7 +1,8 @@
 # Version comes from apps/synapse/VERSION via the build workflow
 ARG SYNAPSE_VERSION
 FROM oci.element.io/synapse:${SYNAPSE_VERSION}
-# renovate: datasource=pypi depName=synapse-s3-storage-provider
+# Bump by hand, together with a VERSION change: the image tag is VERSION
+# and CI skips the build when that tag already exists in Harbor
 ARG S3_PROVIDER_VERSION=1.7.0
 RUN pip install --no-cache-dir "synapse-s3-storage-provider==${S3_PROVIDER_VERSION}" \
  && python3 -c "import s3_storage_provider" \

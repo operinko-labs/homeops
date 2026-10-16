@@ -6,7 +6,6 @@
       description: "Process annotated dependencies",
       managerFilePatterns: [
         "/\\.env(?:\\.j2)?$/",
-        "/(^|/)Dockerfile$/",
         "/\\.sh(?:\\.j2)?$/",
         "/\\.yaml(?:\\.j2)?$/",
       ],
