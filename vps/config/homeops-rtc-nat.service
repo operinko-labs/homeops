@@ -1,0 +1,13 @@
+[Unit]
+Description=homeops MatrixRTC UDP forwarding to the cluster
+After=network-online.target wg-quick@wg0.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/nftables.d/homeops-rtc.nft
+ExecStop=/usr/sbin/nft delete table ip homeops_rtc
+
+[Install]
+WantedBy=multi-user.target

@@ -77,8 +77,20 @@ install_file apt-20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades 644 || true
 install_file apt-52-auto-reboot.conf /etc/apt/apt.conf.d/52-homeops-auto-reboot.conf 644 || true
 install_file needrestart-50-auto.conf /etc/needrestart/conf.d/50-homeops.conf 644 || true
 
+# --- MatrixRTC UDP forwarding --------------------------------------------------
+rtc_changed=0
+if install_file homeops-rtc.nft /etc/nftables.d/homeops-rtc.nft 644; then rtc_changed=1; fi
+if install_file homeops-rtc-nat.service /etc/systemd/system/homeops-rtc-nat.service 644; then
+  systemctl daemon-reload
+  rtc_changed=1
+fi
+if ((rtc_changed)); then
+  nft -c -f /etc/nftables.d/homeops-rtc.nft
+  systemctl restart homeops-rtc-nat.service
+fi
+
 # --- ensure everything is enabled ---------------------------------------------
-systemctl enable --quiet haproxy postfix fail2ban wg-quick@wg0 unattended-upgrades
+systemctl enable --quiet haproxy postfix fail2ban wg-quick@wg0 unattended-upgrades homeops-rtc-nat
 
 # --- report -------------------------------------------------------------------
 if ((${#CHANGED[@]})); then

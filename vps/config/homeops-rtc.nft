@@ -1,0 +1,18 @@
+#!/usr/sbin/nft -f
+# MatrixRTC muxed UDP -> LiveKit on talos7 (externalIP 172.16.8.12) over wg0.
+# haproxy cannot carry UDP. Masquerade so replies return through the tunnel;
+# without it LiveKit would answer real client IPs via the home WAN.
+# Own table: never touches fail2ban's iptables-nft rules (do NOT enable
+# nftables.service — its stock config flushes the whole ruleset).
+table ip homeops_rtc
+delete table ip homeops_rtc
+table ip homeops_rtc {
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+    iifname "eth0" udp dport 30002 counter dnat to 172.16.8.12:30002
+  }
+  chain postrouting {
+    type nat hook postrouting priority srcnat; policy accept;
+    oifname "wg0" ip daddr 172.16.8.12 udp dport 30002 masquerade
+  }
+}
