@@ -34,8 +34,8 @@ spec:
           reloader.stakater.com/auto: "true"
         # Every role migrates first: migrations and the one-off import each
         # run under a PostgreSQL advisory lock, so overlapping runs are safe
-        initContainers: &initContainers
-          migrate:
+        initContainers:
+          migrate: &migrate
             image: &image
               repository: harbor.vaderrp.com/operinko-labs/torn-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
@@ -48,6 +48,22 @@ spec:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true
               capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 10m
+                memory: 96Mi
+              limits:
+                memory: 256Mi
+          # The api only, after migrating: registers the Discord slash
+          # commands when this release's differ from the last sync. Skips
+          # when they are in sync, never syncs an older release over a newer
+          # one, and always exits 0, so it never holds the pod in Init
+          sync-commands:
+            dependsOn: migrate
+            image: *image
+            args: ["sync-commands"]
+            envFrom: *envFrom
+            securityContext: *securityContext
             resources:
               requests:
                 cpu: 10m
@@ -102,7 +118,7 @@ spec:
         replicas: 1
         strategy: Recreate
         annotations: *annotations
-        initContainers: *initContainers
+        initContainers: &initContainers {migrate: *migrate}
         containers:
           app:
             image: *image
