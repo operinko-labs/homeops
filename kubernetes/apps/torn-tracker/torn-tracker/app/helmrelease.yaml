@@ -39,7 +39,7 @@ spec:
             image: &image
               repository: harbor.vaderrp.com/operinko-labs/torn-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-tracker)
-              tag: build-1792405541-sha-9dfb3ae # {"$imagepolicy": "flux-system:torn-tracker:tag"}
+              tag: build-1792413115-sha-0a1fa2d # {"$imagepolicy": "flux-system:torn-tracker:tag"}
             args: ["migrate"]
             # Flow style on purpose: Flux image automation re-indents block
             # lists in this file (yamllint rejects that) but keeps flow ones
