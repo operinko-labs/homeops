@@ -51,7 +51,7 @@ controllers:
       app:
         image:
           repository: docker.io/library/node
-          tag: 24-bookworm
+          tag: 24.22.1-bookworm
         command: ["/bin/sh", "-c"]
         args:
           - |
