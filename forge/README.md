@@ -20,6 +20,14 @@ Design: `docs/superpowers/specs/2026-08-17-forgejo-authoritative-forge-design.md
   - GitHub Actions disablement on each mirrored GitHub repo (per-repo UI toggle, so mirror pushes don't double-run CI).
   - NPMplus proxy-host/stream UI entries (Task 5), Cloudflare + Technitium DNS records (Tasks 5–6).
 
+## Upgrades
+
+Not automated (Renovate doesn't see the LXC binaries). Last done 2026-10-21: Forgejo 16.0.2 → 17.0.0, runners 13.0.0 → 13.2.0.
+
+- **Forgejo:** `pct snapshot 130 pre-forgejo-<ver>` on meanie (the rollback — the first start migrates the SQLite DB, so the old binary can't simply be put back), download `forgejo-<ver>-linux-amd64` + `.sha256` + `.asc` from the Codeberg release, check both (key `EB114F5E6C0DC2BCDD183550A4B61A2DC5923710`), then `systemctl stop forgejo`, install as `/opt/forgejo/forgejo-<ver>`, repoint the `/opt/forgejo/forgejo` symlink, start, and wait for `/api/healthz`. Migrations are logged as `Migration[...]` in the journal.
+- **Runners:** same binary + `.sha256` + `.asc` pattern from `code.forgejo.org/forgejo/runner/releases/download/v<ver>/`, replacing `/usr/local/bin/forgejo-runner`. Restart only when `docker ps --filter name=FORGEJO-ACTIONS-TASK` is empty: the config has no `shutdown_timeout`, so a restart cancels running jobs. The in-cluster runner (`kubernetes/apps/actions-runner-system/forgejo-runner`) is an image tag Renovate bumps.
+- The `/usr/bin/update` community-script helpers on the LXCs would also work, but they fetch and run a remote script unpinned; the manual path above is verified.
+
 ## New repos
 
 `just forge setup` only migrates GitHub repos listed in the explicit manifest at the top of `setup-forgejo.sh` (it no longer auto-enumerates GitHub — that kept resurrecting repos deleted from the Forgejo org). To onboard an existing GitHub repo, add it to that manifest and re-run `just forge setup`; to remove one, delete it in Forgejo *and* drop its manifest line. It does not cover Forgejo-first repos. To add a new one:
