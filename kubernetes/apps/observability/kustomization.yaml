@@ -9,6 +9,7 @@ resources:
   - ./vpa/ks.yaml
   - ./gatus/ks.yaml
   - ./grafana/ks.yaml
+  - ./drupal-audit/ks.yaml
   - ./healthchecks/ks.yaml
   - ./ntfy/ks.yaml
   - ./kromgo/ks.yaml

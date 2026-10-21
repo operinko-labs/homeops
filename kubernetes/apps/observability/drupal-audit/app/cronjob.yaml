@@ -1,0 +1,71 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: drupal-audit
+spec:
+  # Drupal security advisories come out on Wednesday afternoons (UTC); a
+  # morning run catches the previous day's.
+  schedule: "0 5 * * *"
+  timeZone: UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsUser: 65534
+            runAsGroup: 65534
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: audit
+              image: docker.io/library/composer:2.10.3
+              command: ["php", "/scripts/audit.php"]
+              env:
+                - name: REPOS
+                  value: >-
+                    operinko-labs/kyronautopalvelu
+                    operinko-labs/medikabalans
+                    operinko-labs/leo_cal
+                    operinko-labs/ruoka-admin
+                    operinko-labs/ruskonkesateatteri
+                - name: FORGEJO_URL
+                  value: https://forgejo.vaderrp.com
+                - name: NTFY_URL
+                  value: http://ntfy.observability.svc.cluster.local:8080/alerts
+                - name: HOME
+                  value: /tmp
+                - name: COMPOSER_HOME
+                  value: /tmp/composer
+              envFrom:
+                - secretRef:
+                    name: drupal-audit
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                - name: tmp
+                  mountPath: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+          volumes:
+            - name: script
+              configMap:
+                name: drupal-audit-script
+            - name: tmp
+              emptyDir: {}

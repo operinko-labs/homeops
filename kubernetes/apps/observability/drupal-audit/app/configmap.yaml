@@ -1,0 +1,81 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drupal-audit-script
+data:
+  audit.php: |
+    <?php
+    // Daily `composer audit` of each Drupal site's main branch. Composer asks
+    // packagist and packages.drupal.org, which carry Drupal contrib advisories
+    // that Harbor's Trivy data lacks, and an advisory published after an image
+    // was built only shows up here. Findings go to ntfy's alerts topic; the
+    // job fails only when it cannot audit, so a broken run also alerts.
+    $repos = preg_split('/\s+/', trim(getenv('REPOS')));
+    $forgejo = getenv('FORGEJO_URL');
+    $ctx = stream_context_create(['http' => [
+      'header' => 'Authorization: token ' . getenv('FORGEJO_TOKEN'),
+      'timeout' => 30,
+    ]]);
+
+    $findings = [];
+    $errors = [];
+    foreach ($repos as $repo) {
+      $dir = sys_get_temp_dir() . '/audit-' . $repo;
+      @mkdir($dir, 0700, TRUE);
+      foreach (['composer.json', 'composer.lock'] as $file) {
+        $body = @file_get_contents("$forgejo/api/v1/repos/$repo/raw/$file?ref=main", FALSE, $ctx);
+        if ($body === FALSE) {
+          $errors[] = "$repo: cannot fetch $file";
+          continue 2;
+        }
+        file_put_contents("$dir/$file", $body);
+      }
+      // Exit code 1 means advisories found; anything else above 0 is an error.
+      exec('composer audit --locked --no-dev --abandoned=ignore --no-plugins --format=json --working-dir=' . escapeshellarg($dir) . ' 2>/dev/null', $out, $rc);
+      $report = json_decode(implode("\n", $out), TRUE);
+      $out = [];
+      if (($rc !== 0 && $rc !== 1) || !is_array($report)) {
+        $errors[] = "$repo: composer audit failed (exit $rc)";
+        continue;
+      }
+      foreach ($report['advisories'] ?? [] as $package => $advisories) {
+        foreach ($advisories as $a) {
+          $findings[] = sprintf('%s: %s (%s) %s', basename($repo), $package,
+            $a['affectedVersions'] ?? '?', trim(($a['cve'] ?? '') . ' ' . ($a['title'] ?? $a['advisoryId'] ?? '')));
+          $findings[] = '  ' . ($a['link'] ?? '');
+        }
+      }
+    }
+
+    foreach (array_merge($findings, $errors) as $line) {
+      echo $line, "\n";
+    }
+
+    function ntfy(string $title, string $body, string $tags): void {
+      $ctx = stream_context_create(['http' => [
+        'method' => 'POST',
+        'header' => implode("\r\n", [
+          'Authorization: Bearer ' . getenv('NTFY_TOKEN'),
+          'Title: ' . $title,
+          'Priority: 4',
+          'Tags: ' . $tags,
+        ]),
+        'content' => $body,
+        'timeout' => 30,
+      ]]);
+      if (@file_get_contents(getenv('NTFY_URL'), FALSE, $ctx) === FALSE) {
+        fwrite(STDERR, "ntfy publish failed\n");
+        exit(1);
+      }
+    }
+
+    if ($findings) {
+      $sites = count(array_unique(array_map(fn($l) => strstr($l, ':', TRUE), array_filter($findings, fn($l) => $l[0] !== ' '))));
+      ntfy(sprintf('Drupal advisories: %d in %d site(s)', count($findings) / 2, $sites), implode("\n", $findings), 'warning,drupal');
+    }
+    if ($errors) {
+      ntfy('Drupal audit could not run', implode("\n", $errors), 'x,drupal');
+      exit(1);
+    }
+    echo $findings ? "advisories reported\n" : "no advisories\n";
