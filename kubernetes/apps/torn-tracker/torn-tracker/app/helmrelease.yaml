@@ -167,6 +167,10 @@ spec:
           app:
             image: *image
             args: ["modeler"]
+            env:
+              # Node caps its heap at about half the container's memory by default (~512 MB of 1Gi), which a fresh start outgrew
+              # on 2026-10-23 (heap OOM at start-up); let it use the limit, leaving ~380 MB for everything outside the heap
+              NODE_OPTIONS: "--max-old-space-size=1152"
             envFrom: *envFrom
             probes: *noProbes
             securityContext: *securityContext
@@ -174,9 +178,9 @@ spec:
               requests:
                 cpu: 10m
                 memory: 96Mi
-              # Loads the whole observation history every pass: raise as it grows
+              # Loads the whole observation history every pass: raise as it grows (with NODE_OPTIONS above)
               limits:
-                memory: 1Gi
+                memory: 1536Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
