@@ -52,6 +52,14 @@
       matchPackageNames: ["harbor.vaderrp.com/ghcr/renovatebot/renovate"],
       enabled: false,
     },
+    {
+      // The Synapse image tag is apps/synapse/VERSION and CI skips tags that
+      // already exist, so a FROM-only bump here would merge without building.
+      // These pins move by hand together with a VERSION bump.
+      description: "Synapse Dockerfile pins are bumped with VERSION",
+      matchFileNames: ["apps/synapse/Dockerfile"],
+      enabled: false,
+    },
   ],
   hostRules: [
     {
