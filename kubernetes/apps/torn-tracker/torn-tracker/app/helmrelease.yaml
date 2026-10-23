@@ -177,7 +177,9 @@ spec:
             resources:
               requests:
                 cpu: 10m
-                memory: 96Mi
+                # Covers a 30-day pass (benchmark peak heap 401 MB) so the scheduler reserves it and memory pressure doesn't
+                # evict the modeler first
+                memory: 384Mi
               # Loads the whole observation history every pass: raise as it grows (with NODE_OPTIONS above)
               limits:
                 memory: 1536Mi
