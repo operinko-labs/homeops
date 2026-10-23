@@ -71,3 +71,31 @@ spec:
           for: 1m
           labels:
             severity: warning
+        # postgres18 hit 100% on 2026-10-23 (Synapse) with no warning first
+        - alert: DatabaseVolumeFilling
+          annotations:
+            description: PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full
+            summary: A database volume is filling up
+          expr: |-
+            kubelet_volume_stats_used_bytes{namespace="database"} / kubelet_volume_stats_capacity_bytes{namespace="database"} > 0.75
+          for: 15m
+          labels:
+            severity: warning
+        - alert: DatabaseVolumeAlmostFull
+          annotations:
+            description: PVC {{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full; Postgres stops at 100%
+            summary: A database volume is almost full
+          expr: |-
+            kubelet_volume_stats_used_bytes{namespace="database"} / kubelet_volume_stats_capacity_bytes{namespace="database"} > 0.90
+          for: 5m
+          labels:
+            severity: critical
+        - alert: SynapseDatabaseGrowingFast
+          annotations:
+            description: The synapse database is growing by {{ $value | humanize1024 }}B/day (6h trend); check joined rooms and the state compressor
+            summary: Synapse database growth is abnormal
+          expr: |-
+            deriv(cnpg_pg_database_size_bytes{datname="synapse"}[6h]) * 86400 > 1e9
+          for: 1h
+          labels:
+            severity: warning

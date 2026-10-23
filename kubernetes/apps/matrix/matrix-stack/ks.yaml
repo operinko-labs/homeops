@@ -39,4 +39,4 @@ spec:
       VOLSYNC_PGID: "10091"
       # Custom image (apps/synapse); used by the HelmRelease and the drain CronJob
       # renovate: datasource=docker depName=harbor.vaderrp.com/operinko-labs/synapse
-      SYNAPSE_TAG: v1.163.0
+      SYNAPSE_TAG: v1.163.1

@@ -1,0 +1,45 @@
+---
+# Compresses Synapse's state_groups_state, which grows with every membership
+# change in busy federated rooms (6.7 GB in a week on 2026-10-23). The
+# compressor keeps its own progress tables, so each run continues where the
+# last one stopped. Manual (larger) run:
+#   kubectl -n matrix create job --from=cronjob/synapse-state-compressor synapse-state-compressor-manual
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: synapse-state-compressor
+spec:
+  schedule: "30 2 * * *"
+  timeZone: Europe/Helsinki
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      # With concurrencyPolicy Forbid, a hung run would otherwise block every later schedule
+      activeDeadlineSeconds: 7200
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10091
+            runAsGroup: 10091
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: compressor
+              image: harbor.vaderrp.com/operinko-labs/synapse:${SYNAPSE_TAG}
+              command: ["/bin/sh", "-c"]
+              args:
+                - exec synapse_auto_compressor -p "$DB_URL" -c 500 -n 100
+              env:
+                - name: DB_URL
+                  valueFrom: {secretKeyRef: {name: matrix-secrets, key: compressor_db_url}}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: ["ALL"]}
+              resources:
+                requests: {cpu: 50m, memory: 128Mi}
+                limits: {memory: 1Gi}

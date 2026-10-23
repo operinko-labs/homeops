@@ -118,6 +118,16 @@ spec:
         s3:
           configSecret: matrix-secrets
           configSecretKey: synapse-s3.yaml
+        # Growth guards: two ~2k-member rooms grew the DB to 6.9 GB in a week
+        # (2026-10-23). Complexity ≈ state events / 500; admins are exempt.
+        growth-guards:
+          config: |
+            limit_remote_rooms:
+              enabled: true
+              complexity: 10.0
+              complexity_error: "This room is too large for this server. Ask an admin to join it."
+              admins_can_join: true
+            forgotten_room_retention_period: 7d
 
     matrixAuthenticationService:
       ingress:
