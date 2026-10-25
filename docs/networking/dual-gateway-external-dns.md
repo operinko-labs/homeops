@@ -20,7 +20,7 @@ Route Labeling
 Gatus Monitoring
 - Each app can be monitored via two endpoints to validate both paths
   - External: DNS resolver 1.1.1.1, URL https://<app>.vaderrp.com
-  - Internal: DNS resolver 192.168.7.8 (ns1), URL https://<app>.vaderrp.com
+  - Internal: DNS resolver 192.168.5.8 (ns1), URL https://<app>.vaderrp.com
   - File: kubernetes/components/gatus/external/config.yaml
 
 Operational Notes
@@ -28,6 +28,6 @@ Operational Notes
 - If a service moves between internal/external, update the HTTPRoute parentRef and optionally label
 - To verify resolution paths:
   - nslookup app.vaderrp.com 1.1.1.1 (public path)
-  - nslookup app.vaderrp.com 192.168.7.8 (internal path)
+  - nslookup app.vaderrp.com 192.168.5.8 (internal path)
   - traceroute app.vaderrp.com
 

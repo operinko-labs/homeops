@@ -74,7 +74,7 @@ data:
         url: "${url}"
         interval: 1m
         client:
-          dns-resolver: tcp://192.168.7.8:53
+          dns-resolver: tcp://192.168.5.8:53
           timeout: 15s
         conditions:
           - "[STATUS] == ${status}"

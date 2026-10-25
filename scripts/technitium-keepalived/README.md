@@ -1,14 +1,14 @@
 # Technitium DNS VIP — Keepalived setup
 
-Floats `192.168.7.7` between the two Technitium LXCs so the UDM can hand out one
+Floats `192.168.5.7` between the two Technitium LXCs so the UDM can hand out one
 DNS address instead of two, and so failover takes ~3 seconds rather than a
 stub-resolver timeout.
 
 | | |
 |---|---|
-| VIP | `192.168.7.7` |
-| `ns1` | LXC 118 on `meanie`, `192.168.7.8`, Technitium **primary**, VRRP **MASTER** |
-| `ns2` | LXC 100 on the NUC, `192.168.7.9`, Technitium secondary, VRRP BACKUP |
+| VIP | `192.168.5.7` |
+| `ns1` | LXC 118 on `meanie`, `192.168.5.8`, Technitium **primary**, VRRP **MASTER** |
+| `ns2` | LXC 100 on the NUC, `192.168.5.9`, Technitium secondary, VRRP BACKUP |
 
 VRRP MASTER is on `ns1` so the VIP normally sits with the Technitium primary —
 the node that is also the RFC2136 target for external-dns.
@@ -28,24 +28,25 @@ Two VRRP pairs sharing a VRID on the same L2 will fight over the same virtual
 MAC. Watch for a minute on either node:
 
 ```sh
-timeout 60 tcpdump -i eth0 -n 'proto 112'
+timeout 60 tcpdump -i eth1 -n 'proto 112'
 ```
 
 Silence means 53 is free. If anything appears, note its VRID from the output and
 pick a different number in both config files. The UDM is the likely candidate if
 it has any redundancy configured.
 
-### 2. Is `192.168.7.7` actually free?
+### 2. Is `192.168.5.7` actually free?
 
 ```sh
-ping -c3 192.168.7.7          # should fail
-arping -c3 -I eth0 192.168.7.7  # should get no reply
+ping -c3 192.168.5.7          # should fail
+arping -c3 -I eth1 192.168.5.7  # should get no reply
 ```
 
-It should be free — it survives only in `archive/` as Technitium's old Cilium
-LB-IPAM address. Note it *does* fall inside the Cilium `static-pool` block
-`192.168.7.0/25`, so it is worth treating as reserved: Cilium will not
-auto-assign it, but a Service could still claim it by hand.
+It should be free — the DNS VLAN (`192.168.5.0/24`, DHCP off) holds only ns1,
+ns2 and the VIP. The pair lived on the Node VLAN (`.7.7/.7.8/.7.9`) until
+2026-10-25; it moved because those addresses sat inside the Cilium
+`static-pool` block `192.168.7.0/25`, where a Service could claim them by hand
+(see `docs/networking/dns-vlan-migration.md`).
 
 ### 3. Does the LXC have the capabilities keepalived needs?
 
@@ -78,7 +79,7 @@ UI, **Settings → General → DNS Server Local End Points** must be `0.0.0.0:53
 (and `[::]:53`) rather than a list of specific addresses — otherwise the server
 will not answer on `.7` when the VIP lands.
 
-Confirm the interface name is `eth0` while you are there:
+Confirm the interface name is `eth1` while you are there:
 
 ```sh
 ip -brief addr
@@ -161,10 +162,10 @@ sed -i 's/CHANGEME/<yourpass>/' /etc/keepalived/keepalived.conf
 ```sh
 systemctl enable --now keepalived
 systemctl status keepalived --no-pager
-ip -brief addr show eth0
+ip -brief addr show eth1
 ```
 
-`ip addr` should now show **both** `192.168.7.8` and `192.168.7.7` on `eth0`.
+`ip addr` should now show **both** `192.168.5.8` and `192.168.5.7` on `eth1`.
 The journal should show the instance entering MASTER state:
 
 ```sh
@@ -174,7 +175,7 @@ journalctl -u keepalived -n 30 --no-pager
 Then confirm the VIP actually serves DNS, which is the thing that matters:
 
 ```sh
-dig @192.168.7.7 vaderrp.com SOA +short
+dig @192.168.5.7 vaderrp.com SOA +short
 ```
 
 If the address is up but this returns nothing, revisit pre-flight check 5.
@@ -183,7 +184,7 @@ If the address is up but this returns nothing, revisit pre-flight check 5.
 
 ```sh
 systemctl enable --now keepalived
-ip -brief addr show eth0     # should NOT have .7
+ip -brief addr show eth1     # should NOT have .7
 journalctl -u keepalived -n 30 --no-pager
 ```
 
@@ -202,8 +203,8 @@ Three separate failure modes. Test all three — they exercise different paths.
 # ns1
 systemctl stop keepalived
 # ns2 — .7 should appear within ~3s
-ip -brief addr show eth0
-dig @192.168.7.7 vaderrp.com SOA +short
+ip -brief addr show eth1
+dig @192.168.5.7 vaderrp.com SOA +short
 # ns1 — restore, VIP should come back
 systemctl start keepalived
 ```
@@ -241,7 +242,7 @@ pct stop 118
 Watch from a third machine throughout:
 
 ```sh
-while true; do dig @192.168.7.7 vaderrp.com SOA +short | head -1; sleep 1; done
+while true; do dig @192.168.5.7 vaderrp.com SOA +short | head -1; sleep 1; done
 ```
 
 A gap of a second or two during handover is expected. A gap that does not
@@ -249,7 +250,7 @@ recover is not.
 
 ## 7. Point things at it
 
-- **DNS records.** `dns.vaderrp.com` A → `192.168.7.7`. Also move
+- **DNS records.** `dns.vaderrp.com` A → `192.168.5.7`. Also move
   `technitium.vaderrp.com` from `.8` to `.7` if you want the admin UI to follow
   the VIP — the certificate covers both names.
 - **UDM DHCP option 6** → `.7` only. This is the original goal: one address for
@@ -257,7 +258,7 @@ recover is not.
 - **Leave `machine.network.nameservers` and the CoreDNS forward list on the real
   IPs.** Two entries cost nothing there and are strictly more robust than
   depending on VRRP. Only DHCP clients need the VIP.
-- **Leave `--rfc2136-host` at `192.168.7.8`.** Dynamic updates must reach the
+- **Leave `--rfc2136-host` at `192.168.5.8`.** Dynamic updates must reach the
   cluster *primary*, not whichever node happens to hold the VIP.
 
 ## 8. Monitoring
@@ -268,7 +269,7 @@ is live — not before, or it alerts on something that does not exist yet:
 ```yaml
   - name: technitium VIP
     group: Network
-    url: "192.168.7.7"
+    url: "192.168.5.7"
     interval: 1m
     dns:
       query-name: "vaderrp.com"
@@ -321,7 +322,7 @@ for the open-resolver side, plus never forwarding `53`. A VPN gets encrypted DNS
 ### What this means in practice
 
 Teleport clients arrive on the LAN, so nothing special is needed — split-horizon
-already resolves `dns.vaderrp.com` to `192.168.7.7` for them, and the
+already resolves `dns.vaderrp.com` to `192.168.5.7` for them, and the
 certificate covers that name. Setting **UDM DHCP option 6 to `.7`** generally
 covers VPN clients too; confirm on the phone with a lookup once connected.
 

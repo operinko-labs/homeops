@@ -1,6 +1,8 @@
 # DNS VLAN migration — move ns1/ns2 and the VIP off the Node VLAN
 
-Status: **Planned.** Nothing below has been executed. Companion to
+Status: **Done.** §1–3 executed 2026-09-14, §4 retirement 2026-10-25: ns1/ns2 and the VIP
+live only on VLAN 5 (`.5.8` / `.5.9` / `.5.7`), `net0` removed, VRRP and cluster sync on VLAN 5,
+legacy UDM policies and `dns-legacy-watch` removed. Companion to
 [`technitium-dns-ha.md`](technitium-dns-ha.md) (current design) and
 [`../../scripts/technitium-keepalived/`](../../scripts/technitium-keepalived/) (VIP).
 
@@ -151,12 +153,16 @@ server answers both). Two ways to see who is still on the old addresses, both fe
    `sum by (src) (count_over_time({job="unifi"} |= "Log legacy DNS" | json | line_format "{{.cef}}" | regexp `src=(?P<src>\S+)` [24h]))`.
    Blind spot: hosts on the Node VLAN itself reach the resolvers at layer 2 and never cross the
    UDM — the Talos nodes and CoreDNS, which are all in git anyway.
-2. **[`scripts/dns-legacy-watch/`](../../scripts/dns-legacy-watch/) on both LXCs (optional).**
+2. **`scripts/dns-legacy-watch/` on both LXCs (optional; removed 2026-10-25, see git history).**
    A 60-second capture every 10 minutes, one syslog line per `(dst, src)` to the gateway
    (`{job="syslog", app="dns-legacy"}`). Covers the layer-2 blind spot and aggregates instead of
    logging per query. Use it if the policy log turns out too noisy or you want the in-VLAN view.
 
 Do the manual passes from that list at your own pace.
+
+In practice (2026-09-15) the logged-policy hits never surfaced anywhere readable — firewall
+policy log lines are absent from the SIEM feed, `system-log/all` and `traffic-flows` — so
+`dns-legacy-watch` was the mechanism that found every straggler. It was removed with §4.
 
 Known so far: ESPHome garage opener `192.168.55.59` (`dns1: 192.168.7.7`, `dns2: 192.168.7.8`),
 meanie iLO `192.168.0.247`.
@@ -179,6 +185,14 @@ reach the new servers.
 5. Delete the "Allow IoT to cluster DNS" policy (§3d) if not already done.
 6. Add `192.168.5.7–9` nowhere near a Cilium pool: they are on a different VLAN now, which was
    the point.
+
+Done 2026-10-25, with three steps the list above missed:
+
+- `/etc/hosts` on both LXCs pinned `ns1.dns` / `ns2.dns` to `.7.8` / `.7.9` (custom block), so
+  Technitium cluster traffic stayed on VLAN 7 until those lines moved to `.5.x`.
+- The UDM policy *Allow Infra to NPMplus SSH (cert-sync)* must allow **2222**, not 22: NPMplus's
+  own sshd moved there at the Forgejo cutover (see `scripts/technitium-cert-sync/`).
+- The `dns.vaderrp.com` apex A record (zone `dns.vaderrp.com`) pointed at the old VIP `.7.7`.
 
 ## 5. Side effects to expect
 
