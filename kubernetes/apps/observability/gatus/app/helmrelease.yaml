@@ -91,6 +91,31 @@ spec:
                 memory: 100Mi
               limits:
                 memory: 100Mi
+          # Public-view DNS for the "external" checks and the gateway leak check.
+          # Plain :53 to public resolvers is DNAT'd to Technitium on the UDM, so
+          # those lookups go out as DoH instead (gatus-config.yaml: 127.0.0.1:5353).
+          doh-proxy:
+            image:
+              repository: docker.io/adguard/dnsproxy
+              tag: v0.86.0@sha256:4d65bafbf246b206a1af35d4263a86c35451d957458c7836304199f1cd2c1535
+            args:
+              - --listen=127.0.0.1
+              - --port=5353
+              - --upstream=https://1.1.1.1/dns-query
+              - --upstream=https://1.0.0.1/dns-query
+            # The image's binary carries file capability cap_net_bind_service;
+            # with no_new_privs or without that cap in the bounding set the
+            # kernel refuses to exec it ("operation not permitted").
+            securityContext:
+              allowPrivilegeEscalation: true
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"], add: ["NET_BIND_SERVICE"]}
+            resources:
+              requests:
+                cpu: 5m
+                memory: 16Mi
+              limits:
+                memory: 64Mi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true

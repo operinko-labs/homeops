@@ -12,7 +12,7 @@ ui:
   header: Status
 connectivity:
   checker:
-    target: 1.1.1.1:53
+    target: 1.1.1.1:443
     interval: 1m
 # Alerting configuration
 alerting:
@@ -64,7 +64,7 @@ endpoints:
     url: "https://vaderrp.com"
     interval: 1h
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[DOMAIN_EXPIRATION] > 720h"
       # NPMplus is on ACME_PROFILE=classic, so this is a 90-day LE cert
@@ -81,7 +81,7 @@ endpoints:
     url: "https://mail.erinko.fi"
     interval: 1h
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[CERTIFICATE_EXPIRATION] > 240h"
     alerts:
@@ -94,7 +94,7 @@ endpoints:
     url: "https://shadowmorph.info"
     interval: 1h
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[DOMAIN_EXPIRATION] > 720h"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -178,7 +178,7 @@ endpoints:
     url: "https://storj.vaderrp.com/"
     interval: 5m
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
@@ -202,7 +202,7 @@ endpoints:
     url: "https://matrix.erinko.fi/_matrix/client/versions"
     interval: 5m
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[STATUS] == 200"
     alerts:
@@ -215,7 +215,7 @@ endpoints:
     url: "https://erinko.fi/.well-known/matrix/server"
     interval: 5m
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[STATUS] == 200"
       - "[BODY] == pat(*matrix.erinko.fi*)"
@@ -229,7 +229,7 @@ endpoints:
     url: "https://account.erinko.fi/.well-known/openid-configuration"
     interval: 5m
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[STATUS] == 200"
     alerts:
@@ -242,7 +242,7 @@ endpoints:
     url: "https://chat.erinko.fi/"
     interval: 5m
     client:
-      dns-resolver: tcp://1.1.1.1:53
+      dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[STATUS] == 200"
     alerts:
