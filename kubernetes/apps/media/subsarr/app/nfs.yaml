@@ -1,0 +1,30 @@
+---
+# Subtitle files imported from the Subscene dump; written once by
+# `subsarr import-dump` on TrueNAS, read-only here.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: subsarr-storage-nfs
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes: ["ReadOnlyMany"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - nfsvers=4.1
+  nfs:
+    server: 192.168.7.198
+    path: /mnt/Nakkiallas/Download/subsarr/storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: subsarr-storage-nfs
+spec:
+  accessModes: ["ReadOnlyMany"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+  volumeName: subsarr-storage-nfs

@@ -15,13 +15,8 @@ controllers:
           TZ: Europe/Helsinki
           SUBSARR_DB_DRIVER: sqlite
           SUBSARR_DB_DSN: /app/db/subsarr.db
-          SUBSARR_STORAGE_BACKEND: s3
-          SUBSARR_S3_ENDPOINT: https://s3.vaderrp.com:9000
-          SUBSARR_S3_BUCKET: subsarr
-          SUBSARR_S3_PATH_STYLE: "true"
-        envFrom:
-          - secretRef:
-              name: subsarr-secret
+          SUBSARR_STORAGE_BACKEND: filesystem
+          SUBSARR_STORAGE_PATH: /app/storage
         probes:
           liveness:
             enabled: true
@@ -75,5 +70,10 @@ persistence:
     existingClaim: subsarr
     globalMounts:
       - path: /app/db
+  storage:
+    existingClaim: subsarr-storage-nfs
+    globalMounts:
+      - path: /app/storage
+        readOnly: true
   tmp:
     type: emptyDir

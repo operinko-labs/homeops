@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - ocirepository.yaml
   - helmrelease.yaml
-  - external-secret.yaml
+  - nfs.yaml
 
 configMapGenerator:
   - name: subsarr-values
