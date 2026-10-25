@@ -12,7 +12,7 @@ ui:
   header: Status
 connectivity:
   checker:
-    target: 1.1.1.1:443
+    target: 1.1.1.1:53
     interval: 1m
 # Alerting configuration
 alerting:
