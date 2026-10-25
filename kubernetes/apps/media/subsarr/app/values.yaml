@@ -1,0 +1,79 @@
+---
+# Helm values for subsarr app-template deployment
+# Self-hosted Subscene archive, used by Bazarr's "Subsarr" provider
+# (base URL http://subsarr.media.svc.cluster.local:8090)
+controllers:
+  subsarr:
+    annotations:
+      reloader.stakater.com/auto: "true"
+    containers:
+      app:
+        image:
+          repository: ghcr.io/slimcdk/subsarr
+          tag: 1.0.0@sha256:6c1d38b1a6d2e49eb0cc3af71a1e5f8d2ddef3f712bdb9162ca92f2ddc72a213
+        env:
+          TZ: Europe/Helsinki
+          SUBSARR_DB_DRIVER: sqlite
+          SUBSARR_DB_DSN: /app/db/subsarr.db
+          SUBSARR_STORAGE_BACKEND: s3
+          SUBSARR_S3_ENDPOINT: https://s3.vaderrp.com:9000
+          SUBSARR_S3_BUCKET: subsarr
+          SUBSARR_S3_PATH_STYLE: "true"
+        envFrom:
+          - secretRef:
+              name: subsarr-secret
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/v1/info
+                port: &port 8090
+              periodSeconds: 30
+              timeoutSeconds: 10
+              failureThreshold: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/v1/info
+                port: *port
+              periodSeconds: 10
+              timeoutSeconds: 10
+              failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: ["ALL"]}
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 1Gi
+defaultPodOptions:
+  dnsConfig:
+    options:
+      - name: ndots
+        value: "1"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+service:
+  app:
+    controller: subsarr
+    ports:
+      http:
+        port: *port
+persistence:
+  db:
+    existingClaim: subsarr
+    globalMounts:
+      - path: /app/db
+  tmp:
+    type: emptyDir
