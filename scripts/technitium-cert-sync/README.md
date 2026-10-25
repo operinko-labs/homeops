@@ -69,8 +69,8 @@ Verify from the node — both commands must produce the same tarball, because th
 forced command ignores whatever the client asks for:
 
 ```sh
-ssh -T -i /root/.ssh/technitium-cert-sync root@npmplus | tar -tzf -
-ssh -T -i /root/.ssh/technitium-cert-sync root@npmplus 'echo hello'
+ssh -T -p 2222 -i /root/.ssh/technitium-cert-sync root@npmplus | tar -tzf -
+ssh -T -p 2222 -i /root/.ssh/technitium-cert-sync root@npmplus 'echo hello'
 ```
 
 If the second prints `hello`, the forced command is not in effect and that key
@@ -88,14 +88,18 @@ before the timer runs unattended — the first interactive `ssh` does this, but
 only on the node where it was run:
 
 ```sh
-ssh-keyscan -t ed25519 npmplus >> /root/.ssh/known_hosts
+ssh-keyscan -p 2222 -t ed25519 npmplus >> /root/.ssh/known_hosts
 ```
+
+Port 2222, not 22: NPMplus's own sshd moved there at the Forgejo cutover, and
+its :22 is now the NPM+ stream to Forgejo, which answers with Forgejo's host key.
+A known_hosts entry for a non-default port is keyed `[npmplus]:2222`.
 
 Compare the fingerprint against the one the other node already accepted rather
 than trusting whatever answers:
 
 ```sh
-ssh-keygen -lf /root/.ssh/known_hosts -F npmplus
+ssh-keygen -lf /root/.ssh/known_hosts -F '[npmplus]:2222'
 ```
 
 ## Install on each Technitium node
@@ -135,6 +139,7 @@ match this deployment. Override via a systemd drop-in if needed:
 | Variable | Default | Meaning |
 |---|---|---|
 | `SRC_HOST` | `root@npmplus` | Host serving the bundle |
+| `SRC_PORT` | `2222` | NPMplus's own sshd (its :22 is the stream to Forgejo) |
 | `SSH_KEY` | `/root/.ssh/technitium-cert-sync` | Key matching the forced command |
 | `OUT` | `/etc/dns/ssl.pfx` | Where Technitium reads the bundle |
 | `WORK` | `/var/lib/technitium-cert` | Scratch and last-synced copy |
