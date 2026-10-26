@@ -77,6 +77,9 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # Push the version tag only: Harbor answers 412 to manifest reads while
+      # scan-on-push runs (prevent_vul), and buildx reads the manifest back
+      # for every further tag, so the rest are added after signing.
       - name: Build and push Docker image
         if: steps.check.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
         id: build
@@ -87,7 +90,7 @@ jobs:
           # inputs.force_push is empty (not a boolean) on pull_request events;
           # compare explicitly so the expression always yields a boolean
           push: ${{ github.event_name != 'pull_request' || inputs.force_push == true }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
           build-args: |
@@ -116,3 +119,14 @@ jobs:
             sleep 10
           done
           exit 1
+
+      - name: Add remaining tags
+        if: steps.build.outcome == 'success' && (github.event_name != 'pull_request' || inputs.force_push == true)
+        run: |
+          for tag in $(echo "${{ steps.meta.outputs.tags }}" | grep -vxF "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"); do
+            for i in $(seq 1 30); do
+              docker buildx imagetools create --tag "$tag" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" && break
+              [[ $i == 30 ]] && exit 1
+              sleep 10
+            done
+          done
