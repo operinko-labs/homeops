@@ -30,7 +30,7 @@ spec:
             image:
               repository: harbor.vaderrp.com/operinko-labs/torn-stats-tracker
               # Updated by Flux image automation (ImagePolicy flux-system/torn-stats-tracker)
-              tag: build-1792615981-sha-765cda7 # {"$imagepolicy": "flux-system:torn-stats-tracker:tag"}
+              tag: build-1793055434-sha-c073a67 # {"$imagepolicy": "flux-system:torn-stats-tracker:tag"}
             env:
               # cloudflared -> Traefik: Traefik appends the cloudflared pod IP
               # after the visitor IP traefik-warp sets from CF-Connecting-IP,
