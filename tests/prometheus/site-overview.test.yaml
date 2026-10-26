@@ -1,0 +1,104 @@
+---
+# promtool unit tests for kubernetes/apps/tools/site-overview/app/prometheusrule.yaml.
+# Run from the repo root (WSL):
+#   docker run --rm -v "$PWD":/w mikefarah/yq:4.54.1 .spec /w/kubernetes/apps/tools/site-overview/app/prometheusrule.yaml > /tmp/site-overview-rules.yaml
+#   docker run --rm -v /tmp:/tmp -v "$PWD/tests/prometheus:/t" --entrypoint promtool prom/prometheus:v3.14.0 test rules /t/site-overview.test.yaml
+rule_files:
+  - /tmp/site-overview-rules.yaml
+evaluation_interval: 1m
+tests:
+  # A configured site that never succeeded: the timestamp stays 0.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_source_last_success_timestamp{site="a",source="inventory",primary="true"}'
+        values: "0x180"
+      - series: 'site_overview_source_interval_seconds{site="a",source="inventory",primary="true"}'
+        values: "300x180"
+      - series: 'up{job="site-overview"}'
+        values: "1x180"
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: SiteSilent
+        exp_alerts:
+          - exp_labels: {site: a, source: inventory, primary: "true", namespace: a, app: site-overview, severity: critical}
+            exp_annotations:
+              summary: "a has gone silent in site-overview"
+              description: "site-overview has had no successful inventory poll of a for over twice its interval plus an hour (or never). https://site-overview.vaderrp.com/sites/a"
+      - eval_time: 2h
+        alertname: SiteOverviewDown
+        exp_alerts: []
+
+  # Last success at t=1h; interval 300 s → silent once older than 600 + 3600 s.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_source_last_success_timestamp{site="b",source="inventory",primary="true"}'
+        values: "3600x240"
+      - series: 'site_overview_source_interval_seconds{site="b",source="inventory",primary="true"}'
+        values: "300x240"
+      - series: 'site_overview_source_last_success_timestamp{site="b",source="dependencies",primary="false"}'
+        values: "3600x240"
+      - series: 'site_overview_source_interval_seconds{site="b",source="dependencies",primary="false"}'
+        values: "3600x240"
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: SiteSilent
+        exp_alerts: []
+      - eval_time: 3h
+        alertname: SiteSilent
+        exp_alerts:
+          - exp_labels: {site: b, source: inventory, primary: "true", namespace: b, app: site-overview, severity: critical}
+            exp_annotations:
+              summary: "b has gone silent in site-overview"
+              description: "site-overview has had no successful inventory poll of b for over twice its interval plus an hour (or never). https://site-overview.vaderrp.com/sites/b"
+      - eval_time: 2h
+        alertname: SiteOverviewSourceStale
+        exp_alerts: []
+      - eval_time: 3h30m
+        alertname: SiteOverviewSourceStale
+        exp_alerts:
+          - exp_labels: {site: b, source: dependencies, primary: "false", namespace: b, app: site-overview, severity: warning}
+            exp_annotations:
+              summary: "b: site-overview's dependencies poll is failing"
+              description: "No successful dependencies poll for b in over twice its interval; the last error is on https://site-overview.vaderrp.com/sites/b"
+
+  # No scrape of site-overview at all.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="something-else"}'
+        values: "1x30"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SiteOverviewDown
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: SiteOverviewDown
+        exp_alerts:
+          - exp_labels: {app: site-overview, severity: critical}
+            exp_annotations:
+              summary: "site-overview is down or not scraped"
+              description: "Prometheus has had no successful scrape of site-overview for 15 minutes, so no site-overview alert can fire."
+
+  # Behind the latest patch: 2 days is fine, 4 days alerts.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_runtime_behind_patch_seconds{site="c",container="php-fpm",product="php"}'
+        values: "172800x5"
+      - series: 'site_overview_runtime_behind_patch_seconds{site="d",container="php-fpm",product="php"}'
+        values: "345600x5"
+      - series: 'site_overview_finding{site="c",component="drupal/x",source="composer-advisory",id="SA-1",severity="critical",ecosystem="composer"}'
+        values: "1x5"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SiteRuntimeBehindPatch
+        exp_alerts:
+          - exp_labels: {site: d, container: php-fpm, product: php, namespace: d, app: site-overview, severity: warning}
+            exp_annotations:
+              summary: "d: php is behind its latest patch"
+              description: "php-fpm on d has trailed the latest php patch release for 4d 0h 0m 0s. https://site-overview.vaderrp.com/sites/d"
+      - eval_time: 5m
+        alertname: SiteDependencyAdvisory
+        exp_alerts:
+          - exp_labels: {site: c, component: drupal/x, source: composer-advisory, id: SA-1, severity: critical, ecosystem: composer, namespace: c, app: site-overview}
+            exp_annotations:
+              summary: "c: SA-1 in drupal/x"
+              description: "Security advisory SA-1 affects drupal/x as deployed on c. https://site-overview.vaderrp.com/sites/c"

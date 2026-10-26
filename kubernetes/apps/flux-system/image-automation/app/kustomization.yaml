@@ -17,4 +17,6 @@ resources:
   - imagepolicy-torn-stats-tracker.yaml
   - imagerepository-torn-tracker.yaml
   - imagepolicy-torn-tracker.yaml
+  - imagerepository-site-overview.yaml
+  - imagepolicy-site-overview.yaml
   - imageupdateautomation.yaml

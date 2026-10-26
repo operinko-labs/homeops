@@ -1,0 +1,96 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/monitoring.coreos.com/prometheusrule_v1.json
+# site-overview alerts. Every rule carries app=site-overview, which routes it to
+# ntfy (kube-prometheus-stack HelmRelease). `namespace` is rewritten to the site
+# name so the global inhibit rules (equal: namespace, alertname) only act within
+# one site, never across sites.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: site-overview
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: site-overview
+      rules:
+        - alert: SiteDependencyAdvisory
+          expr: label_replace(site_overview_finding{source=~"composer-advisory|npm-advisory"}, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+          annotations:
+            summary: "{{ $labels.site }}: {{ $labels.id }} in {{ $labels.component }}"
+            description: "Security advisory {{ $labels.id }} affects {{ $labels.component }} as deployed on {{ $labels.site }}. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        - alert: SiteImageCVE
+          expr: label_replace(site_overview_finding{source="trivy"}, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+          annotations:
+            summary: "{{ $labels.site }}: fixable {{ $labels.id }} in {{ $labels.component }}"
+            description: "A running image on {{ $labels.site }} has a fixable {{ $labels.severity }} CVE ({{ $labels.id }}, {{ $labels.component }}). https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        - alert: SiteRuntimeCVE
+          expr: label_replace(site_overview_finding{source="nvd"}, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+          annotations:
+            summary: "{{ $labels.site }}: {{ $labels.id }} in {{ $labels.component }}"
+            description: "NVD lists {{ $labels.id }} for the {{ $labels.component }} version running on {{ $labels.site }}. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        - alert: SiteRuntimeBehindPatch
+          expr: label_replace(site_overview_runtime_behind_patch_seconds > 3 * 86400, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+            severity: warning
+          annotations:
+            summary: "{{ $labels.site }}: {{ $labels.product }} is behind its latest patch"
+            description: "{{ $labels.container }} on {{ $labels.site }} has trailed the latest {{ $labels.product }} patch release for {{ $value | humanizeDuration }}. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        - alert: SiteRuntimeNearEOL
+          expr: label_replace(site_overview_runtime_eol_timestamp - time() < 90 * 86400, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+            severity: warning
+          annotations:
+            summary: "{{ $labels.site }}: {{ $labels.product }} branch reaches EOL soon"
+            description: "The {{ $labels.product }} branch running in {{ $labels.container }} on {{ $labels.site }} is EOL in {{ $value | humanizeDuration }} (or already past it). https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        - alert: SiteOverviewSourceStale
+          expr: |
+            label_replace(
+              time() - site_overview_source_last_success_timestamp{primary="false"}
+                > on(site, source, primary) (2 * site_overview_source_interval_seconds),
+              "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+            severity: warning
+          annotations:
+            summary: "{{ $labels.site }}: site-overview's {{ $labels.source }} poll is failing"
+            description: "No successful {{ $labels.source }} poll for {{ $labels.site }} in over twice its interval; the last error is on https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        # Dead-man switch per site: its primary source has gone quiet, or never
+        # succeeded at all (the timestamp is exported as 0 until it does).
+        - alert: SiteSilent
+          expr: |
+            label_replace(
+              time() - site_overview_source_last_success_timestamp{primary="true"}
+                > on(site, source, primary) (2 * site_overview_source_interval_seconds + 3600),
+              "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+            severity: critical
+          annotations:
+            summary: "{{ $labels.site }} has gone silent in site-overview"
+            description: "site-overview has had no successful {{ $labels.source }} poll of {{ $labels.site }} for over twice its interval plus an hour (or never). https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
+        # Dead-man switch for the collector itself: without its metrics no rule above can fire.
+        - alert: SiteOverviewDown
+          expr: absent(up{job="site-overview"} == 1)
+          for: 15m
+          labels:
+            app: site-overview
+            severity: critical
+          annotations:
+            summary: "site-overview is down or not scraped"
+            description: "Prometheus has had no successful scrape of site-overview for 15 minutes, so no site-overview alert can fire."

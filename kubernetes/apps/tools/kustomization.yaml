@@ -12,6 +12,7 @@ resources:
   - ./n8n/ks.yaml
   - ./paperless/ks.yaml
   - ./parsedmarc/ks.yaml
+  - ./site-overview/ks.yaml
   - ./tainer/ks.yaml
   - ./trilium/ks.yaml
 components:

@@ -1,0 +1,85 @@
+---
+# Harbor proxy-cache project per upstream registry (talos/machineconfig.yaml.j2).
+registryMirrors:
+  docker.io: dockerhub
+  ghcr.io: ghcr
+  registry.k8s.io: k8s
+  quay.io: quay
+  mirror.gcr.io: gcr
+  cr.fluentbit.io: fluentbit
+
+sites:
+  - name: kyronautopalvelu
+    kind: drupal
+    namespace: kyronautopalvelu
+    repo: operinko-labs/kyronautopalvelu
+    siteImage: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
+    hostname: kyronautopalvelu.fi
+    lockfiles: [composer.lock]
+    runtimes: &drupal-runtimes
+      - {container: php-fpm, product: php, env: PHP_VERSION, cpe: "php:php"}
+      - {container: nginx, product: nginx, env: NGINX_VERSION, cpe: "f5:nginx"}
+      - {container: varnish, product: varnish, package: varnish}
+      # Base OS versions from each image's SBOM (Harbor/Trivy SPDX)
+      - {container: php-fpm, product: alpine-linux, package: alpine}
+      - {container: nginx, product: alpine-linux, package: alpine}
+      - {container: varnish, product: debian, package: debian}
+    logs:
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="kyronautopalvelu"} | json'}
+      - {name: php-fpm, query: '{namespace="kyronautopalvelu", container="php-fpm"}'}
+      - {name: nginx, query: '{namespace="kyronautopalvelu", container="nginx"}'}
+      - {name: varnish, query: '{namespace="kyronautopalvelu", container="varnish"}'}
+
+  - name: medikabalans
+    kind: drupal
+    namespace: medikabalans
+    repo: operinko-labs/medikabalans
+    siteImage: harbor.vaderrp.com/operinko-labs/medikabalans
+    hostname: medikabalans.fi
+    lockfiles: [composer.lock]
+    runtimes: *drupal-runtimes
+    logs:
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="medikabalans"} | json'}
+      - {name: php-fpm, query: '{namespace="medikabalans", container="php-fpm"}'}
+      - {name: nginx, query: '{namespace="medikabalans", container="nginx"}'}
+      - {name: varnish, query: '{namespace="medikabalans", container="varnish"}'}
+
+  - name: leo_cal
+    kind: drupal
+    namespace: leo-cal
+    repo: operinko-labs/leo_cal
+    siteImage: harbor.vaderrp.com/operinko-labs/leo_cal
+    lockfiles: [composer.lock]
+    runtimes: *drupal-runtimes
+    logs:
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="leo-cal"} | json'}
+      - {name: php-fpm, query: '{namespace="leo-cal", container="php-fpm"}'}
+      - {name: nginx, query: '{namespace="leo-cal", container="nginx"}'}
+      - {name: varnish, query: '{namespace="leo-cal", container="varnish"}'}
+
+  # syslog is disabled on ruoka-admin (Plan 2 enables it), so there is no watchdog stream yet.
+  - name: ruoka-admin
+    kind: drupal
+    namespace: ruoka
+    repo: operinko-labs/ruoka-admin
+    siteImage: harbor.vaderrp.com/operinko-labs/ruoka-admin
+    lockfiles: [composer.lock]
+    runtimes: *drupal-runtimes
+    logs:
+      - {name: php-fpm, query: '{namespace="ruoka", container="php-fpm"}'}
+      - {name: nginx, query: '{namespace="ruoka", container="nginx"}'}
+      - {name: varnish, query: '{namespace="ruoka", container="varnish"}'}
+
+  - name: ruskonkesateatteri
+    kind: drupal
+    namespace: ruskonkesateatteri
+    repo: operinko-labs/ruskonkesateatteri
+    siteImage: harbor.vaderrp.com/operinko-labs/ruskonkesateatteri
+    hostname: ruskonkesateatteri.fi
+    lockfiles: [composer.lock]
+    runtimes: *drupal-runtimes
+    logs:
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="ruskonkesateatteri"} | json'}
+      - {name: php-fpm, query: '{namespace="ruskonkesateatteri", container="php-fpm"}'}
+      - {name: nginx, query: '{namespace="ruskonkesateatteri", container="nginx"}'}
+      - {name: varnish, query: '{namespace="ruskonkesateatteri", container="varnish"}'}

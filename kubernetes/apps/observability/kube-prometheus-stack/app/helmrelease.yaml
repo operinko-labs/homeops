@@ -68,6 +68,9 @@ spec:
           type: None
         # Look in all namespaces for AlertmanagerConfig CRDs
         alertmanagerConfigNamespaceSelector: {}
+        # Mounted at /etc/alertmanager/secrets/alertmanager-ntfy/ (ntfy receiver below)
+        secrets:
+          - alertmanager-ntfy
       config:
         global:
           resolve_timeout: 5m
@@ -84,6 +87,13 @@ spec:
             - matchers:
                 - alertname = "InfoInhibitor"
               receiver: "null"
+            # site-overview (tools) alerts go to ntfy once a day until fixed;
+            # `continue` lets log-aggregator record them too.
+            - matchers:
+                - app = "site-overview"
+              receiver: "ntfy"
+              repeat_interval: 24h
+              continue: true
             # Log aggregator captures all alerts for AI analysis
             - receiver: "log-aggregator"
               continue: true
@@ -109,6 +119,15 @@ spec:
             webhook_configs:
               - url: "http://log-aggregator.tools.svc.cluster.local:8080/api/alert"
                 send_resolved: true
+          - name: "ntfy"
+            webhook_configs:
+              # ntfy's built-in alertmanager template formats the payload.
+              - url: "http://ntfy.observability.svc.cluster.local:8080/alerts?template=alertmanager"
+                send_resolved: true
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials_file: /etc/alertmanager/secrets/alertmanager-ntfy/ntfy_token
     kubeEtcd:
       service:
         selector:
