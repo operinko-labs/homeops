@@ -1,4 +1,3 @@
----
 # Source: forgejo operinko-labs/site-overview. Releases are v* tags; Flux image
 # automation (ImagePolicy flux-system/site-overview) bumps the tag below.
 controllers:
@@ -19,7 +18,7 @@ controllers:
       app:
         image:
           repository: harbor.vaderrp.com/operinko-labs/site-overview
-          tag: 0.1.0 # {"$imagepolicy": "flux-system:site-overview:tag"}
+          tag: 0.1.1 # {"$imagepolicy": "flux-system:site-overview:tag"}
         env:
           TZ: Europe/Helsinki
           SITE_OVERVIEW_SITES_FILE: /config/sites.yaml
