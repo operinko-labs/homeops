@@ -102,3 +102,19 @@ tests:
             exp_annotations:
               summary: "c: SA-1 in drupal/x"
               description: "Security advisory SA-1 affects drupal/x as deployed on c. https://site-overview.vaderrp.com/sites/c"
+
+  # Image CVEs are counted per site, container and severity.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_finding{site="e",component="varnish:curl",source="trivy",id="CVE-1",severity="warning",ecosystem=""}'
+        values: "1x5"
+      - series: 'site_overview_finding{site="e",component="varnish:openssl",source="trivy",id="CVE-2",severity="warning",ecosystem=""}'
+        values: "1x5"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SiteImageCVE
+        exp_alerts:
+          - exp_labels: {site: e, container: varnish, severity: warning, namespace: e, app: site-overview}
+            exp_annotations:
+              summary: "e: 2 fixable warning CVE(s) in the varnish image"
+              description: "The varnish image on e has 2 fixable warning CVE(s); rebuilding or re-pulling it usually clears them. https://site-overview.vaderrp.com/sites/e"

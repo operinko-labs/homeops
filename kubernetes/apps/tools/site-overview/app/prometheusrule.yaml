@@ -22,13 +22,21 @@ spec:
             summary: "{{ $labels.site }}: {{ $labels.id }} in {{ $labels.component }}"
             description: "Security advisory {{ $labels.id }} affects {{ $labels.component }} as deployed on {{ $labels.site }}. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
 
+        # One alert per site, container and severity carrying the count: an
+        # outdated base image has dozens of fixable CVEs, and one alert each
+        # would bury everything else. The list is on the site page.
         - alert: SiteImageCVE
-          expr: label_replace(site_overview_finding{source="trivy"}, "namespace", "$1", "site", "(.*)")
+          expr: |
+            label_replace(
+              count by (site, container, severity) (
+                label_replace(site_overview_finding{source="trivy"}, "container", "$1", "component", "([^:]+):.*")
+              ),
+              "namespace", "$1", "site", "(.*)")
           labels:
             app: site-overview
           annotations:
-            summary: "{{ $labels.site }}: fixable {{ $labels.id }} in {{ $labels.component }}"
-            description: "A running image on {{ $labels.site }} has a fixable {{ $labels.severity }} CVE ({{ $labels.id }}, {{ $labels.component }}). https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+            summary: "{{ $labels.site }}: {{ $value }} fixable {{ $labels.severity }} CVE(s) in the {{ $labels.container }} image"
+            description: "The {{ $labels.container }} image on {{ $labels.site }} has {{ $value }} fixable {{ $labels.severity }} CVE(s); rebuilding or re-pulling it usually clears them. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
 
         - alert: SiteRuntimeCVE
           expr: label_replace(site_overview_finding{source="nvd"}, "namespace", "$1", "site", "(.*)")
