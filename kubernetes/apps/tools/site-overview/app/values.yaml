@@ -88,6 +88,9 @@ serviceMonitor:
     serviceName: site-overview
     endpoints:
       - port: http
+        # The app's own `container` label (runtime metrics) must not be
+        # renamed to exported_container by the pod's target label.
+        honorLabels: true
         scheme: http
         path: /metrics
         interval: 1m
