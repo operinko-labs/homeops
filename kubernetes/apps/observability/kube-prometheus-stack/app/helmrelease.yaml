@@ -147,6 +147,9 @@ spec:
       ingress:
         enabled: false
       prometheusSpec:
+        # Alert "Source" links (generatorURL) point here instead of the
+        # cluster-internal service name.
+        externalUrl: https://prometheus.vaderrp.com
         priorityClassName: system-cluster-critical
         podMonitorSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
