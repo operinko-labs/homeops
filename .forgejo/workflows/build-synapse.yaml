@@ -79,6 +79,7 @@ jobs:
 
       - name: Build and push Docker image
         if: steps.check.outputs.exists != 'true' || github.event_name == 'workflow_dispatch'
+        id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: apps/synapse
@@ -91,3 +92,27 @@ jobs:
           platforms: linux/amd64
           build-args: |
             SYNAPSE_VERSION=${{ steps.version.outputs.version }}
+
+      - name: Install cosign
+        if: steps.build.outcome == 'success' && (github.event_name != 'pull_request' || inputs.force_push == true)
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      # Sign the pushed digest with the operinko-labs key (public half in
+      # cosign.pub). Legacy .sig tag and no Rekor upload: Harbor lists it as a
+      # signature.cosign accessory and nothing leaves the homelab. Retry while
+      # scan-on-push answers 412 to the manifest read.
+      - name: Sign image
+        if: steps.build.outcome == 'success' && (github.event_name != 'pull_request' || inputs.force_push == true)
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          for i in $(seq 1 30); do
+            cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
+              --use-signing-config=false --new-bundle-format=false --tlog-upload=false \
+              "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}" && exit 0
+            sleep 10
+          done
+          exit 1

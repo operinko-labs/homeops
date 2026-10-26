@@ -1,5 +1,7 @@
 # Secrets
 *.pub
+# Image-signing public key, see docs/image-signing.md
+!/cosign.pub
 *.key
 *.decrypted~*.yaml
 /age.key
