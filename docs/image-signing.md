@@ -57,8 +57,8 @@ cosign sign --yes --key env://COSIGN_PRIVATE_KEY \
 Signing workflows: homeops `build-{log-aggregator,synapse,tempest-mcp}.yaml`, lab-images
 (`drupal-php-fpm`, `nginx-brotli`), the five Drupal site CIs (kyronautopalvelu, leo_cal, medikabalans,
 ruoka-admin, ruskonkesateatteri), gpro (`ci.yml`, `manual-build.yml`), torn-tracker, torn_stats_tracker,
-autoposter, stalwart-users (`.github/workflows/release.yml`), bitwarden-eso-provider (`bweso`) and
-site-overview. The Helm chart pushes (`charts`, bitwarden-eso-provider `cd-helm-release.yml`) aren't
+autoposter, stalwart-users (`.github/workflows/release.yml`), bitwarden-eso-provider (`bweso`),
+site-overview and paikky_calendar_export (`.github/workflows/ci.yml`). The Helm chart pushes (`charts`, bitwarden-eso-provider `cd-helm-release.yml`) aren't
 signed.
 
 ## Verifying
