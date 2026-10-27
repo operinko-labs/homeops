@@ -1,4 +1,7 @@
 ---
+# Bulwark is served only on webmail.erinko.fi (httproute-erinko.yaml): its
+# Stalwart OAuth client is registered for that host alone, so the old
+# address just redirects there
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -8,17 +11,11 @@ metadata:
     route.scope: external
   annotations:
     external-dns.alpha.kubernetes.io/target: external.vaderrp.com
-    gatus.home-operations.com/enabled: "true"
-    gatus.home-operations.com/endpoint: |
-      group: Mail
-      url: "https://webmail.vaderrp.com"
-      conditions:
-        - "[STATUS] == 200"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/group: Mail
     gethomepage.dev/name: Webmail
     gethomepage.dev/icon: si-maildotcom
-    gethomepage.dev/href: https://webmail.vaderrp.com
+    gethomepage.dev/href: https://webmail.erinko.fi
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -28,10 +25,9 @@ spec:
   hostnames:
     - webmail.vaderrp.com
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: bulwark
-          port: 3000
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: webmail.erinko.fi
+            statusCode: 301
