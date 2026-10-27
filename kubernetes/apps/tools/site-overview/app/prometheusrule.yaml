@@ -22,6 +22,14 @@ spec:
             summary: "{{ $labels.site }}: {{ $labels.id }} in {{ $labels.component }}"
             description: "Security advisory {{ $labels.id }} affects {{ $labels.component }} as deployed on {{ $labels.site }}. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
 
+        - alert: DrupalProjectUnsupported
+          expr: label_replace(site_overview_finding{source="drupal-updates"}, "namespace", "$1", "site", "(.*)")
+          labels:
+            app: site-overview
+          annotations:
+            summary: "{{ $labels.site }}: {{ $labels.component }} is {{ $labels.id }} on drupal.org"
+            description: "drupal.org marks {{ $labels.component }}, as deployed on {{ $labels.site }}, {{ $labels.id }}: it no longer gets security coverage. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
+
         # One alert per site, container and severity carrying the count: an
         # outdated base image has dozens of fixable CVEs, and one alert each
         # would bury everything else. The list is on the site page.

@@ -118,3 +118,19 @@ tests:
             exp_annotations:
               summary: "e: 2 fixable warning CVE(s) in the varnish image"
               description: "The varnish image on e has 2 fixable warning CVE(s); rebuilding or re-pulling it usually clears them. https://site-overview.vaderrp.com/sites/e"
+
+  # An unsupported Drupal project alerts; an image CVE series does not trip it.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_finding{site="leo_cal",component="drupal/gone",source="drupal-updates",id="unsupported",severity="warning",ecosystem="composer"}'
+        values: "1x10"
+      - series: 'site_overview_finding{site="leo_cal",component="varnish:libc",source="trivy",id="CVE-1",severity="warning",ecosystem=""}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: DrupalProjectUnsupported
+        exp_alerts:
+          - exp_labels: {site: leo_cal, component: drupal/gone, source: drupal-updates, id: unsupported, severity: warning, ecosystem: composer, namespace: leo_cal, app: site-overview}
+            exp_annotations:
+              summary: "leo_cal: drupal/gone is unsupported on drupal.org"
+              description: "drupal.org marks drupal/gone, as deployed on leo_cal, unsupported: it no longer gets security coverage. https://site-overview.vaderrp.com/sites/leo_cal"
