@@ -88,9 +88,13 @@ otherwise once a year.
    second signature is added to the existing `.sig` manifest.
 6. Once nothing deployed depends on the old key alone, drop it from the policy.
 
-## Enforcement: recommendation
+## Enforcement
 
-Nothing is enforced yet. There are two candidates.
+**Status (2026-10-27): Kyverno `verifyImages` in `Audit`.** The policy is
+[`verify-images.yaml`](../kubernetes/apps/security/kyverno/policies/verify-images.yaml). Nothing is
+blocked yet; results land in PolicyReports.
+
+Two candidates were compared.
 
 ### Harbor: "Cosign: prevent unsigned images from being pulled" on operinko-labs
 
@@ -117,51 +121,13 @@ Nothing is enforced yet. There are two candidates.
 **Recommendation: Kyverno, staged.** Harbor's check doesn't bind to our key, and it risks breaking the
 signing step itself.
 
-1. Add the policy below in `Audit` (for example as `kubernetes/apps/security/kyverno/policies/verify-images.yaml`)
-   and watch `kubectl get policyreport -A` for a week.
+1. Policy in `Audit` (done 2026-10-27). Watch it for a week:
+   `kubectl get policyreport -A -o json | jq -r '.items[].results[]? | select(.policy=="verify-operinko-labs-images" and .result!="pass") | .resources[0].name // .message'`
+   (or `kubectl get events -A --field-selector reason=PolicyViolation`).
 2. Let every image get a signed build, or re-sign the deployed digests by hand.
-3. Switch `failureAction` to `Enforce`.
+3. In the policy, set `failureAction: Enforce` and `failurePolicy: Fail`. `failurePolicy: Ignore` is
+   there only so a Kyverno outage can't block Pods while nothing is enforced.
 
 `mutateDigest: false` stops Kyverno from rewriting image tags to digests, which would fight Flux/Helm.
-
-```yaml
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kyverno.io/clusterpolicy_v1.json
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
-metadata:
-  name: verify-operinko-labs-images
-  annotations:
-    policies.kyverno.io/title: Verify operinko-labs image signatures
-    policies.kyverno.io/description: >-
-      Images from harbor.vaderrp.com/operinko-labs must carry a cosign signature
-      made with the key in cosign.pub. Proxy-cache images are not matched.
-spec:
-  background: false
-  webhookTimeoutSeconds: 30
-  rules:
-    - name: operinko-labs-signed
-      match:
-        any:
-          - resources:
-              kinds: ["Pod"]
-      verifyImages:
-        - imageReferences:
-            - "harbor.vaderrp.com/operinko-labs/*"
-          failureAction: Audit
-          mutateDigest: false
-          verifyDigest: false
-          required: true
-          attestors:
-            - entries:
-                - keys:
-                    publicKeys: |-
-                      -----BEGIN PUBLIC KEY-----
-                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEacG7diNtFSMNUD+A0dZKZJOXVZ22
-                      pQUw77geH1ZFcUp5UC6mICQ6GjBxEBpFZ+iw5QP2vMPB90QDI2pdmTErOA==
-                      -----END PUBLIC KEY-----
-                    rekor:
-                      ignoreTlog: true
-                    ctlog:
-                      ignoreSCT: true
-```
+`background: false` keeps the check at admission; Pods that already run are reported when they are
+next created.

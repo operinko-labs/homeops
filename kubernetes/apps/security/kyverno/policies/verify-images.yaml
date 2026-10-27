@@ -1,0 +1,46 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/kyverno.io/clusterpolicy_v1.json
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-operinko-labs-images
+  annotations:
+    policies.kyverno.io/title: Verify operinko-labs image signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Images from harbor.vaderrp.com/operinko-labs must carry a cosign signature
+      made with the key in cosign.pub. Proxy-cache images are not matched.
+      See docs/image-signing.md.
+spec:
+  background: false
+  # Audit only: a Kyverno outage must not block Pods. Set Fail with Enforce.
+  failurePolicy: Ignore
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: operinko-labs-signed
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - imageReferences:
+            - "harbor.vaderrp.com/operinko-labs/*"
+          failureAction: Audit
+          mutateDigest: false
+          verifyDigest: false
+          required: true
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEacG7diNtFSMNUD+A0dZKZJOXVZ22
+                      pQUw77geH1ZFcUp5UC6mICQ6GjBxEBpFZ+iw5QP2vMPB90QDI2pdmTErOA==
+                      -----END PUBLIC KEY-----
+                    rekor:
+                      ignoreTlog: true
+                    ctlog:
+                      ignoreSCT: true
