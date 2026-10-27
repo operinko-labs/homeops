@@ -33,7 +33,7 @@ spec:
         tag: production-1793081149-sha-2ec67c4 # {"$imagepolicy": "flux-system:gpro-backend-production:tag"}
       frontend:
         repository: harbor.vaderrp.com/operinko-labs/gpro-frontend
-        tag: production-1792615374-sha-d4d8bba # {"$imagepolicy": "flux-system:gpro-frontend-production:tag"}
+        tag: production-1793081149-sha-2ec67c4 # {"$imagepolicy": "flux-system:gpro-frontend-production:tag"}
     envSecretName: gpro-secret
     schedulerTick:
       enabled: true
