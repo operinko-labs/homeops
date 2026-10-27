@@ -14,6 +14,14 @@ ARG PILLOW_VERSION=13.0.0
 # (The base is distroless-style: apt can't upgrade it, Debian fixes come with
 # new upstream images.)
 RUN rm -f /usr/sbin/gosu
+# libxml2 carries a Critical CVE (CVE-2026-6653) that trixie won't fix (no-dsa).
+# Only the xmlsec1/xslt stack links it, and that serves pysaml2's SAML signing;
+# logins go through MAS, so drop the whole stack and its dpkg status entries.
+RUN rm -f /usr/bin/xmlsec1 \
+    /usr/lib/x86_64-linux-gnu/libxml2.so* /usr/lib/x86_64-linux-gnu/libxslt.so* \
+    /usr/lib/x86_64-linux-gnu/libexslt.so* /usr/lib/x86_64-linux-gnu/libxmlsec1*.so* \
+    /var/lib/dpkg/status.d/libxml2* /var/lib/dpkg/status.d/libxslt1.1* \
+    /var/lib/dpkg/status.d/libxmlsec1t64* /var/lib/dpkg/status.d/xmlsec1*
 COPY --from=compressor /usr/local/bin/synapse_auto_compressor /usr/local/bin/synapse_auto_compressor
 RUN pip install --no-cache-dir "synapse-s3-storage-provider==${S3_PROVIDER_VERSION}" "pillow==${PILLOW_VERSION}" \
  && pip check \
