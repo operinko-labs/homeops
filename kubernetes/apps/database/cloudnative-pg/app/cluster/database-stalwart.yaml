@@ -14,8 +14,8 @@ spec:
       owner: stalwart
 ---
 # Target of the 0.16 -> 1.0 migration (docs/superpowers/plans/2026-10-27-stalwart-1.0-migration.md).
-# stalwart-migrate requires a new, empty database. The SQL directory stays in
-# the directory schema of the stalwart database above.
+# stalwart-migrate requires a new, empty database. The SQL directory (directory
+# schema, shared with stalwart-users) moved here from the stalwart database on 2026-10-27.
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:

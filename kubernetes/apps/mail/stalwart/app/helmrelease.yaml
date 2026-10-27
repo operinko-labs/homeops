@@ -30,7 +30,7 @@ spec:
               tag: "18"
             command: ["psql"]
             args:
-              - "postgresql://$(STALWART_DB_USER):$(STALWART_DB_PASSWORD)@postgres18-rw.database.svc.cluster.local:5432/stalwart"
+              - "postgresql://$(STALWART_DB_USER):$(STALWART_DB_PASSWORD)@postgres18-rw.database.svc.cluster.local:5432/stalwart_v1"
               - -f
               - /config/init-directory.sql
             envFrom:
