@@ -27,7 +27,7 @@ spec:
       name: bitwarden-eso-provider
     image:
       repository: harbor.vaderrp.com/operinko-labs/bweso
-      tag: "2026.7.0"
+      tag: "2026.7.0-r1"
     resources:
       requests:
         cpu: 512m
