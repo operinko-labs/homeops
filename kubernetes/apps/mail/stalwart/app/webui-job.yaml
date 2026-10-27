@@ -73,7 +73,7 @@ data:
     if webui["id"] not in (result.get("updated") or {}):
         sys.exit(f"Update rejected: {json.dumps(result.get('notUpdated'))}")
 
-    result = jmap("x:Action/set", {"create": {"a0": {"type": "UpdateApps"}}})
+    result = jmap("x:Action/set", {"create": {"a0": {"@type": "UpdateApps"}}})
     if "a0" not in (result.get("created") or {}):
         sys.exit(f"UpdateApps rejected: {json.dumps(result.get('notCreated'))}")
 
@@ -106,7 +106,7 @@ spec:
             - name: STALWART_URL
               value: http://stalwart-app.mail.svc.cluster.local:8080
             - name: WEBUI_RESOURCE_URL
-              value: https://github.com/LinkPhoenix/stalwart-webui-fork/releases/latest/download/webui.zip
+              value: https://github.com/stalwartlabs/webui/releases/download/v2/webui.zip
             - name: STALWART_RECOVERY_ADMIN
               valueFrom:
                 secretKeyRef:

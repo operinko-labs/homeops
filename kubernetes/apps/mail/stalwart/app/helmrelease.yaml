@@ -40,7 +40,7 @@ spec:
           app:
             image:
               repository: ghcr.io/stalwartlabs/stalwart
-              tag: v0.16.27@sha256:c429b311c93db5606598abc1c68225a85a6953183848ae01bee9c6a98885836c
+              tag: v1.0.0@sha256:baafeacd6cbde77acdd94af49972d41c6709e54a376df48e18a9fe3f445eb3d5
             env:
               TZ: Europe/Helsinki
             envFrom:
@@ -121,7 +121,7 @@ spec:
           - path: /var/lib/stalwart
       config:
         type: secret
-        name: stalwart-secret
+        name: stalwart-v1-secret
         globalMounts:
           - path: /etc/stalwart/config.json
             subPath: config.json
