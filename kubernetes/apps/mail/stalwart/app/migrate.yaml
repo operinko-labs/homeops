@@ -1,0 +1,85 @@
+---
+# Toolbox for the 0.16 -> 1.0 migration
+# (docs/superpowers/plans/2026-10-27-stalwart-1.0-migration.md). It idles, and
+# every stalwart-migrate command runs through kubectl exec. The state volume
+# holds answers.toml, progress and reports, and `rollback --forward-state`
+# needs it until 0.16 is retired, so delete this file only after the soak.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stalwart-migrate-state
+  namespace: mail
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: tns-iscsi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stalwart-migrate
+  namespace: mail
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: migrate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: migrate
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 2000
+        runAsGroup: 2000
+        fsGroup: 2000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: ghcr.io/stalwartlabs/stalwart-migrate:1.0.0@sha256:d722a11e081882152c85da629f37ff2bc33a2063fa2c7a262c71052add17d44f
+          command: ["sleep", "infinity"]
+          env:
+            - name: STALWART_MIGRATE_STATE
+              value: /var/lib/stalwart-migrate
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 2Gi
+          volumeMounts:
+            - name: source-config
+              mountPath: /etc/stalwart
+              readOnly: true
+            - name: target-config
+              mountPath: /etc/stalwart-v1
+              readOnly: true
+            - name: state
+              mountPath: /var/lib/stalwart-migrate
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: source-config
+          secret:
+            secretName: stalwart-secret
+            items:
+              - key: config.json
+                path: config.json
+        - name: target-config
+          secret:
+            secretName: stalwart-v1-secret
+        - name: state
+          persistentVolumeClaim:
+            claimName: stalwart-migrate-state
+        - name: tmp
+          emptyDir: {}

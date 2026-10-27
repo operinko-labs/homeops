@@ -7,9 +7,11 @@ resources:
   - httproute.yaml
   - httproute-erinko.yaml
   - external-secret.yaml
+  - external-secret-v1.yaml
   - dnsendpoint.yaml
   - configmap.yaml
   - webui-job.yaml
+  - migrate.yaml
 configMapGenerator:
   - name: stalwart-loki-rules
     files:
