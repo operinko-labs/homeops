@@ -8,6 +8,11 @@ registryMirrors:
   mirror.gcr.io: gcr
   cr.fluentbit.io: fluentbit
 
+# Trivy packages whose CVEs are never findings: kernel headers in a container
+# image don't run (the nodes' kernel is Talos's).
+trivyIgnorePackages:
+  - linux-libc-dev
+
 sites:
   - name: kyronautopalvelu
     kind: drupal

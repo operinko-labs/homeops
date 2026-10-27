@@ -102,15 +102,19 @@ spec:
             - receiver: "log-aggregator"
               continue: true
         inhibit_rules:
+          # site-overview alerts are exempt: a critical CVE in one package or
+          # container doesn't make another one's warning redundant.
           - source_matchers:
               - severity = "critical"
             target_matchers:
               - severity =~ "warning|info"
+              - app != "site-overview"
             equal: ["namespace", "alertname"]
           - source_matchers:
               - severity = "warning"
             target_matchers:
               - severity = "info"
+              - app != "site-overview"
             equal: ["namespace", "alertname"]
           - source_matchers:
               - alertname = "InfoInhibitor"
