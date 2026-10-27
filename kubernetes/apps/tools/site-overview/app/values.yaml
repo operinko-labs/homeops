@@ -18,7 +18,7 @@ controllers:
       app:
         image:
           repository: harbor.vaderrp.com/operinko-labs/site-overview
-          tag: 0.1.2 # {"$imagepolicy": "flux-system:site-overview:tag"}
+          tag: 0.2.0 # {"$imagepolicy": "flux-system:site-overview:tag"}
         env:
           TZ: Europe/Helsinki
           SITE_OVERVIEW_SITES_FILE: /config/sites.yaml
