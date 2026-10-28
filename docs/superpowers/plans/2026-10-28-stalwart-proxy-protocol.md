@@ -94,3 +94,12 @@ Not in scope: the Traefik → `stalwart-app:8080` path (admin UI, LAN `mail.erin
 - [ ] **Step 1:** Add a "Done" note with times and results to this plan; update memory `project_stalwart_1_0_migration.md` (PROXY live, authBanPeriod 1d, 143 removed); commit and push homeops.
 
 **Rollback** (any time): `git revert` the haproxy commit + `just vps apply`; `x:NetworkListener/set` the six listeners back to `{}` and `x:Security/set` `authBanPeriod` back to `null`; `kubectl -n mail rollout restart deploy/stalwart`, applying haproxy while the old pod is down, as in Task 3.
+
+## Done (2026-10-28, 21:22–21:23 UTC)
+
+- Pre-flight: over 24 h the only 172.16.8.x source on the six listeners was 172.16.8.2 (plus one in-cluster pod on imaps). Outside baseline OK on 443/993/995/465/587/4190. Rollback values saved: the six listeners had `{}`, smtp `{"172.16.8.0/24": true}`, `x:Security.authBanPeriod` `null`.
+- haproxy aa0b3979c: `send-proxy-v2` on the six backends, port 143 relay removed; `haproxy -c` passed on the VPS. Applied by copying the file and `systemctl reload haproxy` (same steps as `apply.sh`) so the timing could be controlled; the VPS file equals the committed one.
+- Stalwart: listeners https, submissions, submission, imaps, pop3s, sieve → `{"172.16.8.2/32": true}`; `authBanPeriod` = 86400000 (1 day; the API takes milliseconds).
+- Switch: `rollout restart` at 21:22:36, old pod gone 21:22:40, haproxy reloaded 21:22:42, new pod Ready 21:23:13 — ~37 s of downtime.
+- Verified: all six ports answer from outside; Stalwart logs real client addresses (home IPv4 on submission, the user's phone on https, an IPv6 client on pop3s) and no 172.16.8.2; no PROXY errors; admin API/UI, webmail + its SSO start, stalwart-users (vaderrp host) unaffected; ban list unchanged (89). Phone on mobile data synced and delivered a self-sent message.
+- Not verified directly: failed IMAP logins aren't logged at INFO, so ban attribution relies on the throwaway-pod test.
