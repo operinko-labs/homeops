@@ -264,3 +264,22 @@ Mail keeps flowing throughout; sign-ins fail only during the Stalwart restart (~
 - [ ] Drop `directory.accounts`, `directory.emails`, `directory.group_members` in `stalwart_v1`; keep `directory.domain_admins`.
 - [ ] Remove those tables from `init-directory.sql` in `kubernetes/apps/mail/stalwart/app/configmap.yaml`; keep the schema creation for `domain_admins`.
 - [ ] Delete the backup `postgres18-pre-drop-sql-directory`; update the memory note and the 1.0 migration runbook.
+
+## Rehearsal (Task 7, done 2026-10-28)
+
+Ran against stalwart-users PR #37 at 6ab4de6 (binaries built locally, pointed at a port-forwarded throwaway pod: Stalwart v1.0.0 on RocksDB + a Postgres 18 sidecar, no egress). Seven SQL accounts: 4-, 8- and 16-byte salts, a lowercase `{ssha512}`, an `is_admin` account with two aliases, a domain admin and an ops admin.
+
+Worked as planned:
+- SQL directory sign-in for all formats only after a Stalwart restart; Stalwart takes ~40 s to listen again after a restart, in both directions of the switch.
+- First sign-in mirrors each SQL account into an internal account with a Password credential; `is_admin` does not become the Admin role (the migration adds it).
+- `migrate-directory`: dry run, apply, re-apply = only `unchanged`; Admin added to the `is_admin` account, nothing else touched.
+- `directoryId: null` + restart: every account signs in with its original password, wrong passwords 401. With an account's SQL row deleted it still signs in, so the patched `credentials/0/secret` holds the copied hash verbatim (4-byte salt case).
+- `quotas/maxDiskQuota` accepts a value and `null` (null removes the key). Alias objects with `"description": null` are accepted. An account created without credentials gets `credentials/0` from the app's password reset and signs in.
+- stalwart-users: full admin from Stalwart's role, 4-byte-salt user signs in, alias login 401, create/alias/quota/password-reset/self-change/delete all work, domain admin limited to their domain and blocked from full admins, mixed-case path resolves to the same account, deactivate 400, unhosted alias domain 400, address in use 409.
+- Rollback: `directoryId` back to the Sql directory + restart → SQL passwords sign in again; a password changed after cutover reverts.
+
+Found:
+- A duplicate account create and a too-weak password both come back from Stalwart as `invalidProperties` "Invalid value for property." (400). Safe, but the message doesn't say which. A raw `x:Account/set` duplicate without credentials answers `primaryKeyViolation`, which the client doesn't map (500); the app path isn't affected.
+- Accounts mirrored from a fresh SQL directory list their own primary address among their aliases; the live mirrors don't.
+- **App passwords:** an app password passes Basic on `/jmap/session`, so it opens a stalwart-users session and is accepted as `current_password` to change the main password.
+- **Auth bans:** live `x:Security` has `authBanRate` 100 failures per 24 h and `authBanPeriod` null; `x:AllowedIp` only covers 172.16.8.0/24 (HAProxy/WG). After cutover every failed stalwart-users login is a failed Stalwart auth from the stalwart-users pod address, so 100 bad logins on the public login page would ban that address and block stalwart-users for everyone. The rehearsal's 30 failures came from loopback and stayed under the limit, so they don't show this. Decide the mitigation before Task 9.
