@@ -19,6 +19,7 @@
 - New and changed passwords go to Stalwart as plaintext; Stalwart hashes them with `passwordHashAlgorithm` = `argon2id` and enforces `minPasswordLength` 8 and `minPasswordStrength` "three".
 - An account's name in stalwart-users is its full address (`local@domain`); in Stalwart it is `name` (local part) plus `domainId`.
 - Full admin = `roles` `{"@type":"Admin"}`; everyone else `{"@type":"User"}`. Domain-admin assignments stay in Postgres `directory.domain_admins` (`stalwart_v1` DB).
+- Stalwart roles are the source of truth and are never lowered. SQL `is_admin` is true only for `admin@vaderrp.com`, while Stalwart also gives `olli@erinko.fi` Admin; the migration only ever adds Admin, never removes it.
 - Quota maps to `quotas` key `maxDiskQuota` (bytes); 0 means no entry (unlimited). Confirm the JSON key in Task 7 before relying on it.
 - stalwart-users changes go on a branch in `C:\Users\ollie\stalwart-users`, pushed to the `forgejo` remote, as a PR the user merges; release = `v*` tag. homeops changes commit straight to `main`.
 - No AI attribution in commits or PR text.
@@ -27,7 +28,8 @@
 
 1. **No "inactive" accounts.** 1.0 accounts have no enable flag and every live account is active. `active` is always `true` in API output; a PATCH with `"active": false` returns 400 `accounts can't be disabled in Stalwart 1.0`. The frontend drops the Active toggle.
 2. **Groups use Stalwart's own groups.** `/accounts/{name}/groups` reads and writes `memberGroupIds`, naming groups by their address. No groups exist today. Creating accounts of type `group` from stalwart-users returns 400; groups are made in Stalwart's admin UI.
-3. **stalwart-users login goes through Stalwart.** It checks credentials with HTTP Basic on `/jmap/session` instead of reading hashes. Side effect: the 27 accounts with 4- or 8-byte salts can sign in to stalwart-users for the first time (today's `verifySsha512` rejects anything under 80 decoded bytes). Accounts with two-factor auth can't sign in this way; that matches today.
+3. **Full admins in stalwart-users come from Stalwart's Admin role**, so `olli@erinko.fi` becomes a full admin there (SQL `is_admin` says no today).
+4. **stalwart-users login goes through Stalwart.** It checks credentials with HTTP Basic on `/jmap/session` instead of reading hashes. Side effect: the 27 accounts with 4- or 8-byte salts can sign in to stalwart-users for the first time (today's `verifySsha512` rejects anything under 80 decoded bytes). Accounts with two-factor auth can't sign in this way; that matches today.
 
 ## Review Focus
 
@@ -199,9 +201,9 @@
   func plan(sqlAccts []sqlAccount, accts []stalwart.Account, domains []stalwart.Domain) ([]change, error)
   type change struct{ Address, AccountID string; Patch map[string]any; Secret string; Account stalwart.Account }
   ```
-  Per account the patch sets `description`, `roles` (Admin iff `is_admin`), `quotas` (`maxDiskQuota` iff quota > 0), and `aliases` (exact set from SQL, existing keys reused); the secret goes through `SetPassword`. Output: one line per account, `address: unchanged|updated|would update (<fields>)`; secrets never printed. Exit non-zero if any SQL account has no internal account, any alias domain is unknown, or any hash fails `validHash` — before writing anything.
+  Per account the patch sets `description`, `roles` (`{"@type":"Admin"}` only when `is_admin` is true and the account isn't already Admin; never lowered), `quotas` (`maxDiskQuota` iff quota > 0), and `aliases` (exact set from SQL, existing keys reused); the secret goes through `SetPassword`. Output: one line per account, `address: unchanged|updated|would update (<fields>)`; secrets never printed. Exit non-zero if any SQL account has no internal account, any alias domain is unknown, or any hash fails `validHash` — before writing anything.
 
-- [ ] **Step 1: Write failing tests** `TestValidHash` (the four live shapes pass; `{SSHA512}` + URL-safe body, trailing space, `{SSHA}`-only, empty fail), `TestMigrateRejectsMalformedHash` (whole run aborts, no client writes), `TestMigrateMissingInternalAccount`, `TestPlanAdminAndAliases`, `TestMigrateIsIdempotent` (second plan over the result of the first → all `unchanged`), `TestDryRunWritesNothing`.
+- [ ] **Step 1: Write failing tests** `TestValidHash` (the four live shapes pass; `{SSHA512}` + URL-safe body, trailing space, `{SSHA}`-only, empty fail), `TestMigrateRejectsMalformedHash` (whole run aborts, no client writes), `TestMigrateMissingInternalAccount`, `TestPlanAdminAndAliases`, `TestPlanNeverDemotesAdmin` (SQL `is_admin` false + Stalwart Admin → no `roles` in the patch), `TestMigrateIsIdempotent` (second plan over the result of the first → all `unchanged`), `TestDryRunWritesNothing`.
 - [ ] **Step 2: Run** `go test ./cmd/migrate-directory/` → FAIL.
 - [ ] **Step 3: Implement.** "Unchanged" for the secret can't be read back (Stalwart masks it), so `--apply` always calls `SetPassword`; idempotence covers the patch fields.
 - [ ] **Step 4: Run** `go test ./... && docker build -f Dockerfile .` → PASS, image contains `/migrate-directory`.
@@ -235,15 +237,15 @@ Mail keeps flowing throughout; sign-ins fail only during the Stalwart restart (~
 - Modify: `kubernetes/apps/mail/stalwart-users/app/helmrelease.yaml` (both tags → `v0.5.0`; `STALWART_URL`, `STALWART_ADMIN_TOKEN` and `DATABASE_URL` are already in the pod env)
 - Create (cutover only, applied with `kubectl apply`, not committed): a one-shot Job manifest running `/migrate-directory` from the v0.5.0 backend image with `envFrom: stalwart-users-secret` and the HelmRelease's `STALWART_URL`
 
-- [ ] **Step 1: Canary.** Insert `dircanary@vaderrp.com` into `directory.accounts` (+ primary email) with a known password hashed with an 8-byte salt; sign in once (200) so Stalwart mirrors it.
+- [ ] **Step 1: Check account.** `stalwart_username` / `stalwart_password` in homeops `.env` (gitignored) are `olli@erinko.fi`, whose hash has a 4-byte salt. Use them only for right-password checks; wrong-password checks happened in the rehearsal, because failed sign-ins on the live server count towards Stalwart's ban threshold. Confirm 200 on `/jmap/session` before starting.
 - [ ] **Step 2: Freeze.** `flux suspend hr stalwart-users -n mail`; `kubectl -n mail scale deploy -l app.kubernetes.io/name=stalwart-users --replicas=0`.
 - [ ] **Step 3: Backup.** CNPG on-demand `Backup` of `postgres18` named `postgres18-pre-drop-sql-directory`; wait with `kubectl -n database get backups.postgresql.cnpg.io postgres18-pre-drop-sql-directory -w` until `completed`.
-- [ ] **Step 4: Dry run.** Run the Job without `--apply`; the output lists 42 accounts (41 + canary) and no errors.
+- [ ] **Step 4: Dry run.** Run the Job without `--apply`; the output lists 41 accounts and no errors, and no `roles` change for `olli@erinko.fi`.
 - [ ] **Step 5: Apply.** Run the Job with `--apply`; then again → only `unchanged` apart from secrets.
 - [ ] **Step 6: Switch.** `x:Authentication/set` `{"update":{"singleton":{"directoryId":null}}}`; `kubectl -n mail rollout restart deploy/stalwart`; wait for Ready.
-- [ ] **Step 7: Verify.** Canary: right password 200, wrong 401 on `/jmap/session`. IMAP and SMTP AUTH for the canary (`openssl s_client` to `mail.erinko.fi:993` / `:465`). User signs in to Bulwark and their mail client. Loki: no spike of `auth.failed` for real users over 15 min.
-- [ ] **Step 8: Deploy** stalwart-users v0.5.0 (commit the helmrelease/external-secret change, reconcile, `flux resume hr stalwart-users -n mail`, scale to 1 if it stays at 0). Log in as the user: the account list shows 42 and `GET /accounts/minna@medikabalans.fi/admin-domains` still returns `medikabalans.fi`.
-- [ ] **Step 9: Clean up** the canary (delete it in stalwart-users and from `directory.accounts`/`emails`), delete the Job, record the cutover in this plan.
+- [ ] **Step 7: Verify.** The `.env` account: 200 on `/jmap/session`, IMAP LOGIN and SMTP AUTH succeed (`openssl s_client` to `mail.erinko.fi:993` / `:465`), and `x:Account/get` still shows its role as Admin. User signs in to Bulwark and their mail client. Loki: no spike of `auth.failed` for real users over 15 min.
+- [ ] **Step 8: Deploy** stalwart-users v0.5.0 (commit the helmrelease/external-secret change, reconcile, `flux resume hr stalwart-users -n mail`, scale to 1 if it stays at 0). Log in as the user: the account list shows 41 and `GET /accounts/minna@medikabalans.fi/admin-domains` still returns `medikabalans.fi`.
+- [ ] **Step 9: Clean up** the Job and record the cutover in this plan.
 
 **Rollback** (any time before the soak ends): `directoryId` back to `iqlf1mnmaaqc`, restart Stalwart, stalwart-users back to `v0.4.2`. Passwords changed after cutover revert to the SQL hash.
 
