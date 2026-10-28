@@ -154,3 +154,21 @@ Live, with the user, at the drop-SQL cutover.
 - [ ] `x:OAuthClient/set` create `stalwart-users`: `firstParty: true`, the same secret, `redirectUris` `{"https://email-users.erinko.fi/api/auth/callback": true}`, `grantTypes` authorizationCode + refreshToken, description "stalwart-users (account management)".
 - [ ] homeops: `external-secret.yaml` adds `OIDC_CLIENT_SECRET`; `helmrelease.yaml` adds `OIDC_ISSUER=https://mail.erinko.fi`, `OIDC_CLIENT_ID=stalwart-users`, `OIDC_REDIRECT_URL=https://email-users.erinko.fi/api/auth/callback`, and `CORS_ORIGIN=https://email-users.erinko.fi`; `httproute.yaml` serves the app on `email-users.erinko.fi` only and adds a route that 301-redirects `email-users.vaderrp.com` to `email-users.erinko.fi` (same shape as `bulwark-webmail`); homepage `href` → `https://email-users.erinko.fi`; Gatus check unchanged (in-cluster URL).
 - [ ] Verify: sign in through Stalwart's page with the `.env` account (right password only) and check `/api/auth/me`. Test the password change on a temporary account created and deleted through stalwart-users, never on the user's real account.
+
+## Rehearsal (Task 5, done 2026-10-29)
+
+Branch 8780a76, Linux build run inside a throwaway pod (Stalwart v1.0.0 on RocksDB + Postgres sidecar for `domain_admins`, no egress). Stalwart's issuer is `https://<defaultHostname>` (`localhost` is rejected as a hostname), so the pod used its own name `stalwart-dirtest` with a throwaway CA + certificate loaded as `x:Certificate`, and the server trusted that CA via `SSL_CERT_FILE`. First-party client `stalwart-users` with an alphanumeric secret; login scripted through Stalwart's `POST /api/auth` (`{"type":"authCode","accountName","accountSecret","query","consent":true}` → `{"type":"authenticated","location":…}`).
+
+Worked:
+- `/api/auth/login` → Stalwart `/login` with `client_id`, `redirect_uri`, `scope=openid offline_access`, `response_type=code`, S256 challenge, state; `su_oidc` set. Callback → 302 `/`, session cookie, `/auth/me` right for a regular user, the full admin (`isAdmin: true`) and the domain admin (`adminDomains: ["rb.example.com"]`). Client secret via HTTP Basic accepted.
+- Wrong password: Stalwart answers `{"type":"failure"}`, no code. Tampered state and a callback without `su_oidc` → `/login?error=state`, no session.
+- Own password change through `x:AccountPassword` with the user token (no `accountId` needed): wrong current → 401, **app password as current → 401**, weak new → 400 "Password must be at least 8 characters long.", right current → 200 and only the new password signs in. Domain admin self → same path, 200. Full admin self → admin path without current password, 200.
+- A second own change in the same session → 401 `reauth_required` (Stalwart revokes the session's tokens when the password changes; the UI sends the user to sign in again).
+- After a backend restart the old session still works (`/auth/me`, a domain admin listing only their domain), and an own password change answers 401 `reauth_required`.
+- No secret-looking lines in the server log.
+
+Found:
+- **Stalwart's login page accepts an app password**, so an app password opens a stalwart-users session (with that user's role). It still can't change the main password. Same exposure as Basic auth had for sign-in; stalwart-users can't tell which credential was used.
+- Signing in with an alias address works: Stalwart resolves it and userinfo returns the primary address, so the session is the primary account.
+
+Not covered: a wrong TOTP code (no 2FA user in the rehearsal) and token refresh after expiry (minimum access-token lifetime is 10 minutes; covered by unit tests).
