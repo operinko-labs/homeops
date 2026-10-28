@@ -218,6 +218,15 @@ Runs the branch image against a disposable Stalwart 1.0 with its own Postgres; n
 - [ ] **Step 1: Seed** Postgres with `init-directory.sql` from `kubernetes/apps/mail/stalwart/app/configmap.yaml`, `is_admin` and `domain_admins`, and five accounts with known passwords: salts 4, 8, 16, a lowercase `{ssha512}`, and one `is_admin` account with two aliases.
 - [ ] **Step 2: Configure Stalwart** over the API: two domains, a Sql directory copied from live `iqlf1mnmaaqc` (same queries) pointing at the sidecar, `x:Authentication` `directoryId` set to it, restart. Sign in once per account so Stalwart creates the internal mirrors. Expected: 200 for each.
 - [ ] **Step 3: Confirm the open schema points:** the `maxDiskQuota` JSON key, the `SetPassword` create-via-patch form for an account with no Password credential, and that patching an existing credential with a hash stores it as-is (sign-in with the known password → 200). Fix Task 1–2 code if any differ.
+- [ ] **Step 3b: Stalwart behaviour the code relies on** (from the branch's final review):
+  - patching `credentials/<key>/secret` with a `{SSHA512}` value stores it verbatim (sign-in with the known password → 200); all 41 live accounts take this path;
+  - a Password credential created under the next free key (`credentials/<n>`) when none exists;
+  - `quotas/maxDiskQuota` with a value, and with `null` (removes the key);
+  - alias objects with `"description": null` are accepted;
+  - a duplicate account create answers `alreadyExists` (409 in the app) or `invalidProperties` (400);
+  - sign-in with an alias address or the bare name is refused by stalwart-users (401);
+  - an app password on `/jmap/session`: if Stalwart accepts it, it also opens a stalwart-users session and passes `current_password` — record the result for the user;
+  - repeated wrong passwords through stalwart-users' login: does Stalwart ban the sidecar's address, and does that block everyone's login and the admin API? If yes, the cutover must exempt that address.
 - [ ] **Step 4: Run** `/migrate-directory` (dry run, then `--apply`, then `--apply` again). Expected: second apply prints only `unchanged` apart from secrets.
 - [ ] **Step 5: Switch** `x:Authentication` `directoryId` to `null` (internal) and restart Stalwart. Expected: all five sign in with their passwords (200) and fail with a wrong one (401); `x:Account/get` shows the admin account with `roles.@type` Admin and both aliases.
 - [ ] **Step 6: Exercise stalwart-users** against the pod: login as the admin and as a 4-byte-salt user (200), create an account, change a password (then sign in to Stalwart with it → 200), add and remove an alias, set a quota, delete the account, weak password → 400.
