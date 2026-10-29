@@ -146,7 +146,43 @@ Scratch files only (session scratchpad); nothing touches live data.
 - [ ] **Step 5:** Password change as the regular user: wrong current → 401; app password as current → 401; right current + weak new → 400; right current + strong new → 200 and Stalwart sign-in with the new one works; after restarting the server, the same request → 401 `reauth_required`. Refresh: if the access token lifetime can be shortened on the throwaway (`x:OidcProvider` `accessTokenExpiry`, min 10 min), skip live waiting and rely on the unit test.
 - [ ] **Step 6:** Tear down; record results under "Rehearsal" in this plan; commit to homeops `main`.
 
-### Task 6: Cutover additions (fold into Task 9 of `2026-10-28-stalwart-drop-sql-directory.md`)
+### Task 7: Self-registration of the OAuth client (added 2026-10-29)
+
+Replaces the manual client registration and the Vaultwarden field of Task 6. stalwart-users registers its own first-party client at startup with the admin key it already has, using a secret derived from its existing `JWT_SECRET`, the same way Bulwark's "Auto-configure OAuth" does it, but automatically and without storing anything.
+
+**Files:**
+- Modify: `internal/stalwart/jmap.go` (+ test), `internal/oidc/client.go` (+ test), `cmd/server/main.go` (+ test), `README.md`
+- Create: `internal/auth/clientsecret.go` (+ test)
+
+**Interfaces:**
+- Produces:
+  ```go
+  // auth
+  func DeriveOAuthClientSecret(jwtSecret string) string // hex(HMAC-SHA256(key=jwtSecret, msg="stalwart-users oauth client secret")), 64 lowercase hex chars
+  // stalwart
+  type OAuthClientSpec struct{ ClientID, Secret, RedirectURI, Description string }
+  func (c *Client) EnsureOAuthClient(ctx context.Context, spec OAuthClientSpec) (created bool, err error)
+  ```
+  `EnsureOAuthClient` runs `x:OAuthClient/query` with `{"filter":{"clientId":<id>}}`. With no match it creates `{"clientId","description","contacts":{},"secret","redirectUris":{<uri>:true},"postLogoutRedirectUris":{},"logo":null,"firstParty":true,"scopes":{},"grantTypes":{"authorizationCode":true,"refreshToken":true}}`. With a match it updates that id with `secret`, `redirectUris` (exactly `{<uri>: true}`), `firstParty: true`, `grantTypes` and `description`. Errors never contain the secret.
+- `main.go`: `OIDC_CLIENT_SECRET` is no longer required; when empty the secret is `DeriveOAuthClientSecret(JWT_SECRET)`. After the handler is built, a background goroutine calls `EnsureOAuthClient` (10 s timeout per attempt), retrying with backoff 5 s → 60 s cap until it succeeds, logging `OAuth client stalwart-users created|updated` once, and errors without the secret. The server starts listening without waiting; sign-ins that happen before registration succeeds simply fail at the token exchange (`/login?error=signin`).
+- `internal/oidc`: the HTTP client refuses redirects to another host or from https to http (`CheckRedirect`); same-host redirects are followed, at most 3.
+
+- [ ] **Step 1: Write failing tests:**
+  - `TestDeriveOAuthClientSecret`: deterministic, 64 hex chars, differs for different JWT secrets, and differs from the cookie MAC key derivation in `jwt.go`.
+  - `TestEnsureOAuthClientCreates`: the exact create payload.
+  - `TestEnsureOAuthClientUpdatesExisting`: the exact update patch on the queried id.
+  - `TestEnsureOAuthClientErrorHasNoSecret`.
+  - `TestOIDCRefusesCrossHostRedirect`: discovery answering 302 to another host is an error.
+  - `TestOIDCFollowsSameHostRedirect`.
+  - `TestRefusesHTTPSDowngradeRedirect`.
+  - main tests: `OIDC_CLIENT_SECRET` optional, the derived secret used when it's empty, and registration retried until a fake succeeds.
+- [ ] **Step 2: Run** `go test ./...` → FAIL.
+- [ ] **Step 3: Implement.**
+- [ ] **Step 4: Run** `go test ./... && go vet ./... && gofmt -l .` → PASS, gofmt prints nothing.
+- [ ] **Step 5: README:** the client registers itself at startup; `OIDC_CLIENT_SECRET` is an optional override; rotating `JWT_SECRET` rotates the client secret on the next start and signs everyone out.
+- [ ] **Step 6: Commit** `feat: register the OAuth client in Stalwart at startup`.
+
+### Task 6: Cutover additions (fold into Task 9 of `2026-10-28-stalwart-drop-sql-directory.md`) — superseded in part by Task 7: no Vaultwarden field and no manual client registration
 
 Live, with the user, at the drop-SQL cutover.
 
