@@ -88,3 +88,63 @@ sites:
       - {name: php-fpm, query: '{namespace="ruskonkesateatteri", container="php-fpm"}'}
       - {name: nginx, query: '{namespace="ruskonkesateatteri", container="nginx"}'}
       - {name: varnish, query: '{namespace="ruskonkesateatteri", container="varnish"}'}
+
+  # Olli's own apps (spec §13). health blocks follow once each app ships /status.
+  - name: torn-tracker
+    kind: generic
+    namespace: torn-tracker
+    repo: operinko-labs/torn-tracker
+    siteImage: harbor.vaderrp.com/operinko-labs/torn-tracker
+    lockfiles: [package-lock.json]
+    runtimes:
+      - {container: app, product: nodejs, env: NODE_VERSION, cpe: "nodejs:node.js"}
+      - {container: app, product: alpine-linux, package: alpine}
+    logs:
+      - {name: api, query: '{namespace="torn-tracker", pod=~"torn-tracker-api-.*"}'}
+      - {name: collector, query: '{namespace="torn-tracker", pod=~"torn-tracker-collector-.*"}'}
+      - {name: modeler, query: '{namespace="torn-tracker", pod=~"torn-tracker-modeler-.*"}'}
+      - {name: gateway, query: '{namespace="torn-tracker", pod=~"torn-tracker-gateway-.*"}'}
+
+  - name: gpro-production
+    kind: generic
+    namespace: gpro
+    selector: app.kubernetes.io/instance=gpro-production
+    repo: operinko-labs/gpro
+    siteImage: &gpro-images
+      - harbor.vaderrp.com/operinko-labs/gpro-backend
+      - harbor.vaderrp.com/operinko-labs/gpro-frontend
+    lockfiles: [pnpm-lock.yaml]
+    runtimes: &gpro-runtimes
+      - {container: backend, product: nodejs, env: NODE_VERSION, cpe: "nodejs:node.js"}
+      - {container: worker, product: nodejs, env: NODE_VERSION, cpe: "nodejs:node.js"}
+      - {container: frontend, product: nginx, env: NGINX_VERSION, cpe: "f5:nginx"}
+      - {container: backend, product: alpine-linux, package: alpine}
+      - {container: frontend, product: alpine-linux, package: alpine}
+    logs:
+      - {name: backend, query: '{namespace="gpro", pod=~"gpro-backend-.*"}'}
+      - {name: worker, query: '{namespace="gpro", pod=~"gpro-worker-.*"}'}
+
+  - name: gpro-main
+    kind: generic
+    namespace: gpro
+    selector: app.kubernetes.io/instance=gpro-main
+    repo: operinko-labs/gpro
+    siteImage: *gpro-images
+    lockfiles: [pnpm-lock.yaml]
+    runtimes: *gpro-runtimes
+    logs:
+      - {name: backend, query: '{namespace="gpro", pod=~"gpro-dev-backend-.*"}'}
+      - {name: worker, query: '{namespace="gpro", pod=~"gpro-dev-worker-.*"}'}
+
+  - name: autoposter
+    kind: generic
+    namespace: media
+    selector: app.kubernetes.io/instance=autoposter
+    repo: operinko-labs/autoposter
+    siteImage: harbor.vaderrp.com/operinko-labs/autoposter
+    lockfiles: [frontend/package-lock.json]
+    runtimes:
+      - {container: app, product: python, env: PYTHON_VERSION, cpe: "python:python"}
+      - {container: app, product: alpine-linux, package: alpine}
+    logs:
+      - {name: app, query: '{namespace="media", pod=~"autoposter-.*"}'}
