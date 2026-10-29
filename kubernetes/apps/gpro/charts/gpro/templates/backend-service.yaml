@@ -13,3 +13,8 @@ spec:
       port: 3000
       targetPort: 3000
       protocol: TCP
+    # In-cluster /status for site-overview; no HTTPRoute targets it.
+    - name: status
+      port: 9095
+      targetPort: 9095
+      protocol: TCP

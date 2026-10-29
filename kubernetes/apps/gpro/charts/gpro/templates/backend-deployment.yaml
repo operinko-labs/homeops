@@ -49,12 +49,19 @@ spec:
               # API pods keep the default 30 s grace period; finish (or force-exit
               # with a log line) before the kubelet's SIGKILL.
               value: "25000"
+            - name: APP_VERSION
+              # The version /health and /status report (npm_package_version is
+              # never set under `node dist/index.js`).
+              value: {{ .Values.images.app.tag | quote }}
           envFrom:
             - secretRef:
                 name: {{ .Values.envSecretName }}
           ports:
             - name: http
               containerPort: 3000
+              protocol: TCP
+            - name: status
+              containerPort: 9095
               protocol: TCP
           livenessProbe:
             httpGet:
