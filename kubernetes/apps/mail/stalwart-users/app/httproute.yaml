@@ -15,7 +15,7 @@ metadata:
     gethomepage.dev/group: Mail
     gethomepage.dev/name: Email Users
     gethomepage.dev/icon: mdi-email-edit
-    gethomepage.dev/href: https://email-users.vaderrp.com
+    gethomepage.dev/href: https://email-users.erinko.fi
     gethomepage.dev/pod-selector: app.kubernetes.io/name=stalwart-users
 spec:
   parentRefs:
@@ -24,7 +24,6 @@ spec:
       name: gateway-public
       namespace: network
   hostnames:
-    - email-users.vaderrp.com
     - email-users.erinko.fi
   rules:
     - matches:
@@ -41,3 +40,30 @@ spec:
       backendRefs:
         - name: stalwart-users-frontend
           port: 80
+---
+# stalwart-users is served only on email-users.erinko.fi: its Stalwart OAuth
+# client is registered for that host alone, so the old address redirects there
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: stalwart-users-redirect
+  namespace: mail
+  labels:
+    route.scope: external
+  annotations:
+    external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-public
+      namespace: network
+  hostnames:
+    - email-users.vaderrp.com
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            hostname: email-users.erinko.fi
+            statusCode: 301
