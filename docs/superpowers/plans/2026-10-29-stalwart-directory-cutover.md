@@ -136,3 +136,11 @@ The SQL tables stay untouched as the rollback source for two weeks.
 3. Passwords changed after the cutover revert to the SQL hashes.
 
 The OAuth client can stay registered.
+
+## Done (2026-10-29, UTC)
+
+- v0.5.0 tagged at 27d9b9f (Release run success; both images signed, scans Success). Pre-flight clean: the only API key is `admin@vaderrp.com`'s (Admin role), discovery reachable in-cluster, 41 Users, dry run without errors (six empty descriptions to fill).
+- Freeze 00:58, backup `postgres18-pre-drop-sql-directory` completed 01:01.
+- **Order change:** the first `--apply` stopped at `fritzbox@erinko.fi` with "Cannot change credentials for accounts in an external directory". Without the enterprise edition every domain uses the default directory (`get_default_directory`), so while it is the SQL directory every credential change is refused. Accounts whose internal secret already matched SQL (synced by a recent login) were no-ops, which is why the rehearsal never hit this. With the user's OK: `directoryId: null` + restart first (down 01:11:39–01:12:16), then `--apply` at 01:12:20 wrote all 41 hashes; a second `--apply` was all `unchanged`. **For any re-run: switch first, migrate immediately after.**
+- Verified: `.env` account JMAP 200, IMAP LOGIN and SMTP AUTH via the VPS, both admins intact, no auth failures. stalwart-users v0.5.0 deployed (392ba5366) and self-registered `stalwart-users`; `email-users.vaderrp.com` → 301 `email-users.erinko.fi`; temporary account round trip (OIDC sign-in, `/auth/me`, own password change) OK and the account deleted. User confirmed email-users, Bulwark and phone.
+- Found afterwards: `erinko.fi/.well-known/jmap` redirected to chat.erinko.fi, breaking JMAP autodiscovery (Epistles) → fixed in the matrix `well-known` route (cafe568d4). Epistles works with an app password; its OAuth device flow still gets `invalid_client` (it sends a client ID Stalwart doesn't know and doesn't self-register; debug log shows no metadata-document fetch). `x:OidcProvider.clientMetadataDocuments` was set to `any` for that test and is still `any`; tracer level was raised to debug for the capture and is back at `info`.
