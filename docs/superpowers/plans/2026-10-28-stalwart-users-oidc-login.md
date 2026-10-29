@@ -182,6 +182,8 @@ Replaces the manual client registration and the Vaultwarden field of Task 6. sta
 - [ ] **Step 5: README:** the client registers itself at startup; `OIDC_CLIENT_SECRET` is an optional override; rotating `JWT_SECRET` rotates the client secret on the next start and signs everyone out.
 - [ ] **Step 6: Commit** `feat: register the OAuth client in Stalwart at startup`.
 
+**Task 7 done 2026-10-29:** stalwart-users commits 8402e37, 61321c4 (review fixes: exact `clientId` match before any update, graceful SIGTERM shutdown, secret redacted from errors/logs) and 27d9b9f (README). Re-checked on a throwaway Stalwart 1.0.0: the client was created on first start (first-party, the configured redirect URI), sign-in worked with the derived secret, a tampered redirect URI / `firstParty` / secret was corrected on the next start, SIGTERM exited in ~1 s, and no secret value appeared in the log.
+
 ### Task 6: Cutover additions (fold into Task 9 of `2026-10-28-stalwart-drop-sql-directory.md`) — superseded in part by Task 7: no Vaultwarden field and no manual client registration
 
 Live, with the user, at the drop-SQL cutover.

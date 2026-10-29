@@ -13,17 +13,17 @@
 
 The SQL tables stay untouched as the rollback source for two weeks.
 
-**Tech Stack:** Flux, Stalwart v1.0.0 registry API, CNPG, ExternalSecrets (Vaultwarden via `bitwarden-fields`), Forgejo Actions release.
+**Tech Stack:** Flux, Stalwart v1.0.0 registry API, CNPG, Forgejo Actions release.
 
-**Spec:** `2026-10-28-stalwart-drop-sql-directory.md` (Task 9 and Task 10, Rehearsal) and `2026-10-28-stalwart-users-oidc-login.md` (Task 6, Rehearsal). This runbook replaces their Task 9 / Task 6 as the steps to run; their rollback notes still hold.
+**Spec:** `2026-10-28-stalwart-drop-sql-directory.md` (Task 9 and Task 10, Rehearsal) and `2026-10-28-stalwart-users-oidc-login.md` (Task 6, Task 7, Rehearsal). This runbook replaces their Task 9 / Task 6 as the steps to run; their rollback notes still hold.
 
 ## Global Constraints
 
 - Right-password checks only on the live server, with `stalwart_username`/`stalwart_password` from homeops `.env` (`olli@erinko.fi`, 4-byte salt). Failed sign-ins count towards the ban threshold (100 per 24 h, now per real client IP).
-- Never print or log secrets: the OAuth client secret is read from the Kubernetes secret and piped straight into the API call; temporary test passwords live only in the scratchpad and are deleted afterwards.
+- Never print or log secrets; temporary test passwords live only in the scratchpad and are deleted afterwards.
 - `x:Authentication.directoryId` changes and `overrideProxyTrustedNetworks`-style settings take effect only after a Stalwart restart (Recreate, ~35–40 s to Ready).
-- OAuth client: id `stalwart-users`, `firstParty: true`, alphanumeric secret of at least 32 characters, `redirectUris` exactly `{"https://email-users.erinko.fi/api/auth/callback": true}`, `grantTypes` authorizationCode + refreshToken.
-- stalwart-users v0.5.0 env: `OIDC_ISSUER=https://mail.erinko.fi`, `OIDC_CLIENT_ID=stalwart-users`, `OIDC_CLIENT_SECRET` (from the secret), `OIDC_REDIRECT_URL=https://email-users.erinko.fi/api/auth/callback`, `CORS_ORIGIN=https://email-users.erinko.fi`; existing `STALWART_URL`, `STALWART_ADMIN_TOKEN`, `DATABASE_URL`, `JWT_SECRET` stay.
+- OAuth client: v0.5.0 registers `stalwart-users` itself at startup (OIDC plan Task 7): `firstParty: true`, `redirectUris` exactly `{"https://email-users.erinko.fi/api/auth/callback": true}`, `grantTypes` authorizationCode + refreshToken, secret derived from `JWT_SECRET`. No Vaultwarden field, no manual registration. Re-checked on Stalwart 1.0.0 on 2026-10-29: created on first start, corrected after tampering on the next start, sign-in works with the derived secret, SIGTERM exits in ~1 s.
+- stalwart-users v0.5.0 env: `OIDC_ISSUER=https://mail.erinko.fi`, `OIDC_CLIENT_ID=stalwart-users`, `OIDC_REDIRECT_URL=https://email-users.erinko.fi/api/auth/callback`, `CORS_ORIGIN=https://email-users.erinko.fi`; existing `STALWART_URL`, `STALWART_ADMIN_TOKEN`, `DATABASE_URL`, `JWT_SECRET` stay. No `OIDC_CLIENT_SECRET`.
 - SQL directory id `iqlf1mnmaaqc` is the rollback target.
 - homeops commits go straight to `main`; no AI attribution.
 
@@ -39,23 +39,16 @@ The SQL tables stay untouched as the rollback source for two weeks.
 
 ---
 
-### Task 1: Preconditions (user)
+### Task 1: Precondition (user)
 
-- [ ] **Step 1:** User reviews and merges [operinko-labs/stalwart-users#37](https://forgejo.vaderrp.com/operinko-labs/stalwart-users/pulls/37) on Forgejo.
-- [ ] **Step 2:** User adds a field `stalwart_users_oidc_secret` to the Vaultwarden item `afda7dff-e1ac-4c30-9ec9-1f81ad1e9971` (the one behind `stalwart-users-secret`): alphanumeric, at least 32 characters (e.g. the output of `openssl rand -hex 24`). Tell the controller when it's saved; don't paste it in chat.
+- [ ] **Step 1:** User reviews and merges [operinko-labs/stalwart-users#37](https://forgejo.vaderrp.com/operinko-labs/stalwart-users/pulls/37) on Forgejo. Nothing else is needed from the user before the window.
 
 ### Task 2: Prepare (no user-visible change)
 
 - [ ] **Step 1: Release v0.5.0.** On the merged `main` of `C:\Users\ollie\stalwart-users`: `git fetch forgejo && git tag v0.5.0 forgejo/main && git push forgejo v0.5.0`. Wait for the Release workflow. Verify in Harbor, for `stalwart-users` and `stalwart-users-frontend`: tags `v0.5.0`, `sha-<commit>`, `latest`; scan `Success`; `signature.cosign`. Confirm the backend image contains `/migrate-directory`, either by running `docker run --rm --entrypoint /migrate-directory harbor.vaderrp.com/operinko-labs/stalwart-users:v0.5.0 --help` or from the build log.
-- [ ] **Step 2: Secret field.** Commit `kubernetes/apps/mail/stalwart-users/app/external-secret.yaml`: add `OIDC_CLIENT_SECRET: "{{ .oidc_client_secret }}"` to the template, and a `data` entry `oidc_client_secret` ← property `stalwart_users_oidc_secret` of the same item. v0.4.2 ignores the extra variable. Push, then sync the provider:
-  ```bash
-  kubectl -n external-secrets port-forward svc/bitwarden-eso-provider 18087:8087   # in the background
-  curl -s -X POST http://127.0.0.1:18087/sync
-  ```
-  (`bw serve` caches items until `/sync`.) Then `just kube sync-es` or annotate the ExternalSecret `force-sync=$(date +%s)` to refresh it. Check: `kubectl -n mail get secret stalwart-users-secret -o jsonpath='{.data.OIDC_CLIENT_SECRET}' | wc -c` is more than 40, and print nothing else.
-- [ ] **Step 3: Register the OAuth client.** Read the secret from the Kubernetes secret inside a script and send `x:OAuthClient/set` create with the Global Constraints values and description "stalwart-users (account management)". Read back with `x:OAuthClient/get` (properties `clientId`, `firstParty`, `redirectUris`, `grantTypes`; never `secret`).
-- [ ] **Step 4: Discovery from inside the cluster.** From the Bulwark pod, `node -e` a fetch of `https://mail.erinko.fi/.well-known/openid-configuration` and print only `issuer` and `token_endpoint`. Expected `https://mail.erinko.fi` and `https://mail.erinko.fi/auth/token`.
-- [ ] **Step 5: Pre-flight on live.**
+- [ ] **Step 2: Admin key may manage OAuth clients.** With the key from `stalwart-users-secret` (read inside a script, never printed), `x:OAuthClient/query` `{}` must answer a list, not a forbidden error. Otherwise self-registration would retry forever and every sign-in would fail.
+- [ ] **Step 3: Discovery from inside the cluster.** From the Bulwark pod, `node -e` a fetch of `https://mail.erinko.fi/.well-known/openid-configuration` and print only `issuer` and `token_endpoint`. Expected `https://mail.erinko.fi` and `https://mail.erinko.fi/auth/token`.
+- [ ] **Step 4: Pre-flight on live.**
   - The `.env` account gets 200 on `/jmap/session`.
   - `x:Authentication/get` shows `directoryId` `iqlf1mnmaaqc`.
   - `x:Account/get` shows 41 Users.
@@ -101,7 +94,7 @@ The SQL tables stay untouched as the rollback source for two weeks.
   flux reconcile ks stalwart-users -n mail --with-source
   flux resume hr stalwart-users -n mail
   ```
-  Then `kubectl -n mail scale deploy -l app.kubernetes.io/name=stalwart-users --replicas=1` (resume doesn't restore replicas) and wait for Ready. Backend log: `OIDC issuer: https://mail.erinko.fi` and `Listening`, no errors.
+  Then `kubectl -n mail scale deploy -l app.kubernetes.io/name=stalwart-users --replicas=1` (resume doesn't restore replicas) and wait for Ready. Backend log: `OIDC issuer: https://mail.erinko.fi`, `Listening` and `OAuth client stalwart-users created`, no errors. `x:OAuthClient/get` (properties `clientId`, `firstParty`, `redirectUris`, `grantTypes`) shows the expected client.
 - [ ] **Step 3: Scripted checks** (browser User-Agent header, since Cloudflare blocks Python's):
   - `https://email-users.vaderrp.com/x` → 301 `https://email-users.erinko.fi/x`.
   - `https://email-users.erinko.fi/api/auth/login` → 302 to `https://mail.erinko.fi/login?…` with `client_id=stalwart-users`, the redirect URI above, `scope=openid offline_access` and S256.
