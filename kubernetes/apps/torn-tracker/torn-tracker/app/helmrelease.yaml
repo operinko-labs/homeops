@@ -195,3 +195,5 @@ spec:
         ports:
           http:
             port: *port
+          status:
+            port: 9095

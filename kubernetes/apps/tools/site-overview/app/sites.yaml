@@ -89,7 +89,8 @@ sites:
       - {name: nginx, query: '{namespace="ruskonkesateatteri", container="nginx"}'}
       - {name: varnish, query: '{namespace="ruskonkesateatteri", container="varnish"}'}
 
-  # Olli's own apps (spec §13). health blocks follow once each app ships /status.
+  # Olli's own apps (spec §13). gpro-production's health block waits for production to run the /status image;
+  # autoposter's waits until its uploads threshold is settled.
   - name: torn-tracker
     kind: generic
     namespace: torn-tracker
@@ -104,6 +105,7 @@ sites:
       - {name: collector, query: '{namespace="torn-tracker", pod=~"torn-tracker-collector-.*"}'}
       - {name: modeler, query: '{namespace="torn-tracker", pod=~"torn-tracker-modeler-.*"}'}
       - {name: gateway, query: '{namespace="torn-tracker", pod=~"torn-tracker-gateway-.*"}'}
+    health: {type: status, url: http://torn-tracker.torn-tracker.svc:9095/status}
 
   - name: gpro-production
     kind: generic
@@ -135,6 +137,7 @@ sites:
     logs:
       - {name: backend, query: '{namespace="gpro", pod=~"gpro-dev-backend-.*"}'}
       - {name: worker, query: '{namespace="gpro", pod=~"gpro-dev-worker-.*"}'}
+    health: {type: status, url: http://gpro-dev-backend.gpro.svc:9095/status}
 
   - name: autoposter
     kind: generic

@@ -119,6 +119,8 @@ spec:
         ports:
           http:
             port: *port
+          status:
+            port: 9095
     persistence:
       config:
         type: configMap
