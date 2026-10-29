@@ -1,6 +1,6 @@
 ---
-# Read-only: the inventory lists pods in each site namespace. No exec, no logs
-# (logs come from Loki), no secrets.
+# Read-only: the inventory lists pods in each site namespace, and Deployments and
+# StatefulSets for their readiness. No exec, no logs (logs come from Loki), no secrets.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -8,6 +8,9 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
     verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

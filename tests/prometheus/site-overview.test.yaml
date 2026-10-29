@@ -134,3 +134,39 @@ tests:
             exp_annotations:
               summary: "leo_cal: drupal/gone is unsupported on drupal.org"
               description: "drupal.org marks drupal/gone, as deployed on leo_cal, unsupported: it no longer gets security coverage. https://site-overview.vaderrp.com/sites/leo_cal"
+
+  # A failing health check alerts only once it has failed for 10 minutes.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_finding{site="gpro-main",component="health",source="health",id="redis",severity="critical",ecosystem=""}'
+        values: "1x20"
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: SiteHealthCheckFailing
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: SiteHealthCheckFailing
+        exp_alerts:
+          - exp_labels: {site: gpro-main, component: health, source: health, id: redis, severity: critical, namespace: gpro-main, app: site-overview}
+            exp_annotations:
+              summary: "gpro-main: health check redis failing"
+              description: "gpro-main's own health check redis has reported fail for 10 minutes. https://site-overview.vaderrp.com/sites/gpro-main#health"
+
+  # The 1-min health source gets a 15-min floor before it counts as stale.
+  - interval: 1m
+    input_series:
+      - series: 'site_overview_source_last_success_timestamp{site="h",source="health",primary="false"}'
+        values: "0+60x5 300x30"
+      - series: 'site_overview_source_interval_seconds{site="h",source="health",primary="false"}'
+        values: "60x36"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SiteOverviewSourceStale
+        exp_alerts: []
+      - eval_time: 21m
+        alertname: SiteOverviewSourceStale
+        exp_alerts:
+          - exp_labels: {site: h, source: health, primary: "false", namespace: h, app: site-overview, severity: warning}
+            exp_annotations:
+              summary: "h: site-overview's health poll is failing"
+              description: "No successful health poll for h in over twice its interval; the last error is on https://site-overview.vaderrp.com/sites/h"

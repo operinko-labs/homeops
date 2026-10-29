@@ -30,6 +30,16 @@ spec:
             summary: "{{ $labels.site }}: {{ $labels.component }} is {{ $labels.id }} on drupal.org"
             description: "drupal.org marks {{ $labels.component }}, as deployed on {{ $labels.site }}, {{ $labels.id }}: it no longer gets security coverage. https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
 
+        # A site's own health check (its /status or drupal-ping) reporting fail.
+        - alert: SiteHealthCheckFailing
+          expr: label_replace(site_overview_finding{source="health"}, "namespace", "$1", "site", "(.*)")
+          for: 10m
+          labels:
+            app: site-overview
+          annotations:
+            summary: "{{ $labels.site }}: health check {{ $labels.id }} failing"
+            description: "{{ $labels.site }}'s own health check {{ $labels.id }} has reported fail for 10 minutes. https://site-overview.vaderrp.com/sites/{{ $labels.site }}#health"
+
         # One alert per site, container and severity carrying the count: an
         # outdated base image has dozens of fixable CVEs, and one alert each
         # would bury everything else. The list is on the site page.
@@ -72,11 +82,12 @@ spec:
             summary: "{{ $labels.site }}: {{ $labels.product }} branch reaches EOL soon"
             description: "The {{ $labels.product }} branch running in {{ $labels.container }} on {{ $labels.site }} is EOL in {{ $value | humanizeDuration }} (or already past it). https://site-overview.vaderrp.com/sites/{{ $labels.site }}"
 
+        # The 15-min floor keeps the 1-min health source from alerting on a blip.
         - alert: SiteOverviewSourceStale
           expr: |
             label_replace(
               time() - site_overview_source_last_success_timestamp{primary="false"}
-                > on(site, source, primary) (2 * site_overview_source_interval_seconds),
+                > on(site, source, primary) clamp_min(2 * site_overview_source_interval_seconds, 900),
               "namespace", "$1", "site", "(.*)")
           labels:
             app: site-overview
