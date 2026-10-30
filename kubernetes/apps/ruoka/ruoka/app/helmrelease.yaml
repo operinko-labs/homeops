@@ -65,8 +65,8 @@ spec:
         containers:
           app:
             image:
-              repository: docker.io/nginxinc/nginx-unprivileged
-              tag: 1.31-alpine
+              repository: harbor.vaderrp.com/operinko-labs/nginx-unprivileged
+              tag: 1.31-alpine@sha256:afc4d589c6b83399b14f39cec712562b69d8132bb6d275e4b4111c4ef357a090
             probes:
               liveness: &probe
                 enabled: true
