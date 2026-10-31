@@ -24,7 +24,8 @@ sites:
     runtimes: &drupal-runtimes
       - {container: php-fpm, product: php, env: PHP_VERSION, cpe: "php:php"}
       - {container: nginx, product: nginx, env: NGINX_VERSION, cpe: "f5:nginx"}
-      - {container: varnish, product: varnish, package: varnish}
+      # wodby/vinyl builds varnish from source, so only its tag gives a varnish version.
+      - {container: varnish, product: varnish, package: varnish, from_tag: true}
       # Base OS versions from each image's SBOM (Harbor/Trivy SPDX)
       - {container: php-fpm, product: alpine-linux, package: alpine}
       - {container: nginx, product: alpine-linux, package: alpine}
