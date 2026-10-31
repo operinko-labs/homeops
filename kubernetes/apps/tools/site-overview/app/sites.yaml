@@ -31,9 +31,9 @@ sites:
       - {container: nginx, product: alpine-linux, package: alpine}
       - {container: varnish, product: alpine-linux, package: alpine}
     logs:
-      - {name: watchdog, query: '{job="syslog", app="drupal", host="kyronautopalvelu"} | json'}
-      - {name: php-fpm, query: '{namespace="kyronautopalvelu", container="php-fpm"}'}
-      - {name: nginx, query: '{namespace="kyronautopalvelu", container="nginx"}'}
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="kyronautopalvelu"} | json', format: drupal-watchdog}
+      - {name: php-fpm, query: '{namespace="kyronautopalvelu", container="php-fpm"}', format: php-fpm}
+      - {name: nginx, query: '{namespace="kyronautopalvelu", container="nginx"}', format: nginx}
       - {name: varnish, query: '{namespace="kyronautopalvelu", container="varnish"}'}
 
   - name: medikabalans
@@ -45,9 +45,9 @@ sites:
     lockfiles: [composer.lock]
     runtimes: *drupal-runtimes
     logs:
-      - {name: watchdog, query: '{job="syslog", app="drupal", host="medikabalans"} | json'}
-      - {name: php-fpm, query: '{namespace="medikabalans", container="php-fpm"}'}
-      - {name: nginx, query: '{namespace="medikabalans", container="nginx"}'}
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="medikabalans"} | json', format: drupal-watchdog}
+      - {name: php-fpm, query: '{namespace="medikabalans", container="php-fpm"}', format: php-fpm}
+      - {name: nginx, query: '{namespace="medikabalans", container="nginx"}', format: nginx}
       - {name: varnish, query: '{namespace="medikabalans", container="varnish"}'}
 
   - name: leo_cal
@@ -58,9 +58,9 @@ sites:
     lockfiles: [composer.lock]
     runtimes: *drupal-runtimes
     logs:
-      - {name: watchdog, query: '{job="syslog", app="drupal", host="leo-cal"} | json'}
-      - {name: php-fpm, query: '{namespace="leo-cal", container="php-fpm"}'}
-      - {name: nginx, query: '{namespace="leo-cal", container="nginx"}'}
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="leo-cal"} | json', format: drupal-watchdog}
+      - {name: php-fpm, query: '{namespace="leo-cal", container="php-fpm"}', format: php-fpm}
+      - {name: nginx, query: '{namespace="leo-cal", container="nginx"}', format: nginx}
       - {name: varnish, query: '{namespace="leo-cal", container="varnish"}'}
 
   # syslog is disabled on ruoka-admin (Plan 2 enables it), so there is no watchdog stream yet.
@@ -72,8 +72,8 @@ sites:
     lockfiles: [composer.lock]
     runtimes: *drupal-runtimes
     logs:
-      - {name: php-fpm, query: '{namespace="ruoka", container="php-fpm"}'}
-      - {name: nginx, query: '{namespace="ruoka", container="nginx"}'}
+      - {name: php-fpm, query: '{namespace="ruoka", container="php-fpm"}', format: php-fpm}
+      - {name: nginx, query: '{namespace="ruoka", container="nginx"}', format: nginx}
       - {name: varnish, query: '{namespace="ruoka", container="varnish"}'}
 
   - name: ruskonkesateatteri
@@ -85,9 +85,9 @@ sites:
     lockfiles: [composer.lock]
     runtimes: *drupal-runtimes
     logs:
-      - {name: watchdog, query: '{job="syslog", app="drupal", host="ruskonkesateatteri"} | json'}
-      - {name: php-fpm, query: '{namespace="ruskonkesateatteri", container="php-fpm"}'}
-      - {name: nginx, query: '{namespace="ruskonkesateatteri", container="nginx"}'}
+      - {name: watchdog, query: '{job="syslog", app="drupal", host="ruskonkesateatteri"} | json', format: drupal-watchdog}
+      - {name: php-fpm, query: '{namespace="ruskonkesateatteri", container="php-fpm"}', format: php-fpm}
+      - {name: nginx, query: '{namespace="ruskonkesateatteri", container="nginx"}', format: nginx}
       - {name: varnish, query: '{namespace="ruskonkesateatteri", container="varnish"}'}
 
   # Olli's own apps (spec §13). gpro-production's health block waits for production to run the /status image;
@@ -102,10 +102,10 @@ sites:
       - {container: app, product: nodejs, env: NODE_VERSION, cpe: "nodejs:node.js"}
       - {container: app, product: alpine-linux, package: alpine}
     logs:
-      - {name: api, query: '{namespace="torn-tracker", pod=~"torn-tracker-api-.*"}'}
-      - {name: collector, query: '{namespace="torn-tracker", pod=~"torn-tracker-collector-.*"}'}
-      - {name: modeler, query: '{namespace="torn-tracker", pod=~"torn-tracker-modeler-.*"}'}
-      - {name: gateway, query: '{namespace="torn-tracker", pod=~"torn-tracker-gateway-.*"}'}
+      - {name: api, query: '{namespace="torn-tracker", pod=~"torn-tracker-api-.*"}', format: torn-api}
+      - {name: collector, query: '{namespace="torn-tracker", pod=~"torn-tracker-collector-.*"}', format: torn-collector}
+      - {name: modeler, query: '{namespace="torn-tracker", pod=~"torn-tracker-modeler-.*"}', format: torn-modeler}
+      - {name: gateway, query: '{namespace="torn-tracker", pod=~"torn-tracker-gateway-.*"}', format: torn-gateway}
     health: {type: status, url: http://torn-tracker.torn-tracker.svc:9095/status}
 
   - name: gpro-production
@@ -124,8 +124,8 @@ sites:
       - {container: backend, product: alpine-linux, package: alpine}
       - {container: frontend, product: alpine-linux, package: alpine}
     logs:
-      - {name: backend, query: '{namespace="gpro", pod=~"gpro-backend-.*"}'}
-      - {name: worker, query: '{namespace="gpro", pod=~"gpro-worker-.*"}'}
+      - {name: backend, query: '{namespace="gpro", pod=~"gpro-backend-.*"}', format: gpro-backend}
+      - {name: worker, query: '{namespace="gpro", pod=~"gpro-worker-.*"}', format: gpro-worker}
 
   - name: gpro-main
     kind: generic
@@ -136,8 +136,8 @@ sites:
     lockfiles: [pnpm-lock.yaml]
     runtimes: *gpro-runtimes
     logs:
-      - {name: backend, query: '{namespace="gpro", pod=~"gpro-dev-backend-.*"}'}
-      - {name: worker, query: '{namespace="gpro", pod=~"gpro-dev-worker-.*"}'}
+      - {name: backend, query: '{namespace="gpro", pod=~"gpro-dev-backend-.*"}', format: gpro-backend}
+      - {name: worker, query: '{namespace="gpro", pod=~"gpro-dev-worker-.*"}', format: gpro-worker}
     health: {type: status, url: http://gpro-dev-backend.gpro.svc:9095/status}
 
   - name: autoposter
@@ -151,4 +151,6 @@ sites:
       - {container: app, product: python, env: PYTHON_VERSION, cpe: "python:python"}
       - {container: app, product: alpine-linux, package: alpine}
     logs:
-      - {name: app, query: '{namespace="media", pod=~"autoposter-.*"}'}
+      # One container logs both; uvicorn's access lines go to requests, everything else to app.
+      - {name: app, query: '{namespace="media", pod=~"autoposter-.*"} !~ `^[A-Z]+: +\S+:[0-9]+ - "`', format: autoposter-app}
+      - {name: requests, query: '{namespace="media", pod=~"autoposter-.*"} |~ `^[A-Z]+: +\S+:[0-9]+ - "`', format: autoposter-requests}
