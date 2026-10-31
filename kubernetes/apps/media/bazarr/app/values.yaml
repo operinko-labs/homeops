@@ -71,6 +71,8 @@ controllers:
           GITSYNC_REF: master
           GITSYNC_PERIOD: 24h
           GITSYNC_ROOT: /subcleaner
+          # git-sync 4.8 no longer trusts every directory, and the volume is root-owned.
+          GITSYNC_GIT_CONFIG: safe.directory:/subcleaner
         resources:
           requests:
             cpu: 10m
