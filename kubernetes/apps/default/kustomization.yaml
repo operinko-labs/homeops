@@ -9,6 +9,5 @@ resources:
   - ./echo/ks.yaml
   - ./gramps-web/ks.yaml
   - ./homepage/ks.yaml
-  - ./torn-illicit/ks.yaml
 components:
   - ../../components/common

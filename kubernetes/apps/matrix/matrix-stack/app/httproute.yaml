@@ -7,6 +7,9 @@ metadata:
     route.scope: external
   annotations:
     external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    # gatus-config.yaml checks /_matrix/client/versions; the auto check probes
+    # the first match (legacy v1 login), which 404s
+    gatus.home-operations.com/enabled: "false"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -113,6 +116,9 @@ metadata:
     route.scope: external
   annotations:
     external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    # gatus-config.yaml checks /.well-known/matrix/server; the auto check probes
+    # the first match (the JMAP redirect to mail.erinko.fi)
+    gatus.home-operations.com/enabled: "false"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
@@ -154,6 +160,14 @@ metadata:
     route.scope: external
   annotations:
     external-dns.alpha.kubernetes.io/target: external.vaderrp.com
+    # The auto check probes /sfu/get, which is POST-only (405); LiveKit's root
+    # answers 200
+    gatus.home-operations.com/enabled: "true"
+    gatus.home-operations.com/endpoint: |
+      group: Matrix
+      url: "https://mrtc.erinko.fi/"
+      conditions:
+        - "[STATUS] == 200"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
