@@ -28,7 +28,7 @@ sites:
       # Base OS versions from each image's SBOM (Harbor/Trivy SPDX)
       - {container: php-fpm, product: alpine-linux, package: alpine}
       - {container: nginx, product: alpine-linux, package: alpine}
-      - {container: varnish, product: debian, package: debian}
+      - {container: varnish, product: alpine-linux, package: alpine}
     logs:
       - {name: watchdog, query: '{job="syslog", app="drupal", host="kyronautopalvelu"} | json'}
       - {name: php-fpm, query: '{namespace="kyronautopalvelu", container="php-fpm"}'}
