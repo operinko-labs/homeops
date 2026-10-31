@@ -12,6 +12,7 @@ resources:
   - configmap.yaml
   - webui-job.yaml
   - migrate.yaml
+  - wan-allowlist.yaml
 configMapGenerator:
   - name: stalwart-loki-rules
     files:

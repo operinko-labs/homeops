@@ -1,0 +1,138 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stalwart-wan-allowlist-script
+  namespace: mail
+data:
+  sync-wan-allowlist.py: |
+    # Keeps the home WAN address in Stalwart's x:AllowedIp list. Everything at
+    # home (LAN clients, the Forgejo LXC, Proxmox, the cluster) reaches
+    # mail.erinko.fi through the VPS with that one address, and since the VPS
+    # sends PROXY v2 Stalwart sees it - so a single misbehaving client can get
+    # the whole house banned (2026-10-31: a permanent rcptToFailure ban).
+    #
+    # The address is dynamic, so this owns exactly one entry, recognised by
+    # REASON, and replaces it when the address changes. It also lifts any ban
+    # already on the new address. The cluster's egress IS the home WAN, so
+    # asking Cloudflare from here gives the right address.
+    import base64
+    import ipaddress
+    import json
+    import os
+    import sys
+    import urllib.request
+
+    REASON = "Home WAN (auto, stalwart-wan-allowlist)"
+
+    base = os.environ["STALWART_URL"].rstrip("/")
+    creds = os.environ["STALWART_RECOVERY_ADMIN"]  # "admin:<password>"
+    headers = {
+        "Authorization": "Basic " + base64.b64encode(creds.encode()).decode(),
+        "Content-Type": "application/json",
+    }
+
+    def jmap(method, args):
+        req = urllib.request.Request(
+            base + "/jmap",
+            data=json.dumps({
+                "using": ["urn:ietf:params:jmap:core", "urn:stalwart:jmap"],
+                "methodCalls": [[method, args, "c0"]],
+            }).encode(),
+            headers=headers,
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            name, result, _ = json.load(resp)["methodResponses"][0]
+        if name == "error":
+            sys.exit(f"{method} failed: {json.dumps(result)}")
+        return result
+
+    def get_all(kind):
+        ids = jmap(f"x:{kind}/query", {})["ids"]
+        return jmap(f"x:{kind}/get", {"ids": ids})["list"] if ids else []
+
+    # 1.1.1.1 forces IPv4; home has no IPv6 on the WAN
+    with urllib.request.urlopen("https://1.1.1.1/cdn-cgi/trace", timeout=15) as resp:
+        trace = dict(line.split("=", 1) for line in resp.read().decode().splitlines() if "=" in line)
+    wan = ipaddress.ip_address(trace["ip"])
+    if not wan.is_global:
+        sys.exit(f"Refusing non-global WAN address {wan}")
+    wan = str(wan)
+
+    mine = [a for a in get_all("AllowedIp") if a.get("reason") == REASON]
+    banned = [b for b in get_all("BlockedIp") if b.get("address") == wan]
+    if [a["address"] for a in mine] == [wan] and not banned:
+        print(f"{wan} already allowed, nothing to do")
+        sys.exit(0)
+
+    if not (len(mine) == 1 and mine[0]["address"] == wan):
+        print(f"Allowing {wan} (was: {[a['address'] for a in mine]})", flush=True)
+        result = jmap("x:AllowedIp/set", {
+            "destroy": [a["id"] for a in mine],
+            "create": {"wan": {"address": wan, "reason": REASON}},
+        })
+        if "wan" not in (result.get("created") or {}):
+            sys.exit(f"Create rejected: {json.dumps(result.get('notCreated'))}")
+    if banned:
+        print(f"Lifting ban on {wan}: {json.dumps(banned)}", flush=True)
+        jmap("x:BlockedIp/set", {"destroy": [b["id"] for b in banned]})
+
+    # IP lists are cached in memory: a destroyed ban kept blocking until
+    # ReloadBlockedIps ran
+    result = jmap("x:Action/set", {"create": {"r": {"@type": "ReloadBlockedIps"}}})
+    if "r" not in (result.get("created") or {}):
+        sys.exit(f"ReloadBlockedIps rejected: {json.dumps(result.get('notCreated'))}")
+    print("Allowlist updated and IP lists reloaded")
+---
+# Manual run:
+#   kubectl -n mail create job --from=cronjob/stalwart-wan-allowlist stalwart-wan-allowlist-manual
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: stalwart-wan-allowlist
+  namespace: mail
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            seccompProfile: {type: RuntimeDefault}
+          containers:
+            - name: sync
+              image: docker.io/library/python:3.14-alpine
+              command: ["python", "/scripts/sync-wan-allowlist.py"]
+              env:
+                - name: STALWART_URL
+                  value: http://stalwart-app.mail.svc.cluster.local:8080
+                - name: STALWART_RECOVERY_ADMIN
+                  valueFrom:
+                    secretKeyRef:
+                      name: stalwart-secret
+                      key: STALWART_RECOVERY_ADMIN
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests: {cpu: 10m, memory: 32Mi}
+                limits: {memory: 64Mi}
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: stalwart-wan-allowlist-script
