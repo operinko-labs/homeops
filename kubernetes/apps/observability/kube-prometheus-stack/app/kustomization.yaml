@@ -14,5 +14,4 @@ resources:
   - alertrules-talos-etcd.yaml
   - alertrules-workload-health.yaml
   - externalsecret-alertmanager-ntfy.yaml
-  - scrapeconfig-minio.yaml
   - grafanadashboard.yaml
