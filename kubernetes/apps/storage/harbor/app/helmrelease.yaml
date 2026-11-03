@@ -61,7 +61,7 @@ spec:
           cpu: 100m
           memory: 256Mi
         limits:
-          memory: 512Mi
+          memory: 2Gi
     persistence:
       imageChartStorage:
         type: s3
