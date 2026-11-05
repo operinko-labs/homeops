@@ -62,8 +62,8 @@ spec:
 
   postgresql:
     parameters:
-      max_connections: "100"
-      shared_buffers: 128MB
+      max_connections: "200"
+      shared_buffers: 256MB
       wal_keep_size: "512MB"
       max_wal_size: "256MB"
       min_wal_size: "40MB"
@@ -86,7 +86,7 @@ spec:
       cpu: 100m
       memory: 256Mi
     limits:
-      memory: 1Gi
+      memory: 2Gi
   monitoring:
     enablePodMonitor: true
 
