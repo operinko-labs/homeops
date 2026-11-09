@@ -219,12 +219,50 @@ test_swap() {
     "5/5/5"
 }
 
+# Failed swaps must leave dev and the old copy alone.
+test_swap_refusals() {
+  # Empty staging: refused, dev unchanged and still connectable.
+  sql <<'SQL'
+CREATE DATABASE gpro_dev_sync OWNER gpro_devrole;
+SQL
+  docker exec "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev_sync \
+    -c 'CREATE TABLE public."user" (id int)'
+  local out
+  if out="$(run_step swap.sh 2>&1)"; then
+    echo "FAIL: swap accepted an empty staging database" >&2
+    exit 1
+  fi
+  assert_eq "empty staging refused" "$(grep -c 'has no users' <<<"$out")" "1"
+  assert_eq "dev unchanged after refused swap" \
+    "$(q gpro_dev "SELECT count(*) FROM \"user\" WHERE gpro_manager_id BETWEEN 100 AND 999")" "5"
+  assert_eq "dev still accepts connections" \
+    "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev'")" "t"
+  q postgres 'DROP DATABASE gpro_dev_sync' >/dev/null
+
+  # Missing dev db (half-done swap): refused before anything is dropped.
+  if out="$(run_step swap.sh -e DEV_DB=missing_dev 2>&1)"; then
+    echo "FAIL: swap ran with a missing DEV_DB" >&2
+    exit 1
+  fi
+  assert_eq "missing dev db refused" "$(grep -c 'does not exist' <<<"$out")" "1"
+  assert_eq "old db survives refused swap" \
+    "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_old'")" "1"
+}
+
 # A second month: the enabled set carries over, a live dev session is terminated,
 # and the previous old db is replaced.
 test_second_run() {
   docker exec -d "$PG" psql -U gpro_devrole -d gpro_dev -c 'SELECT pg_sleep(600)'
-  sleep 2
+  local sleepers=0 i
+  for i in $(seq 10); do
+    sleepers="$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE datname = 'gpro_dev' AND usename = 'gpro_devrole' AND query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")"
+    [ "$sleepers" -gt 0 ] && break
+    sleep 1
+  done
+  assert_eq "second run: live dev session established" "$sleepers" "1"
   full_sync
+  assert_eq "second run: live session terminated" \
+    "$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")" "0"
   assert_eq "second run: enabled set carried over" \
     "$(q gpro_dev 'SELECT string_agg(gpro_manager_id::text, $$,$$ ORDER BY gpro_manager_id) FROM "user" WHERE enabled')" \
     "101,103"
@@ -241,6 +279,7 @@ main() {
   test_dump_restore
   test_sanitize
   test_swap
+  test_swap_refusals
   test_second_run
   echo "ALL PASSED"
 }
