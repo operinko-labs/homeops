@@ -1,0 +1,193 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/batch/cronjob_v1.json
+# Monthly prod -> gpro_dev sync. Steps and recovery: db-sync/README.md.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gpro-dev-db-sync
+spec:
+  schedule: "0 3 1 * *"
+  timeZone: Europe/Helsinki
+  concurrencyPolicy: Forbid
+  suspend: false
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 3600
+      template:
+        spec:
+          serviceAccountName: gpro-dev-db-sync
+          restartPolicy: Never
+          dnsConfig:
+            options:
+              - name: ndots
+                value: "1"
+          initContainers:
+            - name: dump-restore
+              image: ghcr.io/cloudnative-pg/postgresql:17.6
+              command: ["bash", "/scripts/dump-restore.sh"]
+              env: &pg-env
+                - name: SRC_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-secret
+                      key: POSTGRESDB_HOST
+                - name: SRC_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-secret
+                      key: POSTGRESDB_PORT
+                - name: SRC_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-secret
+                      key: POSTGRESDB_DATABASE
+                - name: SRC_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-secret
+                      key: POSTGRESDB_USER
+                - name: SRC_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-secret
+                      key: POSTGRESDB_PASSWORD
+                - name: DEV_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: POSTGRESDB_HOST
+                - name: DEV_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: POSTGRESDB_PORT
+                - name: DEV_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: POSTGRESDB_DATABASE
+                - name: DEV_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: POSTGRESDB_USER
+                - name: DEV_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: POSTGRESDB_PASSWORD
+                - name: SUPER_USER
+                  value: postgres
+                - name: SUPER_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: gpro-dev-secret
+                      key: INIT_POSTGRES_SUPER_PASS
+                - name: STAGING_DB
+                  value: gpro_dev_sync
+                - name: OLD_DB
+                  value: gpro_dev_old
+                - name: WORK_DIR
+                  value: /work
+              volumeMounts: &pg-mounts
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: work
+                  mountPath: /work
+              resources: &pg-resources
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  memory: 1Gi
+            - name: migrate
+              image: harbor.vaderrp.com/operinko-labs/gpro-backend:main-1794183484-sha-461f47f # {"$imagepolicy": "flux-system:gpro-backend-main"}
+              command: ["node", "dist/db/migrate.js"]
+              envFrom:
+                - secretRef:
+                    name: gpro-dev-secret
+              env:
+                - name: NODE_ENV
+                  value: production
+                - name: POSTGRESDB_DATABASE
+                  value: gpro_dev_sync
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+            - name: sanitize
+              image: ghcr.io/cloudnative-pg/postgresql:17.6
+              command: ["bash", "/scripts/sanitize.sh"]
+              env: *pg-env
+              volumeMounts: *pg-mounts
+              resources: *pg-resources
+            - name: scale-down
+              image: registry.k8s.io/kubectl:v1.37.0
+              args:
+                - scale
+                - --namespace=gpro
+                - --replicas=0
+                - deployment/gpro-dev-backend
+                - deployment/gpro-dev-worker
+              resources: &kubectl-resources
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi
+            - name: wait-pods-gone
+              image: registry.k8s.io/kubectl:v1.37.0
+              args:
+                - wait
+                - --namespace=gpro
+                - --for=delete
+                - pod
+                - --selector=app.kubernetes.io/instance=gpro-main,app.kubernetes.io/component in (backend,worker)
+                - --timeout=300s
+              resources: *kubectl-resources
+            - name: swap
+              image: ghcr.io/cloudnative-pg/postgresql:17.6
+              command: ["bash", "/scripts/swap.sh"]
+              env: *pg-env
+              volumeMounts: *pg-mounts
+              resources: *pg-resources
+            - name: scale-up
+              image: registry.k8s.io/kubectl:v1.37.0
+              args:
+                - scale
+                - --namespace=gpro
+                - --replicas=1
+                - deployment/gpro-dev-backend
+                - deployment/gpro-dev-worker
+              resources: *kubectl-resources
+          containers:
+            - name: rollout-backend
+              image: registry.k8s.io/kubectl:v1.37.0
+              args:
+                - rollout
+                - status
+                - --namespace=gpro
+                - deployment/gpro-dev-backend
+                - --timeout=600s
+              resources: *kubectl-resources
+            - name: rollout-worker
+              image: registry.k8s.io/kubectl:v1.37.0
+              args:
+                - rollout
+                - status
+                - --namespace=gpro
+                - deployment/gpro-dev-worker
+                - --timeout=600s
+              resources: *kubectl-resources
+          volumes:
+            - name: scripts
+              configMap:
+                name: gpro-dev-db-sync-scripts
+            - name: work
+              emptyDir: {}

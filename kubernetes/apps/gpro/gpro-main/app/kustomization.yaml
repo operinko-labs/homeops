@@ -4,3 +4,15 @@ kind: Kustomization
 resources:
   - external-secret.yaml
   - helmrelease.yaml
+  - db-sync-rbac.yaml
+  - db-sync-cronjob.yaml
+configMapGenerator:
+  # Hash suffix kept on purpose: Kustomize rewrites the CronJob's reference,
+  # so script edits always reach the next run.
+  - name: gpro-dev-db-sync-scripts
+    files:
+      - db-sync/lib.sh
+      - db-sync/dump-restore.sh
+      - db-sync/sanitize.sh
+      - db-sync/sanitize.sql
+      - db-sync/swap.sh

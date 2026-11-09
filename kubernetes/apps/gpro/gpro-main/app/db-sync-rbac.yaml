@@ -1,0 +1,35 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpro-dev-db-sync
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gpro-dev-db-sync
+rules:
+  # kubectl scale / rollout status read the deployment first.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    resourceNames: ["gpro-dev-backend", "gpro-dev-worker"]
+    verbs: ["get", "patch", "update"]
+  # kubectl wait --for=delete on the dev pods.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gpro-dev-db-sync
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gpro-dev-db-sync
+subjects:
+  - kind: ServiceAccount
+    name: gpro-dev-db-sync
