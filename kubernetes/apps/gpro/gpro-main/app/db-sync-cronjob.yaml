@@ -115,6 +115,9 @@ spec:
                   value: production
                 - name: POSTGRESDB_DATABASE
                   value: gpro_dev_sync
+                # migrate.ts prefers DATABASE_URL; blank it so the override above always wins.
+                - name: DATABASE_URL
+                  value: ""
               resources:
                 requests:
                   cpu: 100m

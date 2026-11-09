@@ -206,16 +206,6 @@ test_sanitize() {
   q gpro_dev_sync "DELETE FROM cron_job_schedule WHERE name = 'seq-check'" >/dev/null
 }
 
-# The CronJob's pipeline, minus the kubectl steps.
-full_sync() {
-  # Host-side edits in test_sanitize (sed -i, cp) left files the uid-26 client can't rewrite.
-  find "$WORK" -maxdepth 1 -type f -user "$(id -u)" -exec chmod a+rw {} +
-  run_step dump-restore.sh
-  migrate "$DEV" gpro_dev_sync gpro_devrole devpw
-  run_step sanitize.sh
-  run_step swap.sh
-}
-
 test_swap() {
   run_step swap.sh
   assert_eq "dev now holds prod users" \
@@ -229,6 +219,8 @@ test_swap() {
     "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_sync'")" "0"
   assert_eq "old db accepts connections" \
     "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev_old'")" "t"
+  assert_eq "new dev accepts connections" \
+    "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev'")" "t"
   assert_eq "prod untouched" \
     "$(qp gpro "SELECT count(*) FILTER (WHERE enabled) || '/' || count(*) || '/' || (SELECT count(*) FROM refresh_token) FROM \"user\"")" \
     "5/5/5"
@@ -254,6 +246,23 @@ SQL
     "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev'")" "t"
   q postgres 'DROP DATABASE gpro_dev_sync' >/dev/null
 
+  # Backstop: staging with users but not sanitised (sanitize step skipped).
+  find "$WORK" -maxdepth 1 -type f -user "$(id -u)" -exec chmod a+rw {} +
+  run_step dump-restore.sh
+  migrate "$DEV" gpro_dev_sync gpro_devrole devpw
+  if out="$(run_step swap.sh 2>&1)"; then
+    echo "FAIL: swap accepted an unsanitised staging database" >&2
+    exit 1
+  fi
+  assert_eq "unsanitised staging refused" "$(grep -c 'not sanitised' <<<"$out")" "1"
+  assert_eq "dev unchanged after unsanitised refusal" \
+    "$(q gpro_dev "SELECT count(*) FROM \"user\" WHERE gpro_manager_id BETWEEN 100 AND 999")" "5"
+  assert_eq "dev accepts connections after unsanitised refusal" \
+    "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev'")" "t"
+  assert_eq "old db survives unsanitised refusal" \
+    "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_old'")" "1"
+  q postgres 'DROP DATABASE gpro_dev_sync' >/dev/null
+
   # Missing dev db (half-done swap): refused before anything is dropped.
   if out="$(run_step swap.sh -e DEV_DB=missing_dev 2>&1)"; then
     echo "FAIL: swap ran with a missing DEV_DB" >&2
@@ -264,20 +273,35 @@ SQL
     "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_old'")" "1"
 }
 
-# A second month: the enabled set carries over, a live dev session is terminated,
-# and the previous old db is replaced.
-test_second_run() {
-  docker exec -d "$DEV" psql -U gpro_devrole -d gpro_dev -c 'SELECT pg_sleep(600)'
-  local sleepers=0 i
+# Start a background pg_sleep session on <db> and wait until it is visible.
+start_sleeper() {
+  local db="$1" n=0 i
+  docker exec -d "$DEV" psql -U gpro_devrole -d "$db" -c 'SELECT pg_sleep(600)'
   for i in $(seq 10); do
-    sleepers="$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE datname = 'gpro_dev' AND usename = 'gpro_devrole' AND query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")"
-    [ "$sleepers" -gt 0 ] && break
+    n="$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE datname = '$db' AND usename = 'gpro_devrole' AND query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")"
+    [ "$n" -gt 0 ] && break
     sleep 1
   done
-  assert_eq "second run: live dev session established" "$sleepers" "1"
-  full_sync
-  assert_eq "second run: live session terminated" \
+  assert_eq "second run: live session on $db established" "$n" "1"
+}
+
+# A second month: the enabled set carries over, live sessions on both dev and
+# staging are terminated, and the previous old db is replaced.
+test_second_run() {
+  start_sleeper gpro_dev
+  # full_sync's steps inline, with a session on staging opened before the swap.
+  find "$WORK" -maxdepth 1 -type f -user "$(id -u)" -exec chmod a+rw {} +
+  run_step dump-restore.sh
+  migrate "$DEV" gpro_dev_sync gpro_devrole devpw
+  run_step sanitize.sh
+  start_sleeper gpro_dev_sync
+  run_step swap.sh
+  assert_eq "second run: live sessions terminated" \
     "$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")" "0"
+  assert_eq "second run: new dev accepts connections" \
+    "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev'")" "t"
+  assert_eq "second run: staging renamed away" \
+    "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_sync'")" "0"
   assert_eq "second run: enabled set carried over" \
     "$(q gpro_dev 'SELECT string_agg(gpro_manager_id::text, $$,$$ ORDER BY gpro_manager_id) FROM "user" WHERE enabled')" \
     "101,103"
