@@ -1,32 +1,39 @@
 #!/usr/bin/env bash
 # Local end-to-end test for the gpro-dev database sync scripts.
-# Starts a throwaway Postgres 17 holding a fake "prod" (gpro) and dev (gpro_dev),
-# both migrated with the real gpro-backend image, runs the sync steps inside the
+# Starts two throwaway Postgres servers mirroring the cluster: 17 holding a fake
+# "prod" (gpro) and 18 holding dev (gpro_dev), both migrated with the real gpro-backend image, runs the sync steps inside the
 # real client image and asserts the results. Not deployed to the cluster.
 # Needs docker and pull access to harbor.vaderrp.com. Usage: bash test.sh
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 NET=dbsync-test-net
-PG=dbsync-test-pg
-SERVER_IMAGE=postgres:17.6-alpine
-CLIENT_IMAGE=ghcr.io/cloudnative-pg/postgresql:17.6
+PROD=dbsync-test-prod
+DEV=dbsync-test-dev
+PROD_IMAGE=postgres:17.6-alpine
+DEV_IMAGE=postgres:18.3-alpine
+CLIENT_IMAGE=ghcr.io/cloudnative-pg/postgresql:18.3
 APP_TAG="$(awk '/gpro-backend$/ { getline; print $2; exit }' "$HERE/../helmrelease.yaml")"
 MIGRATE_IMAGE="harbor.vaderrp.com/operinko-labs/gpro-backend:$APP_TAG"
 WORK="$(mktemp -d)"
 chmod 777 "$WORK" # the client image runs as uid 26
 
-cleanup() {
-  docker rm -f "$PG" >/dev/null 2>&1 || true
+remove_containers() {
+  docker rm -f "$PROD" "$DEV" >/dev/null 2>&1 || true
   docker network rm "$NET" >/dev/null 2>&1 || true
+}
+cleanup() {
+  remove_containers
   rm -rf "$WORK"
 }
 trap cleanup EXIT
 
-# psql as superuser, SQL on stdin.
-sql() { docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U postgres "$@"; }
-# Single-value query as superuser: q <db> <sql>
-q() { docker exec "$PG" psql -X -At -U postgres -d "$1" -c "$2"; }
+# psql as superuser on the dev server, SQL on stdin.
+sql() { docker exec -i "$DEV" psql -X -q -v ON_ERROR_STOP=1 -U postgres "$@"; }
+# Single-value query as superuser on the dev server: q <db> <sql>
+q() { docker exec "$DEV" psql -X -At -U postgres -d "$1" -c "$2"; }
+# Same, on the prod server: qp <db> <sql>
+qp() { docker exec "$PROD" psql -X -At -U postgres -d "$1" -c "$2"; }
 assert_eq() {
   if [ "$2" != "$3" ]; then
     echo "FAIL: $1: expected '$3', got '$2'" >&2
@@ -35,11 +42,11 @@ assert_eq() {
   echo "ok: $1"
 }
 
-# Run the backend's Drizzle migrations: migrate <db> <user> <password>
+# Run the backend's Drizzle migrations: migrate <host> <db> <user> <password>
 migrate() {
   docker run --rm --network "$NET" -e NODE_ENV=production \
-    -e POSTGRESDB_HOST="$PG" -e POSTGRESDB_PORT=5432 -e POSTGRESDB_DATABASE="$1" \
-    -e POSTGRESDB_USER="$2" -e POSTGRESDB_PASSWORD="$3" \
+    -e POSTGRESDB_HOST="$1" -e POSTGRESDB_PORT=5432 -e POSTGRESDB_DATABASE="$2" \
+    -e POSTGRESDB_USER="$3" -e POSTGRESDB_PASSWORD="$4" \
     "$MIGRATE_IMAGE" node dist/db/migrate.js >/dev/null
 }
 
@@ -49,30 +56,38 @@ run_step() {
   local script="$1"
   shift
   docker run --rm --network "$NET" -v "$HERE:/scripts:ro" -v "$WORK:/work" \
-    -e SRC_HOST="$PG" -e SRC_DB=gpro -e SRC_USER=gpro_prod -e SRC_PASS=prodpw \
-    -e DEV_HOST="$PG" -e DEV_DB=gpro_dev -e DEV_USER=gpro_devrole -e DEV_PASS=devpw \
+    -e SRC_HOST="$PROD" -e SRC_DB=gpro -e SRC_USER=gpro_prod -e SRC_PASS=prodpw \
+    -e DEV_HOST="$DEV" -e DEV_DB=gpro_dev -e DEV_USER=gpro_devrole -e DEV_PASS=devpw \
     -e SUPER_USER=postgres -e SUPER_PASS=superpw \
     -e STAGING_DB=gpro_dev_sync -e OLD_DB=gpro_dev_old -e WORK_DIR=/work \
     "$@" --entrypoint bash "$CLIENT_IMAGE" "/scripts/$script"
 }
 
 setup() {
+  remove_containers # stale leftovers from an interrupted run
   docker network create "$NET" >/dev/null
-  docker run -d --name "$PG" --network "$NET" -e POSTGRES_PASSWORD=superpw \
-    "$SERVER_IMAGE" >/dev/null
+  docker run -d --name "$PROD" --network "$NET" -e POSTGRES_PASSWORD=superpw \
+    "$PROD_IMAGE" >/dev/null
+  docker run -d --name "$DEV" --network "$NET" -e POSTGRES_PASSWORD=superpw \
+    "$DEV_IMAGE" >/dev/null
   # TCP check: the image's temporary init server listens on the socket only.
-  until docker exec "$PG" pg_isready -q -h 127.0.0.1 -U postgres; do sleep 1; done
-  sql <<'SQL'
+  local c
+  for c in "$PROD" "$DEV"; do
+    until docker exec "$c" pg_isready -q -h 127.0.0.1 -U postgres; do sleep 1; done
+  done
+  docker exec -i "$PROD" psql -X -q -v ON_ERROR_STOP=1 -U postgres <<'SQL'
 CREATE ROLE gpro_prod LOGIN PASSWORD 'prodpw';
-CREATE ROLE gpro_devrole LOGIN PASSWORD 'devpw';
 CREATE DATABASE gpro OWNER gpro_prod;
+SQL
+  sql <<'SQL'
+CREATE ROLE gpro_devrole LOGIN PASSWORD 'devpw';
 CREATE DATABASE gpro_dev OWNER gpro_devrole;
 SQL
-  migrate gpro gpro_prod prodpw
-  migrate gpro_dev gpro_devrole devpw
+  migrate "$PROD" gpro gpro_prod prodpw
+  migrate "$DEV" gpro_dev gpro_devrole devpw
 
   # Fake prod: everyone enabled with keys, plus prod-only key, schedule, tokens.
-  docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_prod -d gpro <<'SQL'
+  docker exec -i "$PROD" psql -X -q -v ON_ERROR_STOP=1 -U gpro_prod -d gpro <<'SQL'
 INSERT INTO "user" (username, email, gpro_manager_id, api_key, enabled) VALUES
   ('alice', 'a@example.test', 101, 'key-a', true),
   ('bob',   'b@example.test', 102, 'key-b', true),
@@ -91,7 +106,7 @@ INSERT INTO password_reset_token (user_id, token, expires_at)
 SQL
 
   # Fake dev: 101 and 103 enabled, 102 disabled, 999 dev-only, tester with no manager ID.
-  docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev <<'SQL'
+  docker exec -i "$DEV" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev <<'SQL'
 INSERT INTO "user" (username, email, gpro_manager_id, api_key, enabled) VALUES
   ('alice-dev', 'a@example.test', 101, 'old-key-a', true),
   ('bob-dev',   'b@example.test', 102, NULL,        false),
@@ -124,7 +139,7 @@ test_guard() {
     exit 1
   fi
   assert_eq "guard: DEV_DB suffix enforced" "$(grep -c 'FATAL' <<<"$out")" "1"
-  assert_eq "guard: prod data intact" "$(q gpro 'SELECT count(*) FROM "user"')" "5"
+  assert_eq "guard: prod data intact" "$(qp gpro 'SELECT count(*) FROM "user"')" "5"
 }
 
 test_dump_restore() {
@@ -146,7 +161,7 @@ test_dump_restore() {
 }
 
 test_sanitize() {
-  migrate gpro_dev_sync gpro_devrole devpw # mirrors the CronJob's migrate container
+  migrate "$DEV" gpro_dev_sync gpro_devrole devpw # mirrors the CronJob's migrate container
 
   # A wrong expected count must abort on the matching assertion and roll everything back.
   local out var msg
@@ -196,7 +211,7 @@ full_sync() {
   # Host-side edits in test_sanitize (sed -i, cp) left files the uid-26 client can't rewrite.
   find "$WORK" -maxdepth 1 -type f -user "$(id -u)" -exec chmod a+rw {} +
   run_step dump-restore.sh
-  migrate gpro_dev_sync gpro_devrole devpw
+  migrate "$DEV" gpro_dev_sync gpro_devrole devpw
   run_step sanitize.sh
   run_step swap.sh
 }
@@ -215,7 +230,7 @@ test_swap() {
   assert_eq "old db accepts connections" \
     "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev_old'")" "t"
   assert_eq "prod untouched" \
-    "$(q gpro "SELECT count(*) FILTER (WHERE enabled) || '/' || count(*) || '/' || (SELECT count(*) FROM refresh_token) FROM \"user\"")" \
+    "$(qp gpro "SELECT count(*) FILTER (WHERE enabled) || '/' || count(*) || '/' || (SELECT count(*) FROM refresh_token) FROM \"user\"")" \
     "5/5/5"
 }
 
@@ -225,7 +240,7 @@ test_swap_refusals() {
   sql <<'SQL'
 CREATE DATABASE gpro_dev_sync OWNER gpro_devrole;
 SQL
-  docker exec "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev_sync \
+  docker exec "$DEV" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev_sync \
     -c 'CREATE TABLE public."user" (id int)'
   local out
   if out="$(run_step swap.sh 2>&1)"; then
@@ -252,7 +267,7 @@ SQL
 # A second month: the enabled set carries over, a live dev session is terminated,
 # and the previous old db is replaced.
 test_second_run() {
-  docker exec -d "$PG" psql -U gpro_devrole -d gpro_dev -c 'SELECT pg_sleep(600)'
+  docker exec -d "$DEV" psql -U gpro_devrole -d gpro_dev -c 'SELECT pg_sleep(600)'
   local sleepers=0 i
   for i in $(seq 10); do
     sleepers="$(q postgres "SELECT count(*) FROM pg_stat_activity WHERE datname = 'gpro_dev' AND usename = 'gpro_devrole' AND query LIKE '%pg_sleep(600)%' AND pid <> pg_backend_pid()")"
