@@ -191,11 +191,57 @@ test_sanitize() {
   q gpro_dev_sync "DELETE FROM cron_job_schedule WHERE name = 'seq-check'" >/dev/null
 }
 
+# The CronJob's pipeline, minus the kubectl steps.
+full_sync() {
+  # Host-side edits in test_sanitize (sed -i, cp) left files the uid-26 client can't rewrite.
+  find "$WORK" -maxdepth 1 -type f -user "$(id -u)" -exec chmod a+rw {} +
+  run_step dump-restore.sh
+  migrate gpro_dev_sync gpro_devrole devpw
+  run_step sanitize.sh
+  run_step swap.sh
+}
+
+test_swap() {
+  run_step swap.sh
+  assert_eq "dev now holds prod users" \
+    "$(q gpro_dev "SELECT string_agg(username, ',' ORDER BY username) FROM \"user\" WHERE gpro_manager_id BETWEEN 100 AND 999")" \
+    "alice,bob,carol,dave,erin"
+  assert_eq "dev-only users gone" \
+    "$(q gpro_dev "SELECT count(*) FROM \"user\" WHERE username IN ('ghost', 'tester')")" "0"
+  assert_eq "previous dev kept as old" \
+    "$(q gpro_dev_old "SELECT count(*) FROM \"user\" WHERE username = 'ghost'")" "1"
+  assert_eq "staging renamed away" \
+    "$(q postgres "SELECT count(*) FROM pg_database WHERE datname = 'gpro_dev_sync'")" "0"
+  assert_eq "old db accepts connections" \
+    "$(q postgres "SELECT datallowconn FROM pg_database WHERE datname = 'gpro_dev_old'")" "t"
+  assert_eq "prod untouched" \
+    "$(q gpro "SELECT count(*) FILTER (WHERE enabled) || '/' || count(*) || '/' || (SELECT count(*) FROM refresh_token) FROM \"user\"")" \
+    "5/5/5"
+}
+
+# A second month: the enabled set carries over, a live dev session is terminated,
+# and the previous old db is replaced.
+test_second_run() {
+  docker exec -d "$PG" psql -U gpro_devrole -d gpro_dev -c 'SELECT pg_sleep(600)'
+  sleep 2
+  full_sync
+  assert_eq "second run: enabled set carried over" \
+    "$(q gpro_dev 'SELECT string_agg(gpro_manager_id::text, $$,$$ ORDER BY gpro_manager_id) FROM "user" WHERE enabled')" \
+    "101,103"
+  assert_eq "second run: old db is the first sync's result" \
+    "$(q gpro_dev_old "SELECT count(*) FROM \"user\" WHERE username = 'ghost'")" "0"
+  assert_eq "second run: dev keys still dev's" \
+    "$(q gpro_dev "SELECT string_agg(name, ',' ORDER BY name) FROM service_worker_api_key")" \
+    "$DEV_SWK_BEFORE"
+}
+
 main() {
   setup
   test_guard
   test_dump_restore
   test_sanitize
+  test_swap
+  test_second_run
   echo "ALL PASSED"
 }
 
