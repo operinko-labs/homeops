@@ -145,10 +145,51 @@ test_dump_restore() {
   assert_eq "dev untouched" "$(q gpro_dev 'SELECT count(*) FROM "user"')" "5"
 }
 
+test_sanitize() {
+  migrate gpro_dev_sync gpro_devrole devpw # mirrors the CronJob's migrate container
+
+  # A wrong expected count must abort and roll everything back.
+  cp "$WORK/counts.env" "$WORK/counts.env.good"
+  sed -i 's/^SWK_COUNT=.*/SWK_COUNT=99/' "$WORK/counts.env"
+  if run_step sanitize.sh >/dev/null 2>&1; then
+    echo "FAIL: sanitize accepted a wrong service-worker key count" >&2
+    exit 1
+  fi
+  assert_eq "failed sanitize rolled back" \
+    "$(q gpro_dev_sync 'SELECT count(*) > 0 FROM refresh_token')" "t"
+  mv "$WORK/counts.env.good" "$WORK/counts.env"
+
+  run_step sanitize.sh
+  assert_eq "only dev's enabled users enabled" \
+    "$(q gpro_dev_sync 'SELECT string_agg(gpro_manager_id::text, $$,$$ ORDER BY gpro_manager_id) FROM "user" WHERE enabled')" \
+    "101,103"
+  assert_eq "API keys kept only for enabled users" \
+    "$(q gpro_dev_sync "SELECT string_agg(gpro_manager_id || '=' || coalesce(api_key, '-'), ',' ORDER BY gpro_manager_id) FROM \"user\" WHERE gpro_manager_id BETWEEN 100 AND 999")" \
+    "101=key-a,102=-,103=key-c,104=-,105=-"
+  assert_eq "dev's service-worker keys kept" \
+    "$(q gpro_dev_sync "SELECT string_agg(name, ',' ORDER BY name) FROM service_worker_api_key")" \
+    "$DEV_SWK_BEFORE"
+  assert_eq "dev's cron schedules kept" \
+    "$(q gpro_dev_sync "SELECT string_agg(name || ':' || enabled, ',' ORDER BY name) FROM cron_job_schedule")" \
+    "$DEV_CRON_BEFORE"
+  assert_eq "tokens and run log wiped" \
+    "$(q gpro_dev_sync "SELECT (SELECT count(*) FROM refresh_token) || '|' || (SELECT count(*) FROM password_reset_token) || '|' || (SELECT count(*) FROM cron_job_run_log)")" \
+    "0|0|0"
+  assert_eq "service-worker key sequence usable" \
+    "$(q gpro_dev_sync "WITH i AS (INSERT INTO service_worker_api_key (name, api_key, gpro_manager_id) VALUES ('seq-check', 'x', 1) RETURNING 1) SELECT 'inserted' FROM i")" \
+    "inserted"
+  q gpro_dev_sync "DELETE FROM service_worker_api_key WHERE name = 'seq-check'" >/dev/null
+  assert_eq "cron schedule sequence usable" \
+    "$(q gpro_dev_sync "WITH i AS (INSERT INTO cron_job_schedule (name, cron_expression) VALUES ('seq-check', '* * * * *') RETURNING 1) SELECT 'inserted' FROM i")" \
+    "inserted"
+  q gpro_dev_sync "DELETE FROM cron_job_schedule WHERE name = 'seq-check'" >/dev/null
+}
+
 main() {
   setup
   test_guard
   test_dump_restore
+  test_sanitize
   echo "ALL PASSED"
 }
 
