@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Local end-to-end test for the gpro-dev database sync scripts.
+# Starts a throwaway Postgres 17 holding a fake "prod" (gpro) and dev (gpro_dev),
+# both migrated with the real gpro-backend image, runs the sync steps inside the
+# real client image and asserts the results. Not deployed to the cluster.
+# Needs docker and pull access to harbor.vaderrp.com. Usage: bash test.sh
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+NET=dbsync-test-net
+PG=dbsync-test-pg
+SERVER_IMAGE=postgres:17.6-alpine
+CLIENT_IMAGE=ghcr.io/cloudnative-pg/postgresql:17.6
+APP_TAG="$(awk '/gpro-backend$/ { getline; print $2; exit }' "$HERE/../helmrelease.yaml")"
+MIGRATE_IMAGE="harbor.vaderrp.com/operinko-labs/gpro-backend:$APP_TAG"
+WORK="$(mktemp -d)"
+chmod 777 "$WORK" # the client image runs as uid 26
+
+cleanup() {
+  docker rm -f "$PG" >/dev/null 2>&1 || true
+  docker network rm "$NET" >/dev/null 2>&1 || true
+  rm -rf "$WORK"
+}
+trap cleanup EXIT
+
+# psql as superuser, SQL on stdin.
+sql() { docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U postgres "$@"; }
+# Single-value query as superuser: q <db> <sql>
+q() { docker exec "$PG" psql -X -At -U postgres -d "$1" -c "$2"; }
+assert_eq() {
+  if [ "$2" != "$3" ]; then
+    echo "FAIL: $1: expected '$3', got '$2'" >&2
+    exit 1
+  fi
+  echo "ok: $1"
+}
+
+# Run the backend's Drizzle migrations: migrate <db> <user> <password>
+migrate() {
+  docker run --rm --network "$NET" -e NODE_ENV=production \
+    -e POSTGRESDB_HOST="$PG" -e POSTGRESDB_PORT=5432 -e POSTGRESDB_DATABASE="$1" \
+    -e POSTGRESDB_USER="$2" -e POSTGRESDB_PASSWORD="$3" \
+    "$MIGRATE_IMAGE" node dist/db/migrate.js >/dev/null
+}
+
+# Run one sync script in the client image: run_step <script> [extra docker args]
+# Extra args come after the defaults, so a later -e overrides an earlier one.
+run_step() {
+  local script="$1"
+  shift
+  docker run --rm --network "$NET" -v "$HERE:/scripts:ro" -v "$WORK:/work" \
+    -e SRC_HOST="$PG" -e SRC_DB=gpro -e SRC_USER=gpro_prod -e SRC_PASS=prodpw \
+    -e DEV_HOST="$PG" -e DEV_DB=gpro_dev -e DEV_USER=gpro_devrole -e DEV_PASS=devpw \
+    -e SUPER_USER=postgres -e SUPER_PASS=superpw \
+    -e STAGING_DB=gpro_dev_sync -e OLD_DB=gpro_dev_old -e WORK_DIR=/work \
+    "$@" --entrypoint bash "$CLIENT_IMAGE" "/scripts/$script"
+}
+
+setup() {
+  docker network create "$NET" >/dev/null
+  docker run -d --name "$PG" --network "$NET" -e POSTGRES_PASSWORD=superpw \
+    "$SERVER_IMAGE" >/dev/null
+  # TCP check: the image's temporary init server listens on the socket only.
+  until docker exec "$PG" pg_isready -q -h 127.0.0.1 -U postgres; do sleep 1; done
+  sql <<'SQL'
+CREATE ROLE gpro_prod LOGIN PASSWORD 'prodpw';
+CREATE ROLE gpro_devrole LOGIN PASSWORD 'devpw';
+CREATE DATABASE gpro OWNER gpro_prod;
+CREATE DATABASE gpro_dev OWNER gpro_devrole;
+SQL
+  migrate gpro gpro_prod prodpw
+  migrate gpro_dev gpro_devrole devpw
+
+  # Fake prod: everyone enabled with keys, plus prod-only key, schedule, tokens.
+  docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_prod -d gpro <<'SQL'
+INSERT INTO "user" (username, email, gpro_manager_id, api_key, enabled) VALUES
+  ('alice', 'a@example.test', 101, 'key-a', true),
+  ('bob',   'b@example.test', 102, 'key-b', true),
+  ('carol', 'c@example.test', 103, 'key-c', true),
+  ('dave',  'd@example.test', 104, 'key-d', true),
+  ('erin',  'e@example.test', 105, NULL,    true);
+INSERT INTO service_worker_api_key (name, api_key, gpro_manager_id)
+  VALUES ('prod-key', 'prod-secret', 900);
+INSERT INTO cron_job_schedule (name, cron_expression) VALUES ('test-prod-only', '0 1 * * *');
+INSERT INTO cron_job_run_log (schedule_id, job_name)
+  SELECT id, name FROM cron_job_schedule WHERE name = 'test-prod-only';
+INSERT INTO refresh_token (token_hash, user_id, expires_at)
+  SELECT 'hash-' || id, id, now() + interval '1 day' FROM "user";
+INSERT INTO password_reset_token (user_id, token, expires_at)
+  SELECT id, 'tok-' || id, now() + interval '1 hour' FROM "user";
+SQL
+
+  # Fake dev: 101 and 103 enabled, 102 disabled, 999 dev-only, tester with no manager ID.
+  docker exec -i "$PG" psql -X -q -v ON_ERROR_STOP=1 -U gpro_devrole -d gpro_dev <<'SQL'
+INSERT INTO "user" (username, email, gpro_manager_id, api_key, enabled) VALUES
+  ('alice-dev', 'a@example.test', 101, 'old-key-a', true),
+  ('bob-dev',   'b@example.test', 102, NULL,        false),
+  ('carol-dev', 'c@example.test', 103, 'old-key-c', true),
+  ('ghost',     'g@example.test', 999, 'key-g',     true),
+  ('tester',    't@example.test', NULL, NULL,       true);
+INSERT INTO service_worker_api_key (name, api_key, gpro_manager_id)
+  VALUES ('dev-key', 'dev-secret', 901);
+INSERT INTO cron_job_schedule (name, cron_expression, enabled)
+  VALUES ('test-dev-only', '0 2 * * *', false);
+SQL
+
+  # Dev state the sync must keep (migrations may have seeded extra rows; keep those too).
+  DEV_SWK_BEFORE="$(q gpro_dev "SELECT string_agg(name, ',' ORDER BY name) FROM service_worker_api_key")"
+  DEV_CRON_BEFORE="$(q gpro_dev "SELECT string_agg(name || ':' || enabled, ',' ORDER BY name) FROM cron_job_schedule")"
+  DEV_SWK_COUNT="$(q gpro_dev 'SELECT count(*) FROM service_worker_api_key')"
+  DEV_CRON_COUNT="$(q gpro_dev 'SELECT count(*) FROM cron_job_schedule')"
+}
+
+# Unsafe names must abort before touching anything.
+test_guard() {
+  local out
+  if out="$(run_step dump-restore.sh -e STAGING_DB=gpro 2>&1)"; then
+    echo "FAIL: dump-restore accepted STAGING_DB equal to SRC_DB" >&2
+    exit 1
+  fi
+  assert_eq "guard: staging == source rejected" "$(grep -c 'FATAL' <<<"$out")" "1"
+  if out="$(run_step dump-restore.sh -e DEV_DB=gpro 2>&1)"; then
+    echo "FAIL: dump-restore accepted DEV_DB without _dev suffix" >&2
+    exit 1
+  fi
+  assert_eq "guard: DEV_DB suffix enforced" "$(grep -c 'FATAL' <<<"$out")" "1"
+  assert_eq "guard: prod data intact" "$(q gpro 'SELECT count(*) FROM "user"')" "5"
+}
+
+test_dump_restore() {
+  run_step dump-restore.sh
+  assert_eq "staging has prod users" \
+    "$(q gpro_dev_sync "SELECT string_agg(username, ',' ORDER BY username) FROM \"user\" WHERE gpro_manager_id BETWEEN 100 AND 999")" \
+    "alice,bob,carol,dave,erin"
+  assert_eq "staging tables owned by dev role" \
+    "$(q gpro_dev_sync "SELECT count(*) FROM pg_tables WHERE schemaname IN ('public', 'drizzle') AND tableowner <> 'gpro_devrole'")" \
+    "0"
+  assert_eq "staging has drizzle migrations table" \
+    "$(q gpro_dev_sync 'SELECT count(*) > 0 FROM drizzle.__drizzle_migrations')" "t"
+  assert_eq "saved enabled manager IDs" "$(paste -sd, "$WORK/enabled_ids.txt")" "101,103,999"
+  assert_eq "saved counts" "$(paste -sd' ' "$WORK/counts.env")" \
+    "SWK_COUNT=$DEV_SWK_COUNT CRON_COUNT=$DEV_CRON_COUNT"
+  assert_eq "preserved dump has dev key" "$(grep -c "'dev-key'" "$WORK/preserved.sql")" "1"
+  assert_eq "preserved dump lacks prod key" "$(grep -c "'prod-key'" "$WORK/preserved.sql" || true)" "0"
+  assert_eq "dev untouched" "$(q gpro_dev 'SELECT count(*) FROM "user"')" "5"
+}
+
+main() {
+  setup
+  test_guard
+  test_dump_restore
+  echo "ALL PASSED"
+}
+
+main "$@"
