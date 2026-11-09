@@ -148,16 +148,22 @@ test_dump_restore() {
 test_sanitize() {
   migrate gpro_dev_sync gpro_devrole devpw # mirrors the CronJob's migrate container
 
-  # A wrong expected count must abort and roll everything back.
+  # A wrong expected count must abort on the matching assertion and roll everything back.
+  local out var msg
   cp "$WORK/counts.env" "$WORK/counts.env.good"
-  sed -i 's/^SWK_COUNT=.*/SWK_COUNT=99/' "$WORK/counts.env"
-  if run_step sanitize.sh >/dev/null 2>&1; then
-    echo "FAIL: sanitize accepted a wrong service-worker key count" >&2
-    exit 1
-  fi
-  assert_eq "failed sanitize rolled back" \
-    "$(q gpro_dev_sync 'SELECT count(*) > 0 FROM refresh_token')" "t"
-  mv "$WORK/counts.env.good" "$WORK/counts.env"
+  for var in SWK_COUNT CRON_COUNT; do
+    if [ "$var" = SWK_COUNT ]; then msg='service-worker keys, expected'; else msg='cron schedules, expected'; fi
+    sed -i "s/^$var=.*/$var=99/" "$WORK/counts.env"
+    if out="$(run_step sanitize.sh 2>&1)"; then
+      echo "FAIL: sanitize accepted a wrong $var" >&2
+      exit 1
+    fi
+    assert_eq "wrong $var rejected by its assertion" "$(grep -c "$msg" <<<"$out")" "1"
+    assert_eq "failed sanitize ($var) rolled back" \
+      "$(q gpro_dev_sync 'SELECT count(*) > 0 FROM refresh_token')" "t"
+    cp "$WORK/counts.env.good" "$WORK/counts.env"
+  done
+  rm "$WORK/counts.env.good"
 
   run_step sanitize.sh
   assert_eq "only dev's enabled users enabled" \
