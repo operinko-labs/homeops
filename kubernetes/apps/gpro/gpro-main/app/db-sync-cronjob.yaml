@@ -104,7 +104,7 @@ spec:
                 limits:
                   memory: 1Gi
             - name: migrate
-              image: harbor.vaderrp.com/operinko-labs/gpro-backend:main-1794568685-sha-885a72c # {"$imagepolicy": "flux-system:gpro-backend-main"}
+              image: harbor.vaderrp.com/operinko-labs/gpro-backend:main-1794577698-sha-e60f30e # {"$imagepolicy": "flux-system:gpro-backend-main"}
               command: ["node", "dist/db/migrate.js"]
               envFrom:
                 - secretRef:
