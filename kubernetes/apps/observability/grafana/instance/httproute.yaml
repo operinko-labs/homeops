@@ -16,7 +16,7 @@ metadata:
     gethomepage.dev/name: Grafana
     gethomepage.dev/icon: grafana.png
     gethomepage.dev/href: https://grafana.vaderrp.com
-    gethomepage.dev/pod-selector: app.kubernetes.io/name=grafana
+    gethomepage.dev/pod-selector: app=grafana
     gethomepage.dev/widget.type: grafana
     gethomepage.dev/widget.url: https://grafana.vaderrp.com
 spec:

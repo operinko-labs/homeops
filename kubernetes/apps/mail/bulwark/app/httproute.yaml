@@ -15,6 +15,7 @@ metadata:
     gethomepage.dev/group: Mail
     gethomepage.dev/name: Webmail
     gethomepage.dev/icon: si-maildotcom
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=bulwark
     gethomepage.dev/href: https://webmail.erinko.fi
 spec:
   parentRefs:
