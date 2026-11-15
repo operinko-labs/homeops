@@ -101,9 +101,6 @@ cluster:
   secret: {{ cluster_secret }}
   token: {{ cluster_token }}
   {% if IS_CONTROLLER | lower == 'true' %}
-  aggregatorCA:
-    crt: {{ cluster_aggregator_crt }}
-    key: {{ cluster_aggregator_key }}
   serviceAccount:
     key: {{ service_account_key }}
   allowSchedulingOnControlPlanes: false
@@ -249,4 +246,12 @@ config:
               - name: key2
                 secret: {{ secretbox_encryption_secret }}
         - identity: {}
+---
+# Unlike the base64 crt/key pairs above, this document takes raw PEM, so the
+# two sops values are stored as PEM text (each ending in a newline).
+apiVersion: v1alpha1
+kind: KubeAggregatorCAConfig
+issuingCA:
+  cert: {{ cluster_aggregator_crt | tojson }}
+  key: {{ cluster_aggregator_key | tojson }}
 {% endif %}
