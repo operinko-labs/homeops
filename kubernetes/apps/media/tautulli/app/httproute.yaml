@@ -21,7 +21,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=tautulli
     gethomepage.dev/widget.type: tautulli
     gethomepage.dev/widget.url: http://tautulli.media.svc.cluster.local:8181
-    gethomepage.dev/widget.key: 5e7021f6e1874b25ad515570dc02ee4d
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_TAUTULLI_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

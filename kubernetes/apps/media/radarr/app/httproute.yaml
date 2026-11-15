@@ -23,7 +23,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=radarr
     gethomepage.dev/widget.type: radarr
     gethomepage.dev/widget.url: http://radarr.media.svc.cluster.local
-    gethomepage.dev/widget.key: 33608bebb2f241e78355a02753680f00
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

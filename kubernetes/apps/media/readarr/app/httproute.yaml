@@ -23,7 +23,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=readarr
     gethomepage.dev/widget.type: readarr
     gethomepage.dev/widget.url: http://readarr.media.svc.cluster.local
-    gethomepage.dev/widget.key: 55da3c21057f4b36af5ede0ae208837b
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_READARR_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

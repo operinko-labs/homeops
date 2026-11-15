@@ -23,7 +23,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=sonarr
     gethomepage.dev/widget.type: sonarr
     gethomepage.dev/widget.url: http://sonarr.media.svc.cluster.local
-    gethomepage.dev/widget.key: fa55068cef2e4104914cc4b27a03df0d
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

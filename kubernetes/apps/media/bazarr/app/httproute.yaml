@@ -19,7 +19,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=bazarr
     gethomepage.dev/widget.type: bazarr
     gethomepage.dev/widget.url: http://bazarr.media.svc.cluster.local
-    gethomepage.dev/widget.key: PLACEHOLDER_API_KEY
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io

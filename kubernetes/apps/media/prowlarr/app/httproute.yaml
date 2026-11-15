@@ -26,7 +26,7 @@ metadata:
     gethomepage.dev/pod-selector: app.kubernetes.io/name=prowlarr
     gethomepage.dev/widget.type: prowlarr
     gethomepage.dev/widget.url: http://prowlarr.media.svc.cluster.local
-    gethomepage.dev/widget.key: 33608bebb2f241e78355a02753680f00
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_PROWLARR_API_KEY}}"
 spec:
   parentRefs:
     - group: gateway.networking.k8s.io
