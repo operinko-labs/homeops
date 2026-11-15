@@ -22,6 +22,8 @@ controllers:
         envFrom:
           - secretRef:
               name: homepage-secret
+          - secretRef:
+              name: homepage-external-secret
         probes:
           liveness:
             enabled: true
