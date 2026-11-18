@@ -31,6 +31,9 @@ spec:
           maxSurge: 2
           maxUnavailable: 0
       podAnnotations:
+        # sha256 of warp-cloudflare.go: the ConfigMap has no hash suffix, so
+        # changing the file must change this to roll the pods
+        homeops/warp-cloudflare-sha256: "c26db5bbbd355d8e69ca0f665c08a420b93a226664314f34ddf26b02262b1401"
         prometheus.io/scrape: "true"
         prometheus.io/port: "9100"
       initContainers:
@@ -55,15 +58,32 @@ spec:
               mkdir -p "$WARP_DIR"
               wget -qO- "https://github.com/l4rm4nd/traefik-warp/archive/$WARP_VER.tar.gz" \
                 | tar xz -C "$WARP_DIR" --strip-components=1
+              # Upstream warp trusts 192.168/16, 10/8 and 172.16/12 whenever
+              # Cloudflare's IP list can't be fetched, so any pod or LAN client
+              # could forge CF-Connecting-IP into X-Real-IP. Replace that file
+              # with the fail-closed version (warp-cloudflare.go, the same change
+              # as forge/config/edge/traefik-warp-failclosed.patch), but only the
+              # exact v1.1.5 file it was written against: after a WARP_VER bump
+              # this fails, new pods stay in Init and the old ones keep serving
+              # until warp-cloudflare.go and this checksum are redone.
+              CF="$WARP_DIR/providers/cloudflare/cloudflare.go"
+              echo "c9a6e6ff57e4deab61da8ae3859e2f7fdb8b2b9a76768148335710df92d3af34  $CF" | sha256sum -c -s
+              cp /warp-patch/cloudflare.go "$CF"
               mkdir -p "$OIDC_DIR"
               wget -qO- "https://github.com/sevensolutions/traefik-oidc-auth/archive/$OIDC_VER.tar.gz" \
                 | tar xz -C "$OIDC_DIR" --strip-components=1
           volumeMounts:
             - name: plugins-local
               mountPath: /plugins-local
+            - name: warp-patch
+              mountPath: /warp-patch
+              readOnly: true
       additionalVolumes:
         - name: plugins-local
           emptyDir: {}
+        - name: warp-patch
+          configMap:
+            name: traefik-warp-patch
     resources:
       requests:
         cpu: 100m

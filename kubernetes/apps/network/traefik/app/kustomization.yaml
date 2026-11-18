@@ -9,3 +9,11 @@ resources:
   - ocirepository.yaml
   - grafanadashboard.yaml
   - external-secret-oidc.yaml
+configMapGenerator:
+  # Fail-closed replacement for traefik-warp's Cloudflare range fetch; the
+  # plugin-loader initContainer copies it in (see helmrelease.yaml).
+  - name: traefik-warp-patch
+    files:
+      - cloudflare.go=warp-cloudflare.go
+generatorOptions:
+  disableNameSuffixHash: true
