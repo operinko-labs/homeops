@@ -9,6 +9,12 @@ http:
       entryPoints: [websecure{% if r.wan %}, wan{% endif %}]
       service: {{ r.name }}
 {% endfor %}
+    # Read-only overview of everything above (LAN only via websecure, plus a login)
+    dashboard:
+      rule: "Host(`edge.vaderrp.com`)"
+      entryPoints: [websecure]
+      service: api@internal
+      middlewares: [dashboard-auth]
   services:
 {% for r in edge_routes %}
     {{ r.name }}:
@@ -23,6 +29,9 @@ http:
     lan-only:
       ipAllowList:
         sourceRange: ["192.168.0.0/16"]
+    dashboard-auth:
+      basicAuth:
+        users: ["{{ edge_dashboard_htpasswd }}"]
   serversTransports:
     # Self-signed backends (cups, vaultwarden, pbs, technitium)
     insecure:
