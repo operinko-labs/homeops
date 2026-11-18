@@ -86,6 +86,10 @@ if [[ "$wan" == "--wan" ]]; then
   curl -sk -o /dev/null -m 15 --resolve "photos.vaderrp.com:443:$cf_ip" "https://photos.vaderrp.com/?smoke=$t" || true
   check real-ip-cloudflare "$(logged "$t" request_X-Real-Ip)" "${wan_ip:-unknown}"
   check cf-allowlist-pbs "$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "pbs.vaderrp.com:443:$cf_ip" https://pbs.vaderrp.com/)" 403
+  # VPS path: haproxy's PROXY v2 header must give Traefik the real client.
+  t=$(token)
+  curl -sk -o /dev/null -m 15 --resolve "forgejo.vaderrp.com:443:$vps_ip" "https://forgejo.vaderrp.com/?smoke=$t" || true
+  check real-ip-vps "$(logged "$t" ClientHost)" "${wan_ip:-unknown}"
 fi
 
 if [[ "$wan" == "--wan" ]]; then

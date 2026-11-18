@@ -54,6 +54,11 @@ Operational facts learned while building this module that aren't obvious from th
   marks it `public: true`), `:8443` (the VPS path, Forgejo only) and `:22` (TCP stream to Forgejo's sshd). Its own sshd listens on
   **:2222**, so SSH to the LXC itself uses `-p 2222`. `routes.yaml` is the only
   list of proxied hosts.
+- **Real client IPs.** On `:443`, the vendored `traefik-warp` plugin
+  (`/var/lib/traefik/plugins-local`, fetched by `apply-edge`, never at start) sets
+  `X-Real-IP` from `CF-Connecting-IP` only for Cloudflare's ranges; `lan-only` still
+  judges the socket IP. On `:8443` haproxy sends PROXY v2, and Forgejo trusts
+  192.168.0.5 (`REVERSE_PROXY_TRUSTED_PROXIES`). git-over-SSH still shows edge.
 - **lego's zone lookups use Quad9 on port 9953.** LAN `:53` is DNAT'd to
   Technitium, whose internal `dns.vaderrp.com` zone would make lego look for a
   Cloudflare zone that does not exist; propagation is a fixed 90s wait for the same

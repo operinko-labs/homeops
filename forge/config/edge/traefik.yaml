@@ -31,6 +31,11 @@ entryPoints:
   # are reachable here; any other Host gets Traefik's 404.
   wan:
     address: ":8443"
+    # haproxy on the VPS prepends PROXY v2 (bk_forgejo_web send-proxy-v2), so
+    # Traefik sees the real client instead of 172.16.8.2. Only the VPS's
+    # WireGuard address may assert it.
+    proxyProtocol:
+      trustedIPs: ["172.16.8.2/32"]
     http:
       tls: {}
     transport:

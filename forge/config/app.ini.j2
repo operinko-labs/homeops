@@ -74,6 +74,9 @@ ALLOWED_HOST_LIST = external, flux-webhook.vaderrp.com
 SECRET_KEY = {{ forgejo_secret_key }}
 INTERNAL_TOKEN = {{ forgejo_internal_token }}
 INSTALL_LOCK = true
+# edge Traefik (192.168.0.5) passes the real client in X-Forwarded-For /
+# X-Real-IP (warp on the Cloudflare path, PROXY protocol from the VPS).
+REVERSE_PROXY_TRUSTED_PROXIES = 192.168.0.5
 
 [oauth2]
 JWT_SECRET = {{ forgejo_jwt_secret }}
