@@ -65,8 +65,11 @@ Operational facts learned while building this module that aren't obvious from th
   reason (`forge/config/edge/edge-cert-renew.sh`).
 - **Authentik login (`auth: oidc` routes: proxmox, truenas, unifi, pbs).** The
   vendored `traefik-oidc-auth` plugin reuses the cluster's `traefik` Authentik
-  application; LAN clients (`X-Real-Ip` 192.168.x, set by warp) skip it, browsers
-  from outside get a 302 to Authentik, anything else a 401. Its client ID, secret
+  application. Each such route also gets a `<name>-lan` router
+  (``ClientIP(`192.168.0.0/16`)``, socket IP) without the plugin, because the
+  plugin runs Authentik discovery before any bypass and answers 500 when the
+  cluster is down. Browsers from outside get a 302 to Authentik, anything else a
+  401, forged LAN headers included. Its client ID, secret
   and cookie key are **copies** in `forge/secrets.sops.yaml`
   (`edge_oidc_*`) of the cluster Secret `network/traefik-oidc-secret` (Vaultwarden
   item `6a906531`): after rotating them there, re-copy and `just forge apply-edge`.

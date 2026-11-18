@@ -12,6 +12,14 @@ http:
    definition) must not carry lan-only or the VPS path would get 403. #}
 {% if r.auth == "oidc" %}
       middlewares: [oidc-auth]
+    # LAN clients (socket IP, like lan-only) never enter the OIDC plugin: it
+    # runs Authentik discovery before any bypass and answers 500 when the
+    # cluster is down, which is when PBS/Proxmox matter most. The longer rule
+    # outranks the oidc router above.
+    {{ r.name }}-lan:
+      rule: "Host(`{{ r.host }}`) && ClientIP(`192.168.0.0/16`)"
+      entryPoints: [websecure]
+      service: {{ r.name }}
 {% elif not r.public and not r.wan %}
       middlewares: [lan-only]
 {% endif %}
@@ -42,17 +50,16 @@ http:
           provider: cloudflare
           autoRefresh: true
           refreshInterval: 24h
-    # Authentik login for routes marked auth: oidc. Reuses the cluster's
-    # "traefik" application (its redirect URIs allow any
-    # https://*.vaderrp.com/oidc/callback). LAN clients skip the login via the
-    # X-Real-Ip that warp (entrypoint middleware, runs first, fails closed)
-    # sets; there are deliberately no API-path exemptions.
+    # Authentik login for routes marked auth: oidc, reached only by non-LAN
+    # clients (LAN traffic takes the <name>-lan router instead). Reuses the
+    # cluster's "traefik" application (its redirect URIs allow any
+    # https://*.vaderrp.com/oidc/callback); deliberately no bypass rule and no
+    # API-path exemptions.
     oidc-auth:
       plugin:
         traefik-oidc-auth:
           LogLevel: WARN
           Secret: {{ edge_oidc_encryption_secret | tojson }}
-          BypassAuthenticationRule: 'HeaderRegexp(`X-Real-Ip`, `^192\.168\.`)'
           Provider:
             Url: "https://auth.vaderrp.com/application/o/traefik/"
             ClientId: {{ edge_oidc_client_id | tojson }}
