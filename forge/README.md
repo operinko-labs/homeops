@@ -19,6 +19,7 @@ Design: `docs/superpowers/specs/2026-08-17-forgejo-authoritative-forge-design.md
   - The Flux deploy key: `POST /repos/operinko-labs/homeops/keys` (read-only) against the Forgejo API, plus `bootstrap/forgejo-deploy-key.sops.yaml` added to the repo by hand.
   - GitHub Actions disablement on each mirrored GitHub repo (per-repo UI toggle, so mirror pushes don't double-run CI).
   - NPMplus proxy-host/stream UI entries (Task 5), Cloudflare + Technitium DNS records (Tasks 5–6).
+  - NPMplus `/opt/npmplus/custom_nginx/server_proxy.conf` (2026-11-18 stopgap): returns 421 for any Host other than `forgejo.vaderrp.com` arriving from the VPS WireGuard peer (`172.16.8.0/24`). Without it, a spoofed Host header on the public Forgejo path reached every LAN proxy host. It goes away with LXC 107 (`docs/superpowers/plans/2026-11-18-edge-traefik-replaces-npmplus.md`).
 
 ## Upgrades
 
