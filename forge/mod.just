@@ -6,6 +6,9 @@ forge_ip := '192.168.7.30'
 npmplus_ip := '192.168.0.5'
 # npmplus's own sshd was moved off :22 so the NPM+ stream can own it
 npmplus_ssh_port := '2222'
+# edge Traefik LXC (meanie VMID 120); temporary IP until it takes over npmplus's .0.5
+edge_ip := '192.168.0.6'
+edge_ssh_port := '2222'
 runner1_ip := '192.168.7.31'
 runner2_ip := '192.168.7.32'
 
@@ -37,6 +40,14 @@ apply-npmplus:
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli {{ forge_dir }}/config/wg0-npmplus.conf.j2 --format yaml - | ssh -p {{ npmplus_ssh_port }} root@{{ npmplus_ip }} 'umask 077; cat > /root/.homeops-staging/wg0.conf'
     scp -P {{ npmplus_ssh_port }} -q {{ forge_dir }}/apply-npmplus.sh root@{{ npmplus_ip }}:/root/.homeops-staging/
     ssh -p {{ npmplus_ssh_port }} root@{{ npmplus_ip }} 'sh /root/.homeops-staging/apply-npmplus.sh; rc=$?; rm -rf /root/.homeops-staging; exit $rc'
+
+[doc('Apply Traefik + lego config to the edge LXC')]
+apply-edge:
+    ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'mkdir -p -m 700 /root/.homeops-staging'
+    { sops -d {{ forge_dir }}/secrets.sops.yaml; sed '/^---$/d' {{ forge_dir }}/config/edge/routes.yaml; } | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/edge/dynamic.yaml.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/edge.yaml'
+    sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/edge/lego.env.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/lego.env'
+    cd {{ forge_dir }} && scp -P {{ edge_ssh_port }} -q config/edge/versions.env config/edge/traefik.yaml config/edge/traefik.initd config/edge/edge-cert-hook.sh config/edge/edge-cert-renew.sh config/edge/logrotate-traefik apply-edge.sh root@{{ edge_ip }}:/root/.homeops-staging/
+    ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'sh /root/.homeops-staging/apply-edge.sh; rc=$?; rm -rf /root/.homeops-staging; exit $rc'
 
 [doc('One-time/idempotent Forgejo API-level state (org, mirrors, secrets)')]
 setup:

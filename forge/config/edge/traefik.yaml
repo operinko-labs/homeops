@@ -1,0 +1,55 @@
+---
+# Static config for the edge Traefik LXC (forge/apply-edge.sh installs it as
+# /etc/traefik/traefik.yaml). Routes live in dynamic.yaml.j2 / routes.yaml.
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  # LAN. Every router here inherits lan-only, so no route can skip the allowlist.
+  websecure:
+    address: ":443"
+    http:
+      middlewares: [lan-only@file]
+      tls: {}
+    transport:
+      respondingTimeouts:
+        readTimeout: 0s
+        writeTimeout: 0s
+        idleTimeout: 180s
+  # VPS haproxy over WireGuard (bk_forgejo_web). Only routers that list `wan`
+  # are reachable here; any other Host gets Traefik's 404.
+  wan:
+    address: ":8443"
+    http:
+      tls: {}
+    transport:
+      respondingTimeouts:
+        readTimeout: 0s
+        writeTimeout: 0s
+        idleTimeout: 180s
+  ssh:
+    address: ":22"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+api:
+  dashboard: true
+  insecure: false
+
+log:
+  level: INFO
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+  format: json

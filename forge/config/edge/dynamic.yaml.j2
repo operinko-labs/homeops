@@ -1,0 +1,55 @@
+---
+# Rendered by `just forge apply-edge` from routes.yaml + forge/secrets.sops.yaml
+# into /etc/traefik/dynamic/edge.yaml. Traefik's file provider reloads it on change.
+http:
+  routers:
+{% for r in edge_routes %}
+    {{ r.name }}:
+      rule: "Host(`{{ r.host }}`)"
+      entryPoints: [websecure{% if r.wan %}, wan{% endif %}]
+      service: {{ r.name }}
+{% endfor %}
+  services:
+{% for r in edge_routes %}
+    {{ r.name }}:
+      loadBalancer:
+{% if r.insecure %}
+        serversTransport: insecure
+{% endif %}
+        servers:
+          - url: "{{ r.url }}"
+{% endfor %}
+  middlewares:
+    lan-only:
+      ipAllowList:
+        sourceRange: ["192.168.0.0/16"]
+  serversTransports:
+    # Self-signed backends (cups, vaultwarden, pbs, technitium)
+    insecure:
+      insecureSkipVerify: true
+
+tcp:
+  routers:
+    ssh:
+      rule: "HostSNI(`*`)"
+      entryPoints: [ssh]
+      service: forgejo-ssh
+  services:
+    forgejo-ssh:
+      loadBalancer:
+        servers:
+          - address: "192.168.7.30:22"
+
+# Written by lego's deploy hook (edge-cert-hook.sh); Traefik picks the
+# certificate by SNI and falls back to the wildcard.
+tls:
+  certificates:
+    - certFile: /etc/edge/certs/_.vaderrp.com/fullchain.pem
+      keyFile: /etc/edge/certs/_.vaderrp.com/privkey.pem
+    - certFile: /etc/edge/certs/_.dns.vaderrp.com/fullchain.pem
+      keyFile: /etc/edge/certs/_.dns.vaderrp.com/privkey.pem
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/edge/certs/_.vaderrp.com/fullchain.pem
+        keyFile: /etc/edge/certs/_.vaderrp.com/privkey.pem

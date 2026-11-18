@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+# Installed by forge/apply-edge.sh as /etc/init.d/traefik.
+name="traefik"
+description="Traefik edge proxy"
+command="/usr/local/bin/traefik"
+command_args="--configfile=/etc/traefik/traefik.yaml"
+command_user="traefik:traefik"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/traefik/traefik.log"
+error_log="/var/log/traefik/traefik.log"
+
+depend() {
+	need net
+}
+
+start_pre() {
+	checkpath -d -o traefik:traefik -m 0750 /var/log/traefik
+}

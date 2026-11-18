@@ -1,0 +1,9 @@
+/var/log/traefik/*.log {
+	daily
+	rotate 7
+	compress
+	delaycompress
+	missingok
+	notifempty
+	copytruncate
+}
