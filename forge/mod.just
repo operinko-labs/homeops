@@ -6,8 +6,8 @@ forge_ip := '192.168.7.30'
 npmplus_ip := '192.168.0.5'
 # npmplus's own sshd was moved off :22 so the NPM+ stream can own it
 npmplus_ssh_port := '2222'
-# edge Traefik LXC (meanie VMID 120); temporary IP until it takes over npmplus's .0.5
-edge_ip := '192.168.0.6'
+# edge Traefik LXC (meanie VMID 120); took over npmplus's address on 2026-11-18
+edge_ip := '192.168.0.5'
 edge_ssh_port := '2222'
 runner1_ip := '192.168.7.31'
 runner2_ip := '192.168.7.32'
