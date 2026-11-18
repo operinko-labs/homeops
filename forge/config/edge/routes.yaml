@@ -12,21 +12,80 @@
 #   minio-admin, pulse                   backend gone (502)
 #   npm                                  NPMplus's own UI; the dashboard replaces it
 edge_routes:
-  - { name: tdarr, host: tdarr.vaderrp.com, url: "http://192.168.0.97:8265", expect: 200 }
-  - { name: valetudo, host: valetudo.vaderrp.com, url: "http://192.168.0.62:80", expect: 200 }
-  - { name: emqx, host: emqx.vaderrp.com, url: "http://192.168.55.234:18083", expect: 200 }
-  - { name: z2m, host: z2m.vaderrp.com, url: "http://192.168.55.218:8099", expect: 200 }
-  - { name: nodered, host: nodered.vaderrp.com, url: "http://192.168.55.65:1880", expect: 200 }
-  - { name: esphome, host: esphome.vaderrp.com, url: "http://192.168.55.235:6052", expect: 200 }
-  - { name: cups, host: cups.vaderrp.com, url: "https://192.168.0.215:631", insecure: true, expect: 200 }
-  - { name: hass, host: hass.vaderrp.com, url: "http://192.168.0.40:8123", expect: 200 }
-  - { name: vaultwarden, host: vaultwarden.vaderrp.com, url: "https://192.168.0.136:8000", insecure: true, expect: 200 }
-  - { name: myspeed, host: myspeed.vaderrp.com, url: "http://192.168.55.14:5216", expect: 200 }
-  - { name: storj, host: storj.vaderrp.com, url: "http://192.168.0.221:20909", expect: 200 }
-  - { name: pbs, host: pbs.vaderrp.com, url: "https://192.168.0.183:8007", insecure: true, expect: 200 }
-  - { name: photos, host: photos.vaderrp.com, url: "http://192.168.0.221:30041", expect: 200 }
-  - { name: immich-power-tools, host: immich-power-tools.vaderrp.com, url: "http://192.168.0.221:30042", expect: 200 }
-  - { name: technitium, host: technitium.vaderrp.com, url: "https://192.168.5.7:53443", insecure: true, expect: 200 }
-  - { name: forgejo, host: forgejo.vaderrp.com, url: "http://192.168.7.30:3000", wan: true, expect: 303 }
-  - { name: jellyfin, host: jellyfin.vaderrp.com, url: "http://192.168.0.116:8096", expect: 302 }
-  - { name: plex, host: plex.vaderrp.com, url: "http://192.168.0.7:32400", expect: 401 }
+  - name: tdarr
+    host: tdarr.vaderrp.com
+    url: "http://192.168.0.97:8265"
+    expect: 200
+  - name: valetudo
+    host: valetudo.vaderrp.com
+    url: "http://192.168.0.62:80"
+    expect: 200
+  - name: emqx
+    host: emqx.vaderrp.com
+    url: "http://192.168.55.234:18083"
+    expect: 200
+  - name: z2m
+    host: z2m.vaderrp.com
+    url: "http://192.168.55.218:8099"
+    expect: 200
+  - name: nodered
+    host: nodered.vaderrp.com
+    url: "http://192.168.55.65:1880"
+    expect: 200
+  - name: esphome
+    host: esphome.vaderrp.com
+    url: "http://192.168.55.235:6052"
+    expect: 200
+  - name: cups
+    host: cups.vaderrp.com
+    url: "https://192.168.0.215:631"
+    insecure: true
+    expect: 200
+  - name: hass
+    host: hass.vaderrp.com
+    url: "http://192.168.0.40:8123"
+    expect: 200
+  - name: vaultwarden
+    host: vaultwarden.vaderrp.com
+    url: "https://192.168.0.136:8000"
+    insecure: true
+    expect: 200
+  - name: myspeed
+    host: myspeed.vaderrp.com
+    url: "http://192.168.55.14:5216"
+    expect: 200
+  - name: storj
+    host: storj.vaderrp.com
+    url: "http://192.168.0.221:20909"
+    expect: 200
+  - name: pbs
+    host: pbs.vaderrp.com
+    url: "https://192.168.0.183:8007"
+    insecure: true
+    expect: 200
+  - name: photos
+    host: photos.vaderrp.com
+    url: "http://192.168.0.221:30041"
+    expect: 200
+  - name: immich-power-tools
+    host: immich-power-tools.vaderrp.com
+    url: "http://192.168.0.221:30042"
+    expect: 200
+  - name: technitium
+    host: technitium.vaderrp.com
+    url: "https://192.168.5.7:53443"
+    insecure: true
+    expect: 200
+  - name: forgejo
+    host: forgejo.vaderrp.com
+    url: "http://192.168.7.30:3000"
+    wan: true
+    expect: 303
+  - name: jellyfin
+    host: jellyfin.vaderrp.com
+    url: "http://192.168.0.116:8096"
+    expect: 302
+  - name: plex
+    host: plex.vaderrp.com
+    url: "http://192.168.0.7:32400"
+    expect: 401
