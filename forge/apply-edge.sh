@@ -68,19 +68,32 @@ fi
 # traefik-warp as a local plugin: fetched here, at apply time, so a Traefik
 # restart never needs the network. Traefik reads ./plugins-local from its
 # working directory (/var/lib/traefik, set in the init script).
+# The vendored copy carries traefik-warp-failclosed.patch: upstream falls back
+# to trusting 192.168/16, 10/8 and 172.16/12 when Cloudflare's list can't be
+# fetched (e.g. booting before WAN is up), which lets LAN clients forge their IP.
 WARP_DIR=/var/lib/traefik/plugins-local/src/github.com/l4rm4nd/traefik-warp
-if [ "$(cat "$WARP_DIR/.homeops-version" 2>/dev/null)" != "$TRAEFIK_WARP_VERSION" ]; then
-	d="$(mktemp -d)"
-	curl -fsSL "https://github.com/l4rm4nd/traefik-warp/archive/$TRAEFIK_WARP_VERSION.tar.gz" \
-		| tar -xz -C "$d" --strip-components=1
-	[ -f "$d/go.mod" ] || { echo "traefik-warp archive has no go.mod" >&2; rm -rf "$d"; exit 1; }
-	echo "$TRAEFIK_WARP_VERSION" > "$d/.homeops-version"
+WARP_ID="$TRAEFIK_WARP_VERSION $(sha256sum "$S/traefik-warp-failclosed.patch" | cut -d' ' -f1)"
+if [ "$(cat "$WARP_DIR/.homeops-version" 2>/dev/null)" != "$WARP_ID" ]; then
+	apk info -e patch >/dev/null 2>&1 || apk add -q --no-cache patch
 	mkdir -p "$(dirname "$WARP_DIR")"
+	# Same filesystem as WARP_DIR, so the final mv is an atomic rename.
+	d="$(mktemp -d "$(dirname "$WARP_DIR")/.warp.XXXXXX")"
+	trap 'rm -rf "$d"' EXIT
+	curl -fsSL -o "$d.tar.gz" "https://github.com/l4rm4nd/traefik-warp/archive/$TRAEFIK_WARP_VERSION.tar.gz"
+	tar -xzf "$d.tar.gz" -C "$d" --strip-components=1
+	rm -f "$d.tar.gz"
+	[ -f "$d/go.mod" ] || { echo "traefik-warp archive has no go.mod" >&2; exit 1; }
+	patch -s -p1 -d "$d" < "$S/traefik-warp-failclosed.patch" || {
+		echo "traefik-warp-failclosed.patch no longer applies to $TRAEFIK_WARP_VERSION; rework it" >&2
+		exit 1
+	}
+	chmod -R a+rX "$d"
+	echo "$WARP_ID" > "$d/.homeops-version"
 	rm -rf "$WARP_DIR.old"
-	[ -d "$WARP_DIR" ] && mv "$WARP_DIR" "$WARP_DIR.old"
+	if [ -d "$WARP_DIR" ]; then mv "$WARP_DIR" "$WARP_DIR.old"; fi
 	mv "$d" "$WARP_DIR"
 	rm -rf "$WARP_DIR.old"
-	chmod -R a+rX "$WARP_DIR"
+	trap - EXIT
 	CHANGED="$CHANGED traefik-warp-$TRAEFIK_WARP_VERSION"
 	RESTART=1
 fi

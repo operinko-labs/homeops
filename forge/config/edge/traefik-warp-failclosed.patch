@@ -1,0 +1,74 @@
+--- a/providers/cloudflare/cloudflare.go	2026-11-19 00:54:52.454380071 +0200
++++ b/providers/cloudflare/cloudflare.go	2026-11-19 00:55:40.740461594 +0200
+@@ -5,8 +5,19 @@
+ 	"bufio"
+ 	"fmt"
+ 	"net/http"
++	"time"
+ )
+ 
++// homeops patch (forge/config/edge/traefik-warp-failclosed.patch): a bounded
++// fetch, and never the upstream fallback that trusted 192.168.0.0/16,
++// 10.0.0.0/8 and 172.16.0.0/12 whenever Cloudflare's list was unreachable,
++// which let any LAN client forge CF-Connecting-IP into X-Real-IP.
++var client = &http.Client{Timeout: 10 * time.Second}
++
++// lastGood is the most recent complete list, shared by every middleware
++// instance in this plugin's interpreter.
++var lastGood []string
++
+ // TrustedIPS fetches Cloudflare's current IP ranges (IPv4 + IPv6).
+ func TrustedIPS() []string {
+ 	urls := []string{
+@@ -15,13 +26,20 @@
+ 	}
+ 
+ 	var ipList []string
++	complete := true
+ 	for _, url := range urls {
+-		resp, err := http.Get(url)
++		resp, err := client.Get(url)
+ 		if err != nil {
+ 			fmt.Println("Error fetching", url, ":", err)
++			complete = false
++			continue
++		}
++		if resp.StatusCode != http.StatusOK {
++			fmt.Println("Error fetching", url, ": status", resp.StatusCode)
++			resp.Body.Close()
++			complete = false
+ 			continue
+ 		}
+-		defer resp.Body.Close()
+ 
+ 		scanner := bufio.NewScanner(resp.Body)
+ 		for scanner.Scan() {
+@@ -30,21 +48,19 @@
+ 				ipList = append(ipList, ip)
+ 			}
+ 		}
+-
+ 		if err := scanner.Err(); err != nil {
+ 			fmt.Println("Error reading response from", url, ":", err)
++			complete = false
+ 		}
++		resp.Body.Close()
+ 	}
+ 
+-	// Fallback: if nothing was fetched, allow all
+-	if len(ipList) == 0 {
+-		return []string{
+-			"192.168.0.0/16",
+-			"10.0.0.0/8",
+-			"172.16.0.0/12",
+-		}
++	// A failed or partial fetch keeps the last complete list; with none yet,
++	// trust nobody, so X-Real-IP stays the socket IP.
++	if !complete || len(ipList) == 0 {
++		return lastGood
+ 	}
+-
++	lastGood = ipList
+ 	return ipList
+ }
+ 

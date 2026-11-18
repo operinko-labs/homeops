@@ -22,6 +22,11 @@ entryPoints:
       # is in Cloudflare's ranges; everyone else keeps their socket IP.
       middlewares: [real-ip@file]
       tls: {}
+    # warp writes X-Forwarded-For itself on every request here; without this,
+    # Traefik appends the socket IP (a Cloudflare node) and apps that take the
+    # last hop would see Cloudflare instead of the visitor.
+    forwardedHeaders:
+      notAppendXForwardedFor: true
     transport:
       respondingTimeouts:
         readTimeout: 0s
