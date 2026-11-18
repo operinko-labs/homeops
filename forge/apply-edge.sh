@@ -65,6 +65,27 @@ if ! /usr/local/bin/lego --version 2>/dev/null | grep -q "lego version ${LEGO_VE
 	CHANGED="$CHANGED lego-$LEGO_VERSION"
 fi
 
+# traefik-warp as a local plugin: fetched here, at apply time, so a Traefik
+# restart never needs the network. Traefik reads ./plugins-local from its
+# working directory (/var/lib/traefik, set in the init script).
+WARP_DIR=/var/lib/traefik/plugins-local/src/github.com/l4rm4nd/traefik-warp
+if [ "$(cat "$WARP_DIR/.homeops-version" 2>/dev/null)" != "$TRAEFIK_WARP_VERSION" ]; then
+	d="$(mktemp -d)"
+	curl -fsSL "https://github.com/l4rm4nd/traefik-warp/archive/$TRAEFIK_WARP_VERSION.tar.gz" \
+		| tar -xz -C "$d" --strip-components=1
+	[ -f "$d/go.mod" ] || { echo "traefik-warp archive has no go.mod" >&2; rm -rf "$d"; exit 1; }
+	echo "$TRAEFIK_WARP_VERSION" > "$d/.homeops-version"
+	mkdir -p "$(dirname "$WARP_DIR")"
+	rm -rf "$WARP_DIR.old"
+	[ -d "$WARP_DIR" ] && mv "$WARP_DIR" "$WARP_DIR.old"
+	mv "$d" "$WARP_DIR"
+	rm -rf "$WARP_DIR.old"
+	chmod -R a+rX "$WARP_DIR"
+	CHANGED="$CHANGED traefik-warp-$TRAEFIK_WARP_VERSION"
+	RESTART=1
+fi
+chown traefik:traefik /var/lib/traefik
+
 mkdir -p /etc/edge/certs /var/lib/lego
 chown root:traefik /etc/edge/certs
 chmod 0750 /etc/edge/certs

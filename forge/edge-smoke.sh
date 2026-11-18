@@ -59,6 +59,35 @@ dnscert=$(openssl s_client -connect "$ip:443" -servername ns1.dns.vaderrp.com </
   | openssl x509 -noout -ext subjectAltName 2>/dev/null | grep -c 'DNS:technitium.vaderrp.com')
 check dns-cert-loaded "$dnscert" 1
 
+# --- real client IPs (docs/superpowers/specs/2026-11-19-edge-real-client-ip-design.md)
+# Each probe carries ?smoke=<token>; logged() reads that request's JSON
+# access-log line on the edge LXC and prints one field.
+token() { echo "$(date +%s)$RANDOM"; }
+logged() { # token field
+  sleep 1
+  ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p 2222 "root@$ip" \
+    "grep -F 'smoke=$1' /var/log/traefik/access.log | tail -1" 2>/dev/null \
+    | python3 -c "import sys,json; l=sys.stdin.read().strip(); print(json.loads(l).get('$2','') if l else '')"
+}
+
+# A LAN client forging CF-Connecting-IP must keep its own address.
+t=$(token)
+curl -sk -o /dev/null -m 10 --resolve "photos.vaderrp.com:443:$ip" -H 'CF-Connecting-IP: 1.2.3.4' \
+  "https://photos.vaderrp.com/?smoke=$t" || true
+xr=$(logged "$t" request_X-Real-Ip)
+if [[ "$xr" == 192.168.* ]]; then check real-ip-spoof "$xr" "$xr"; else check real-ip-spoof "${xr:-none}" "192.168.x"; fi
+
+if [[ "$wan" == "--wan" ]]; then
+  # Home WAN IP as the VPS sees it, and the real Cloudflare path (Quad9 :9953
+  # escapes the LAN :53 DNAT, so this resolves to Cloudflare, not edge).
+  wan_ip=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" 'echo ${SSH_CLIENT%% *}' 2>/dev/null)
+  cf_ip=$(dig +short -p 9953 photos.vaderrp.com @9.9.9.9 | grep -E '^[0-9.]+$' | head -1)
+  t=$(token)
+  curl -sk -o /dev/null -m 15 --resolve "photos.vaderrp.com:443:$cf_ip" "https://photos.vaderrp.com/?smoke=$t" || true
+  check real-ip-cloudflare "$(logged "$t" request_X-Real-Ip)" "${wan_ip:-unknown}"
+  check cf-allowlist-pbs "$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "pbs.vaderrp.com:443:$cf_ip" https://pbs.vaderrp.com/)" 403
+fi
+
 if [[ "$wan" == "--wan" ]]; then
   check wan-forgejo "$(code forgejo.vaderrp.com "$vps_ip")" 303
   for h in pbs.vaderrp.com vaultwarden.vaderrp.com hass.vaderrp.com; do

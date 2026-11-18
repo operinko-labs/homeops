@@ -18,6 +18,9 @@ entryPoints:
   websecure:
     address: ":443"
     http:
+      # traefik-warp: X-Real-IP from CF-Connecting-IP, but only when the socket
+      # is in Cloudflare's ranges; everyone else keeps their socket IP.
+      middlewares: [real-ip@file]
       tls: {}
     transport:
       respondingTimeouts:
@@ -43,6 +46,11 @@ providers:
     directory: /etc/traefik/dynamic
     watch: true
 
+experimental:
+  localPlugins:
+    traefikwarp:
+      moduleName: github.com/l4rm4nd/traefik-warp
+
 api:
   dashboard: true
   insecure: false
@@ -53,3 +61,9 @@ log:
 accessLog:
   filePath: /var/log/traefik/access.log
   format: json
+  fields:
+    headers:
+      defaultMode: drop
+      names:
+        X-Real-Ip: keep
+        CF-Connecting-IP: keep

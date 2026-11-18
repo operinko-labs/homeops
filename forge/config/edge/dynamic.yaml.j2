@@ -31,6 +31,15 @@ http:
           - url: "{{ r.url }}"
 {% endfor %}
   middlewares:
+    # Attached to the websecure entrypoint (traefik.yaml). Refreshes
+    # Cloudflare's published ranges itself; cloudflare-only avoids the
+    # CloudFront fetch that stalled the cluster's reloads.
+    real-ip:
+      plugin:
+        traefikwarp:
+          provider: cloudflare
+          autoRefresh: true
+          refreshInterval: 24h
     lan-only:
       ipAllowList:
         sourceRange: ["192.168.0.0/16"]
