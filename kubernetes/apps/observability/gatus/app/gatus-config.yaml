@@ -67,7 +67,8 @@ endpoints:
       dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[DOMAIN_EXPIRATION] > 720h"
-      # lego on the edge LXC requests the classic profile, so this is a 90-day LE cert
+      # Public view (resolved via DoH), so this is not the edge LXC's cert;
+      # "edge proxy certificate" below watches that one
       - "[CERTIFICATE_EXPIRATION] > 240h"
     alerts:
       - type: ntfy
@@ -197,6 +198,23 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
+  - name: edge proxy certificate
+    group: Network
+    # The *.vaderrp.com wildcard the edge Traefik LXC (forge/) serves to every
+    # LAN proxy host. lego renews it from a daily cron whose output goes nowhere,
+    # so a failed renewal only shows up here (10 days before the 90-day cert expires).
+    # The dashboard answers 401 without credentials, which proves Traefik itself.
+    url: "https://edge.vaderrp.com/dashboard/"
+    interval: 1h
+    client:
+      dns-resolver: tcp://192.168.5.8:53
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 401"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+    alerts:
+      - type: ntfy
+        send-on-resolved: true
   - name: matrix homeserver
     group: Matrix
     url: "https://matrix.erinko.fi/_matrix/client/versions"
