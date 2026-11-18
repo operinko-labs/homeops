@@ -63,6 +63,14 @@ Operational facts learned while building this module that aren't obvious from th
   Technitium, whose internal `dns.vaderrp.com` zone would make lego look for a
   Cloudflare zone that does not exist; propagation is a fixed 90s wait for the same
   reason (`forge/config/edge/edge-cert-renew.sh`).
+- **Authentik login (`auth: oidc` routes: proxmox, truenas, unifi, pbs).** The
+  vendored `traefik-oidc-auth` plugin reuses the cluster's `traefik` Authentik
+  application; LAN clients (`X-Real-Ip` 192.168.x, set by warp) skip it, browsers
+  from outside get a 302 to Authentik, anything else a 401. Its client ID, secret
+  and cookie key are **copies** in `forge/secrets.sops.yaml`
+  (`edge_oidc_*`) of the cluster Secret `network/traefik-oidc-secret` (Vaultwarden
+  item `6a906531`): after rotating them there, re-copy and `just forge apply-edge`.
+  Logins from outside need the cluster (Authentik); LAN access never does.
 - **WireGuard only starts on 192.168.0.5.** `apply-edge.sh` skips `wg0` on any
   other address, because a second host with the same key steals the VPS tunnel.
 - **The proxy-path SSH is git-only.** Forgejo rides the forge LXC's system sshd; a

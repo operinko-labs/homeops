@@ -68,35 +68,46 @@ fi
 # traefik-warp as a local plugin: fetched here, at apply time, so a Traefik
 # restart never needs the network. Traefik reads ./plugins-local from its
 # working directory (/var/lib/traefik, set in the init script).
-# The vendored copy carries traefik-warp-failclosed.patch: upstream falls back
-# to trusting 192.168/16, 10/8 and 172.16/12 when Cloudflare's list can't be
-# fetched (e.g. booting before WAN is up), which lets LAN clients forge their IP.
-WARP_DIR=/var/lib/traefik/plugins-local/src/github.com/l4rm4nd/traefik-warp
-WARP_ID="$TRAEFIK_WARP_VERSION $(sha256sum "$S/traefik-warp-failclosed.patch" | cut -d' ' -f1)"
-if [ "$(cat "$WARP_DIR/.homeops-version" 2>/dev/null)" != "$WARP_ID" ]; then
-	apk info -e patch >/dev/null 2>&1 || apk add -q --no-cache patch
-	mkdir -p "$(dirname "$WARP_DIR")"
-	# Same filesystem as WARP_DIR, so the final mv is an atomic rename.
-	d="$(mktemp -d "$(dirname "$WARP_DIR")/.warp.XXXXXX")"
-	trap 'rm -rf "$d"' EXIT
-	curl -fsSL -o "$d.tar.gz" "https://github.com/l4rm4nd/traefik-warp/archive/$TRAEFIK_WARP_VERSION.tar.gz"
+# install_plugin <github owner/repo> <version> [patch file]
+# Vendors a Traefik local plugin into ./plugins-local, built in a temp dir
+# beside the target (same filesystem, so the final mv is an atomic rename) and
+# marked last with "<version> <patch sha256|none>", so a changed version or
+# patch reinstalls it and an interrupted run never looks finished.
+install_plugin() {
+	repo="$1" ver="$2" pfile="${3:-}"
+	dir="/var/lib/traefik/plugins-local/src/github.com/$repo"
+	if [ -n "$pfile" ]; then id="$ver $(sha256sum "$pfile" | cut -d' ' -f1)"; else id="$ver none"; fi
+	[ "$(cat "$dir/.homeops-version" 2>/dev/null)" = "$id" ] && return 0
+	mkdir -p "$(dirname "$dir")"
+	d="$(mktemp -d "$(dirname "$dir")/.plugin.XXXXXX")"
+	trap 'rm -rf "$d" "$d.tar.gz"' EXIT
+	curl -fsSL -o "$d.tar.gz" "https://github.com/$repo/archive/$ver.tar.gz"
 	tar -xzf "$d.tar.gz" -C "$d" --strip-components=1
 	rm -f "$d.tar.gz"
-	[ -f "$d/go.mod" ] || { echo "traefik-warp archive has no go.mod" >&2; exit 1; }
-	patch -s -p1 -d "$d" < "$S/traefik-warp-failclosed.patch" || {
-		echo "traefik-warp-failclosed.patch no longer applies to $TRAEFIK_WARP_VERSION; rework it" >&2
-		exit 1
-	}
+	[ -f "$d/go.mod" ] || { echo "$repo $ver archive has no go.mod" >&2; exit 1; }
+	if [ -n "$pfile" ]; then
+		apk info -e patch >/dev/null 2>&1 || apk add -q --no-cache patch
+		patch -s -p1 -d "$d" < "$pfile" || {
+			echo "$(basename "$pfile") no longer applies to $repo $ver; rework it" >&2
+			exit 1
+		}
+	fi
 	chmod -R a+rX "$d"
-	echo "$WARP_ID" > "$d/.homeops-version"
-	rm -rf "$WARP_DIR.old"
-	if [ -d "$WARP_DIR" ]; then mv "$WARP_DIR" "$WARP_DIR.old"; fi
-	mv "$d" "$WARP_DIR"
-	rm -rf "$WARP_DIR.old"
+	echo "$id" > "$d/.homeops-version"
+	rm -rf "$dir.old"
+	if [ -d "$dir" ]; then mv "$dir" "$dir.old"; fi
+	mv "$d" "$dir"
+	rm -rf "$dir.old"
 	trap - EXIT
-	CHANGED="$CHANGED traefik-warp-$TRAEFIK_WARP_VERSION"
+	CHANGED="$CHANGED $(basename "$repo")-$ver"
 	RESTART=1
-fi
+}
+
+# warp carries traefik-warp-failclosed.patch: upstream falls back to trusting
+# 192.168/16, 10/8 and 172.16/12 when Cloudflare's list can't be fetched (e.g.
+# booting before WAN is up), which lets LAN clients forge their IP.
+install_plugin l4rm4nd/traefik-warp "$TRAEFIK_WARP_VERSION" "$S/traefik-warp-failclosed.patch"
+install_plugin sevensolutions/traefik-oidc-auth "$TRAEFIK_OIDC_AUTH_VERSION"
 chown traefik:traefik /var/lib/traefik
 
 mkdir -p /etc/edge/certs /var/lib/lego

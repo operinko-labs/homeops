@@ -85,7 +85,19 @@ if [[ "$wan" == "--wan" ]]; then
   t=$(token)
   curl -sk -o /dev/null -m 15 --resolve "photos.vaderrp.com:443:$cf_ip" "https://photos.vaderrp.com/?smoke=$t" || true
   check real-ip-cloudflare "$(logged "$t" request_X-Real-Ip)" "${wan_ip:-unknown}"
-  check cf-allowlist-pbs "$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "pbs.vaderrp.com:443:$cf_ip" https://pbs.vaderrp.com/)" 403
+  check cf-allowlist-nodered "$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "nodered.vaderrp.com:443:$cf_ip" https://nodered.vaderrp.com/)" 403
+  # auth: oidc routes: a browser outside the LAN is sent to Authentik first
+  # (their LAN answer is the per-route check at the top).
+  while IFS= read -r host; do
+    got=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" \
+      "curl -sk -o /dev/null -w '%{http_code} %{redirect_url}' -m 10 -H 'Accept: text/html' --resolve $host:443:$edge_wg_ip https://$host/" 2>/dev/null || true)
+    if [[ "$got" == "302 https://auth.vaderrp.com/"* ]]; then check "oidc-required-from-vps-$host" 302-auth 302-auth; else check "oidc-required-from-vps-$host" "${got:-none}" "302 https://auth.vaderrp.com/..."; fi
+    # Non-browser clients (no text/html in Accept) get a flat 401, not a redirect.
+    got=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip"       "curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve $host:443:$edge_wg_ip https://$host/" 2>/dev/null || true)
+    check "oidc-api-401-from-vps-$host" "${got:-none}" 401
+    got=$(curl -sk -o /dev/null -w '%{http_code} %{redirect_url}' -m 15 -H 'Accept: text/html' --resolve "$host:443:$cf_ip" "https://$host/" || true)
+    if [[ "$got" == "302 https://auth.vaderrp.com/"* ]]; then check "oidc-required-cloudflare-$host" 302-auth 302-auth; else check "oidc-required-cloudflare-$host" "${got:-none}" "302 https://auth.vaderrp.com/..."; fi
+  done < <(yq -r '.edge_routes[] | select(.auth == "oidc") | .host' < "$routes" 2>/dev/null)
   # VPS path: haproxy's PROXY v2 header must give Traefik the real client.
   t=$(token)
   curl -sk -o /dev/null -m 15 --resolve "forgejo.vaderrp.com:443:$vps_ip" "https://forgejo.vaderrp.com/?smoke=$t" || true

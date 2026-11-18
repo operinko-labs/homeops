@@ -60,6 +60,8 @@ experimental:
   localPlugins:
     traefikwarp:
       moduleName: github.com/l4rm4nd/traefik-warp
+    traefik-oidc-auth:
+      moduleName: github.com/sevensolutions/traefik-oidc-auth
 
 api:
   dashboard: true

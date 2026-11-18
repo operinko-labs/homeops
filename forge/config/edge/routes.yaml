@@ -7,9 +7,11 @@
 #   public:   reachable from outside the LAN (Cloudflare -> UDM :443 forward).
 #             wan routes are public too. Everything else gets the lan-only
 #             allowlist (403 from outside).
+#   auth:     oidc = reachable from outside only through the Authentik login
+#             (LAN clients skip it); replaces lan-only for that route.
 #
 # Not carried over from NPMplus, so do not re-add without a reason:
-#   proxmox, unifi, truenas, ilo, minio  LAN DNS resolves straight to the host
+#   ilo, minio                           LAN DNS resolves straight to the host
 #   ruoka, bambuddy                      LAN DNS resolves to the cluster
 #   nextcloud, owncloud, collabra (+ the erinko.fi pair)  no LAN record / Cloudflare
 #   minio-admin, pulse                   backend gone (502)
@@ -66,6 +68,7 @@ edge_routes:
     host: pbs.vaderrp.com
     url: "https://192.168.0.183:8007"
     insecure: true
+    auth: oidc
     expect: 200
   - name: photos
     host: photos.vaderrp.com
@@ -95,3 +98,21 @@ edge_routes:
     url: "http://192.168.0.7:32400"
     public: true
     expect: 401
+  - name: proxmox
+    host: proxmox.vaderrp.com
+    url: "https://192.168.3.90:8006"
+    insecure: true
+    auth: oidc
+    expect: 200
+  - name: truenas
+    host: truenas.vaderrp.com
+    url: "https://192.168.0.221"
+    insecure: true
+    auth: oidc
+    expect: 302
+  - name: unifi
+    host: unifi.vaderrp.com
+    url: "https://192.168.0.1"
+    insecure: true
+    auth: oidc
+    expect: 200

@@ -10,7 +10,9 @@ http:
       service: {{ r.name }}
 {# Router middlewares apply on every entrypoint, so a wan route (public by
    definition) must not carry lan-only or the VPS path would get 403. #}
-{% if not r.public and not r.wan %}
+{% if r.auth == "oidc" %}
+      middlewares: [oidc-auth]
+{% elif not r.public and not r.wan %}
       middlewares: [lan-only]
 {% endif %}
 {% endfor %}
@@ -40,6 +42,23 @@ http:
           provider: cloudflare
           autoRefresh: true
           refreshInterval: 24h
+    # Authentik login for routes marked auth: oidc. Reuses the cluster's
+    # "traefik" application (its redirect URIs allow any
+    # https://*.vaderrp.com/oidc/callback). LAN clients skip the login via the
+    # X-Real-Ip that warp (entrypoint middleware, runs first, fails closed)
+    # sets; there are deliberately no API-path exemptions.
+    oidc-auth:
+      plugin:
+        traefik-oidc-auth:
+          LogLevel: WARN
+          Secret: {{ edge_oidc_encryption_secret | tojson }}
+          BypassAuthenticationRule: 'HeaderRegexp(`X-Real-Ip`, `^192\.168\.`)'
+          Provider:
+            Url: "https://auth.vaderrp.com/application/o/traefik/"
+            ClientId: {{ edge_oidc_client_id | tojson }}
+            ClientSecret: {{ edge_oidc_client_secret | tojson }}
+          Scopes: ["openid", "profile", "email"]
+          CallbackUri: "/oidc/callback"
     lan-only:
       ipAllowList:
         sourceRange: ["192.168.0.0/16"]
