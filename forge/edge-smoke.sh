@@ -11,8 +11,10 @@ set -uo pipefail
 ip="${1:?usage: edge-smoke.sh <lan-ip> [--wan]}"
 wan="${2:-}"
 here="$(cd "$(dirname "$0")" && pwd)"
-routes="$here/config/edge/routes.yaml"
+routes="${EDGE_ROUTES:-$here/config/edge/routes.yaml}"
 vps_ip="212.147.241.182"
+vps_ssh_port="2222"
+edge_wg_ip="172.16.8.20"
 forgejo_ip="192.168.7.30"
 fails=0
 
@@ -25,9 +27,19 @@ code() { # host ip [extra curl args...]
   curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "$host:443:$addr" "$@" "https://$host/" 2>/dev/null || true
 }
 
+read_count=0
 while IFS=$'\t' read -r host expect; do
   check "$host" "$(code "$host" "$ip")" "$expect"
-done < <(yq -r '.edge_routes[] | [.host, .expect] | @tsv' < "$routes")
+  read_count=$((read_count + 1))
+done < <(yq -r '.edge_routes[] | [.host, .expect] | @tsv' < "$routes" 2>/dev/null)
+# A missing or failing yq would otherwise skip every route check and pass.
+want_count=$(grep -c '^  - name:' "$routes")
+check routes-read "$read_count" "${want_count:-?}"
+[[ "$read_count" -gt 0 ]] || check routes-read 0 ">0"
+
+# routes.yaml promises only forgejo is published on the VPS entrypoint.
+wan_routes=$(yq -r '[.edge_routes[] | select(.wan) | .name] | join(",")' < "$routes" 2>/dev/null)
+check wan-only-forgejo "${wan_routes:-none}" forgejo
 
 dash=$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "edge.vaderrp.com:443:$ip" https://edge.vaderrp.com/dashboard/ 2>/dev/null || true)
 check dashboard "$dash" 401
@@ -50,10 +62,14 @@ check dns-cert-loaded "$dnscert" 1
 if [[ "$wan" == "--wan" ]]; then
   check wan-forgejo "$(code forgejo.vaderrp.com "$vps_ip")" 303
   for h in pbs.vaderrp.com vaultwarden.vaderrp.com hass.vaderrp.com; do
-    got=$(code forgejo.vaderrp.com "$vps_ip" -H "Host: $h")
-    # Anything but a 2xx/3xx means the spoofed host was refused.
-    if [[ "$got" =~ ^[23] ]]; then check "wan-spoof-$h" "$got" "4xx"; else check "wan-spoof-$h" refused refused; fi
+    # The wan entrypoint has no router for these hosts: Traefik's own 404.
+    check "wan-spoof-$h" "$(code forgejo.vaderrp.com "$vps_ip" -H "Host: $h")" 404
   done
+  # From the VPS (172.16.8.2, outside the LAN range) straight at the LAN
+  # entrypoint over WireGuard: the lan-only allowlist must answer 403.
+  lan=$(ssh -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" \
+    "curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve hass.vaderrp.com:443:$edge_wg_ip https://hass.vaderrp.com/" 2>/dev/null || true)
+  check lan-only-from-vps "${lan:-none}" 403
 fi
 
 echo "---- $fails failure(s)"

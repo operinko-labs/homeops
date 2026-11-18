@@ -1,5 +1,5 @@
 [Unit]
-Description=Sync Technitium TLS bundle from NPMplus
+Description=Sync Technitium TLS bundle from the edge proxy
 Documentation=https://github.com/operinko-labs/homeops/blob/main/docs/networking/technitium-dns-ha.md
 Wants=network-online.target
 After=network-online.target

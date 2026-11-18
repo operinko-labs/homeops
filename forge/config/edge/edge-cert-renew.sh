@@ -28,9 +28,13 @@ run() {
 		"$@"
 }
 
+# Each set runs on its own, so one failing does not skip the other; any failure
+# still makes the script exit non-zero.
+failed=0
 case "$which" in
-	all | vaderrp) run -d '*.vaderrp.com' -d vaderrp.com "$@" ;;
+	all | vaderrp) run -d '*.vaderrp.com' -d vaderrp.com "$@" || failed=1 ;;
 esac
 case "$which" in
-	all | dns) run -d '*.dns.vaderrp.com' -d dns.vaderrp.com -d technitium.vaderrp.com "$@" ;;
+	all | dns) run -d '*.dns.vaderrp.com' -d dns.vaderrp.com -d technitium.vaderrp.com "$@" || failed=1 ;;
 esac
+exit "$failed"

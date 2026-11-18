@@ -1,14 +1,14 @@
 [Unit]
-Description=Hourly Technitium TLS bundle sync from NPMplus
+Description=Hourly Technitium TLS bundle sync from the edge proxy
 
 [Timer]
 OnBootSec=2min
 OnUnitActiveSec=1h
-# NPMplus issues Let's Encrypt shortlived certificates (160h, renewed around
-# day 4-5), so a daily pull leaves too little margin if one run fails. Hourly
-# is nearly free — the script exits early when the source has not changed.
+# lego on the edge LXC renews the 90-day certificate about 30 days before
+# expiry; hourly keeps the nodes within an hour of it and is nearly free —
+# the script exits early when the source has not changed.
 RandomizedDelaySec=5min
-# Both nodes run this; without a jitter they would hit NPMplus together.
+# Both nodes run this; without a jitter they would hit the edge LXC together.
 Persistent=true
 
 [Install]

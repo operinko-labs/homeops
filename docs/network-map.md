@@ -43,7 +43,7 @@ graph TB
             M_LXC_130["LXC 130<br/>forgejo · Forgejo<br/>192.168.7.30"]
             M_LXC_131["LXC 131<br/>forgejo-runner1<br/>192.168.7.31"]
             M_LXC_132["LXC 132<br/>forgejo-runner2<br/>192.168.7.32"]
-            M_VM_120["VM 120<br/>talos1 ⚙️ CP"]
+            M_VM_108["VM 108<br/>talos1 ⚙️ CP"]
             M_VM_122["VM 122<br/>talos4 👷 Worker"]
             M_VM_123["VM 123<br/>talos5 👷 Worker"]
             M_STORAGE["ZFS pool: tank-zfs<br/>8× Samsung PM883"]
@@ -265,7 +265,7 @@ graph TB
     UPS_HOUSE -.-|Powers| FRITZ
 
     %% Talos node mapping
-    M_VM_120 -.-> CP1
+    M_VM_108 -.-> CP1
     NUC_VM_103 -.-> CP2
     T_VM_T3 -.-> CP3
     M_VM_122 -.-> W4

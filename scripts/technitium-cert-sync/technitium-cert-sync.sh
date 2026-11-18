@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Pull the TLS bundle NPMplus holds and hand it to Technitium as PKCS#12.
+# Pull the TLS bundle the edge Traefik LXC holds and hand it to Technitium as PKCS#12.
 #
-# Runs on each Technitium LXC from a systemd timer. NPMplus is the only ACME
+# Runs on each Technitium LXC from a systemd timer. lego on the edge LXC is the only ACME
 # client; the nodes never talk to Let's Encrypt or hold a Cloudflare token.
-# The pull direction is deliberate — NPMplus holds no credential that can write
+# The pull direction is deliberate — the edge LXC holds no credential that can write
 # to a DNS server, only the nodes hold a read-only one pointing back at it.
 #
 # Technitium reloads its bundle when the file's modification time changes, so
@@ -14,8 +14,9 @@ set -Eeuo pipefail
 # that tars the two PEMs to stdout, so there is nothing to request — whatever
 # command is sent is ignored, and the key cannot do anything else.
 readonly SRC_HOST="${SRC_HOST:-root@npmplus}"
-# NPMplus's own sshd listens on 2222; its :22 is the NPM+ stream to Forgejo
-# (forge/mod.just npmplus_ssh_port), which would answer with Forgejo's host key.
+# `npmplus` is a DNS alias for the edge LXC (192.168.0.5). Its own sshd listens
+# on 2222; its :22 is Traefik's stream to Forgejo (forge/mod.just edge_ssh_port),
+# which would answer with Forgejo's host key.
 readonly SRC_PORT="${SRC_PORT:-2222}"
 readonly SSH_KEY="${SSH_KEY:-/root/.ssh/technitium-cert-sync}"
 

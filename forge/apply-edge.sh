@@ -3,6 +3,13 @@
 # Pushed and executed by `just forge apply-edge`; expects its files beside it.
 set -eu
 
+# The documented rollback puts npmplus (LXC 107) back on 192.168.0.5 with the
+# same SSH host keys, so `just forge apply-edge` could silently land there.
+[ "$(hostname)" = edge ] || {
+	echo "apply-edge: not the edge LXC (hostname is $(hostname)); refusing" >&2
+	exit 1
+}
+
 S="$(cd "$(dirname "$0")" && pwd)"
 CHANGED=""
 RESTART=""
@@ -84,6 +91,14 @@ rc-service -q crond status >/dev/null 2>&1 || rc-service crond start
 # First run only: issue both certificates before Traefik needs them.
 if [ ! -s /etc/edge/certs/_.vaderrp.com/fullchain.pem ] || [ ! -s /etc/edge/certs/_.dns.vaderrp.com/fullchain.pem ]; then
 	/usr/local/bin/edge-cert-renew all
+	# lego only runs the deploy hook when it issues; if its state in
+	# /var/lib/lego survived but /etc/edge/certs did not, nothing gets copied.
+	for n in _.vaderrp.com _.dns.vaderrp.com; do
+		[ -s "/etc/edge/certs/$n/fullchain.pem" ] || {
+			echo "apply-edge: /etc/edge/certs/$n missing after lego run; try: edge-cert-renew all --renew-force" >&2
+			exit 1
+		}
+	done
 	CHANGED="$CHANGED certificates"
 fi
 

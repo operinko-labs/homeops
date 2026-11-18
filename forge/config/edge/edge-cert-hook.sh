@@ -3,10 +3,16 @@
 # or renewed certificate to /etc/edge/certs/<name>/{fullchain,privkey}.pem,
 # where Traefik and the Technitium cert-export read it.
 set -eu
+# The key must never exist world-readable, not even before the chmod below.
+umask 077
 
 dir="/etc/edge/certs/${LEGO_HOOK_CERT_NAME_SANITIZED:?}"
 tmp="/etc/edge/.hook.$$"
 mkdir -p "$dir"
+# umask 077 would leave a new directory 0700 root, which Traefik (group
+# traefik) cannot enter.
+chown root:traefik "$dir"
+chmod 0750 "$dir"
 cp "${LEGO_HOOK_CERT_PATH:?}" "$tmp.crt"
 cp "${LEGO_HOOK_CERT_KEY_PATH:?}" "$tmp.key"
 chown root:traefik "$tmp.crt" "$tmp.key"
