@@ -69,6 +69,7 @@ install_file "$S/traefik.initd" /etc/init.d/traefik 0755 root:root restart
 install_file "$S/edge-cert-hook.sh" /usr/local/bin/edge-cert-hook 0755 root:root
 install_file "$S/edge-cert-renew.sh" /usr/local/bin/edge-cert-renew 0755 root:root
 install_file "$S/logrotate-traefik" /etc/logrotate.d/traefik 0644 root:root
+install_file "$S/cert-export" /usr/local/bin/cert-export 0755 root:root
 # busybox run-parts skips names containing a dot, so no .sh here
 [ -L /etc/periodic/daily/edge-cert-renew ] || {
 	ln -sf /usr/local/bin/edge-cert-renew /etc/periodic/daily/edge-cert-renew
@@ -84,6 +85,26 @@ rc-service -q crond status >/dev/null 2>&1 || rc-service crond start
 if [ ! -s /etc/edge/certs/_.vaderrp.com/fullchain.pem ] || [ ! -s /etc/edge/certs/_.dns.vaderrp.com/fullchain.pem ]; then
 	/usr/local/bin/edge-cert-renew all
 	CHANGED="$CHANGED certificates"
+fi
+
+# WireGuard to the VPS (the key npmplus used). Only on 192.168.0.5: a second
+# host with the same key would steal the tunnel from npmplus before cutover.
+if ip -4 addr show eth0 | grep -q 'inet 192\.168\.0\.5/'; then
+	apk info -e wireguard-tools >/dev/null 2>&1 || {
+		apk add -q --no-cache wireguard-tools
+		CHANGED="$CHANGED packages:wireguard-tools"
+	}
+	WG_BEFORE="$CHANGED"
+	install_file "$S/wg0.conf" /etc/wireguard/wg0.conf 0600 root:root
+	[ -e /etc/init.d/wg-quick.wg0 ] || ln -s wg-quick /etc/init.d/wg-quick.wg0
+	rc-update -q add wg-quick.wg0 default 2>/dev/null || true
+	if [ "$CHANGED" != "$WG_BEFORE" ]; then
+		rc-service wg-quick.wg0 restart 2>/dev/null || rc-service wg-quick.wg0 start
+	else
+		rc-service -q wg-quick.wg0 status >/dev/null 2>&1 || rc-service wg-quick.wg0 start
+	fi
+else
+	echo "wg0: skipped (not on 192.168.0.5 yet)"
 fi
 
 rc-update -q add traefik default 2>/dev/null || true

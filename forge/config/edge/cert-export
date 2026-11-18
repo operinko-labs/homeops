@@ -1,0 +1,4 @@
+#!/bin/sh
+# Forced command for the Technitium cert-sync keys in root's authorized_keys
+# (scripts/technitium-cert-sync/): tar the *.dns certificate to stdout.
+exec tar -C /etc/edge/certs/_.dns.vaderrp.com -czhf - fullchain.pem privkey.pem
