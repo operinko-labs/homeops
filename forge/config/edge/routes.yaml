@@ -4,6 +4,9 @@
 #   url:      backend; https:// backends with self-signed certs set insecure: true
 #   expect:   HTTP status of GET / through the proxy (2026-11-18 baseline via NPMplus)
 #   wan:      also served on the VPS entrypoint (:8443). Only forgejo may set this.
+#   public:   reachable from outside the LAN (Cloudflare -> UDM :443 forward).
+#             wan routes are public too. Everything else gets the lan-only
+#             allowlist (403 from outside).
 #
 # Not carried over from NPMplus, so do not re-add without a reason:
 #   proxmox, unifi, truenas, ilo, minio  LAN DNS resolves straight to the host
@@ -49,6 +52,7 @@ edge_routes:
     host: vaultwarden.vaderrp.com
     url: "https://192.168.0.136:8000"
     insecure: true
+    public: true
     expect: 200
   - name: myspeed
     host: myspeed.vaderrp.com
@@ -66,6 +70,7 @@ edge_routes:
   - name: photos
     host: photos.vaderrp.com
     url: "http://192.168.0.221:30041"
+    public: true
     expect: 200
   - name: immich-power-tools
     host: immich-power-tools.vaderrp.com
@@ -88,4 +93,5 @@ edge_routes:
   - name: plex
     host: plex.vaderrp.com
     url: "http://192.168.0.7:32400"
+    public: true
     expect: 401

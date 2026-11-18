@@ -13,11 +13,11 @@ entryPoints:
         entryPoint:
           to: websecure
           scheme: https
-  # LAN. Every router here inherits lan-only, so no route can skip the allowlist.
+  # LAN, plus the UDM's WAN :443 forward (Cloudflare-proxied names). Each
+  # router gets the lan-only allowlist unless routes.yaml marks it public.
   websecure:
     address: ":443"
     http:
-      middlewares: [lan-only@file]
       tls: {}
     transport:
       respondingTimeouts:

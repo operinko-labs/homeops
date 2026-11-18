@@ -70,6 +70,13 @@ if [[ "$wan" == "--wan" ]]; then
   lan=$(ssh -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" \
     "curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve hass.vaderrp.com:443:$edge_wg_ip https://hass.vaderrp.com/" 2>/dev/null || true)
   check lan-only-from-vps "${lan:-none}" 403
+  # Routes marked public: true (reached via Cloudflare -> UDM :443 forward)
+  # must answer non-LAN clients normally.
+  while IFS=$'\t' read -r host expect; do
+    got=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" \
+      "curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve $host:443:$edge_wg_ip https://$host/" 2>/dev/null || true)
+    check "public-from-vps-$host" "${got:-none}" "$expect"
+  done < <(yq -r '.edge_routes[] | select(.public) | [.host, .expect] | @tsv' < "$routes" 2>/dev/null)
 fi
 
 echo "---- $fails failure(s)"

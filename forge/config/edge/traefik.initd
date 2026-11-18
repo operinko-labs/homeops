@@ -7,6 +7,10 @@ command_args="--configfile=/etc/traefik/traefik.yaml"
 command_user="traefik:traefik"
 command_background=true
 pidfile="/run/${RC_SVCNAME}.pid"
+# Traefik drains connections for up to 10s (its default graceTimeOut) after
+# SIGTERM. OpenRC's shorter default made `restart` give up mid-shutdown and
+# leave the service "crashed" with nothing listening (2026-11-18 23:54).
+retry="TERM/30/KILL/5"
 output_log="/var/log/traefik/traefik.log"
 error_log="/var/log/traefik/traefik.log"
 

@@ -49,8 +49,9 @@ Operational facts learned while building this module that aren't obvious from th
   leave a half-imported repo. `setup-forgejo.sh`'s migrate call uses a long
   `--max-time`; never shorten it below 7200s.
 - **The edge LXC (120) is Alpine with OpenRC, no Docker.** Traefik binds `:80`,
-  `:443` (LAN, `192.168.0.0/16` allowlist on every route), `:8443` (the VPS path,
-  Forgejo only) and `:22` (TCP stream to Forgejo's sshd). Its own sshd listens on
+  `:443` (LAN, plus the UDM's WAN `:443` forward for the Cloudflare-proxied
+  names; every route gets the `192.168.0.0/16` allowlist unless `routes.yaml`
+  marks it `public: true`), `:8443` (the VPS path, Forgejo only) and `:22` (TCP stream to Forgejo's sshd). Its own sshd listens on
   **:2222**, so SSH to the LXC itself uses `-p 2222`. `routes.yaml` is the only
   list of proxied hosts.
 - **lego's zone lookups use Quad9 on port 9953.** LAN `:53` is DNAT'd to

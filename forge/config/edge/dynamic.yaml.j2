@@ -8,13 +8,18 @@ http:
       rule: "Host(`{{ r.host }}`)"
       entryPoints: [websecure{% if r.wan %}, wan{% endif %}]
       service: {{ r.name }}
+{# Router middlewares apply on every entrypoint, so a wan route (public by
+   definition) must not carry lan-only or the VPS path would get 403. #}
+{% if not r.public and not r.wan %}
+      middlewares: [lan-only]
+{% endif %}
 {% endfor %}
-    # Read-only overview of everything above (LAN only via websecure, plus a login)
+    # Read-only overview of everything above (LAN only, plus a login)
     dashboard:
       rule: "Host(`edge.vaderrp.com`)"
       entryPoints: [websecure]
       service: api@internal
-      middlewares: [dashboard-auth]
+      middlewares: [lan-only, dashboard-auth]
   services:
 {% for r in edge_routes %}
     {{ r.name }}:
