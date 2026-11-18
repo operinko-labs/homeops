@@ -59,7 +59,7 @@ if ((RESTART_FORGEJO)); then
   systemctl restart forgejo
 fi
 
-# --- sshd: connections via the npmplus proxy (192.168.0.5) are git-only ------
+# --- sshd: connections via the edge proxy (192.168.0.5) are git-only ---------
 # Both mutations are staged first, then validated together, then applied.
 SSHD_DIRTY=0
 DROPIN_WRITTEN=0

@@ -7,23 +7,24 @@ Design: `docs/superpowers/specs/2026-08-17-forgejo-authoritative-forge-design.md
 | forgejo | 130 | 192.168.7.30 | Forgejo (native, SQLite), HTTP :3000, SSH :22 |
 | forgejo-runner1 | 131 | 192.168.7.31 | forgejo-runner + Docker CE |
 | forgejo-runner2 | 132 | 192.168.7.32 | forgejo-runner + Docker CE |
-| npmplus | 107 | (existing) | TLS termination, :22 stream forward, WG peer to VPS |
+| edge | 120 | 192.168.0.5 | Traefik + lego (TLS termination, LAN proxy hosts, :22 stream to Forgejo), WG peer to VPS, dashboard at `edge.vaderrp.com/dashboard/` |
 
-- `just forge apply-forgejo|apply-runner 1|apply-runner 2|apply-npmplus` — idempotent config pushes
+- `just forge apply-forgejo|apply-runner 1|apply-runner 2|apply-edge` — idempotent config pushes
+- `bash forge/edge-smoke.sh 192.168.0.5 --wan` (from WSL) — checks every edge route, the dashboard, the :22 stream, the certificates and that the public path only reaches Forgejo
 - `just forge setup` — Forgejo API-level state (org creation, migration of the GitHub repos allowlisted in `setup-forgejo.sh`, push mirrors, Actions secrets)
 - `apply-runner` also installs a weekly `docker-prune.timer` (`docker system prune -af --volumes`, Sun 04:00) on each runner; without it CI leftovers fill the LXC's ZFS refquota and jobs fail with "disk quota exceeded".
-- Provisioning: community-scripts (`ct/forgejo.sh`, `ct/forgejo-runner.sh`) run on meanie; re-provisioning = script + apply.
+- Provisioning: community-scripts (`ct/forgejo.sh`, `ct/forgejo-runner.sh`) run on meanie; re-provisioning = script + apply. The edge LXC is a plain `pct create` from the Alpine template (unprivileged, `vmbr0`, 192.168.0.5/24 with MAC `BC:24:11:83:03:37`, `tank-zfs` 4G, 512M), then `apk add openssh tar curl logrotate libcap-utils ca-certificates`, sshd on `Port 2222`, root `authorized_keys`, and `just forge apply-edge`.
 - Manual state not covered here (one-off CLI/API/UI steps, not re-run by `just forge setup`):
   - Authentik OIDC auth source: OAuth2/OIDC provider + application created in the Authentik UI (Task 3), then `forgejo admin auth add-oauth --provider openidConnect` run on the forge LXC (scopes `openid,email,profile`) to register it in Forgejo.
   - The `renovate` user: `forgejo admin user create` + `generate-access-token` on the forge LXC, then added to the `operinko-labs` org with write access (Owners/renovate team) — no API call, done by hand.
   - The Flux deploy key: `POST /repos/operinko-labs/homeops/keys` (read-only) against the Forgejo API, plus `bootstrap/forgejo-deploy-key.sops.yaml` added to the repo by hand.
   - GitHub Actions disablement on each mirrored GitHub repo (per-repo UI toggle, so mirror pushes don't double-run CI).
-  - NPMplus proxy-host/stream UI entries (Task 5), Cloudflare + Technitium DNS records (Tasks 5–6).
-  - NPMplus `/opt/npmplus/custom_nginx/server_proxy.conf` (2026-11-18 stopgap): returns 421 for any Host other than `forgejo.vaderrp.com` arriving from the VPS WireGuard peer (`172.16.8.0/24`). Without it, a spoofed Host header on the public Forgejo path reached every LAN proxy host. It goes away with LXC 107 (`docs/superpowers/plans/2026-11-18-edge-traefik-replaces-npmplus.md`).
+  - Cloudflare + Technitium DNS records (Tasks 5–6).
+  - The edge LXC's SSH host keys are NPMplus's old ones, and root's `authorized_keys` holds the two `cert-sync` forced-command keys for `scripts/technitium-cert-sync/`; both were copied from LXC 107 by hand at the 2026-11-18 cutover (`docs/superpowers/plans/2026-11-18-edge-traefik-replaces-npmplus.md`).
 
 ## Upgrades
 
-Not automated (Renovate doesn't see the LXC binaries). Last done 2026-10-21: Forgejo 16.0.2 → 17.0.0, runners 13.0.0 → 13.2.0.
+Not automated for Forgejo and the runners (Renovate doesn't see those LXC binaries). The edge LXC's Traefik and lego are pinned in `forge/config/edge/versions.env`, which Renovate does bump; run `just forge apply-edge` after merging. Last done 2026-10-21: Forgejo 16.0.2 → 17.0.0, runners 13.0.0 → 13.2.0.
 
 - **Forgejo:** `pct snapshot 130 pre-forgejo-<ver>` on meanie (the rollback — the first start migrates the SQLite DB, so the old binary can't simply be put back), download `forgejo-<ver>-linux-amd64` + `.sha256` + `.asc` from the Codeberg release, check both (key `EB114F5E6C0DC2BCDD183550A4B61A2DC5923710`), then `systemctl stop forgejo`, install as `/opt/forgejo/forgejo-<ver>`, repoint the `/opt/forgejo/forgejo` symlink, start, and wait for `/api/healthz`. Migrations are logged as `Migration[...]` in the journal.
 - **Runners:** same binary + `.sha256` + `.asc` pattern from `code.forgejo.org/forgejo/runner/releases/download/v<ver>/`, replacing `/usr/local/bin/forgejo-runner`. Restart only when `docker ps --filter name=FORGEJO-ACTIONS-TASK` is empty: the config has no `shutdown_timeout`, so a restart cancels running jobs. The in-cluster runner (`kubernetes/apps/actions-runner-system/forgejo-runner`) is an image tag Renovate bumps.
@@ -47,15 +48,21 @@ Operational facts learned while building this module that aren't obvious from th
   a client-side timeout below ~2h will chop the connection mid-migration and can
   leave a half-imported repo. `setup-forgejo.sh`'s migrate call uses a long
   `--max-time`; never shorten it below 7200s.
-- **npmplus (LXC 107, not 113 — see `docs/network-map.md`) is Alpine, not Debian.**
-  It runs NPM+ in Docker with host networking; nginx binds `:80`/`:81`/`:443`
-  directly, and the LXC's own OpenRC sshd listens on **:2222** (not :22), so both
-  LAN and VPS SSH traffic to npmplus itself use `-p 2222`. Port 22 on npmplus's IP
-  is reserved for the Forgejo git-SSH stream forward.
+- **The edge LXC (120) is Alpine with OpenRC, no Docker.** Traefik binds `:80`,
+  `:443` (LAN, `192.168.0.0/16` allowlist on every route), `:8443` (the VPS path,
+  Forgejo only) and `:22` (TCP stream to Forgejo's sshd). Its own sshd listens on
+  **:2222**, so SSH to the LXC itself uses `-p 2222`. `routes.yaml` is the only
+  list of proxied hosts.
+- **lego's zone lookups use Quad9 on port 9953.** LAN `:53` is DNAT'd to
+  Technitium, whose internal `dns.vaderrp.com` zone would make lego look for a
+  Cloudflare zone that does not exist; propagation is a fixed 90s wait for the same
+  reason (`forge/config/edge/edge-cert-renew.sh`).
+- **WireGuard only starts on 192.168.0.5.** `apply-edge.sh` skips `wg0` on any
+  other address, because a second host with the same key steals the VPS tunnel.
 - **The proxy-path SSH is git-only.** Forgejo rides the forge LXC's system sshd; a
-  `Match Address 192.168.0.5` block restricts logins arriving via the npmplus proxy
+  `Match Address 192.168.0.5` block restricts logins arriving via the edge proxy
   path to the `git` user. Root SSH to the forge LXC only works direct to its LAN IP
-  (192.168.7.30) or via a VPS→LAN jump, never through the npmplus-forwarded path.
+  (192.168.7.30) or via a VPS→LAN jump, never through the edge-forwarded path.
 - **Runner registration tokens are single-use.** Generate one fresh per runner
   immediately before the apply that consumes it; never reuse or cache one.
 - **Staged community-scripts provisioning lives on meanie, not in git.**

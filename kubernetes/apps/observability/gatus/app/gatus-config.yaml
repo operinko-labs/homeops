@@ -67,7 +67,7 @@ endpoints:
       dns-resolver: tcp://127.0.0.1:5353
     conditions:
       - "[DOMAIN_EXPIRATION] > 720h"
-      # NPMplus is on ACME_PROFILE=classic, so this is a 90-day LE cert
+      # lego on the edge LXC requests the classic profile, so this is a 90-day LE cert
       - "[CERTIFICATE_EXPIRATION] > 240h"
     alerts:
       - type: ntfy
@@ -104,7 +104,7 @@ endpoints:
         failure-threshold: 3
         success-threshold: 5
   # Technitium runs on LXCs outside the cluster and does not issue its own
-  # certificate — NPMplus does, and each node pulls the bundle from it hourly
+  # certificate — lego on the edge LXC does, and each node pulls the bundle from it hourly
   # (scripts/technitium-cert-sync/). These checks exist to catch that pull
   # breaking, which is otherwise invisible until DoT stops working.
   #

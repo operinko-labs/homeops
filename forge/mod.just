@@ -3,10 +3,8 @@ set shell := ['bash', '-euo', 'pipefail', '-c']
 
 forge_dir := justfile_dir() + '/forge'
 forge_ip := '192.168.7.30'
-npmplus_ip := '192.168.0.5'
-# npmplus's own sshd was moved off :22 so the NPM+ stream can own it
-npmplus_ssh_port := '2222'
-# edge Traefik LXC (meanie VMID 120); took over npmplus's address on 2026-11-18
+# edge Traefik LXC (meanie VMID 120); took over npmplus's address on 2026-11-18.
+# Its own sshd is on 2222 because Traefik's :22 stream belongs to Forgejo.
 edge_ip := '192.168.0.5'
 edge_ssh_port := '2222'
 runner1_ip := '192.168.7.31'
@@ -33,13 +31,6 @@ apply-runner n:
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli {{ forge_dir }}/config/runner-config.yaml.j2 --format yaml - | ssh root@$ip 'umask 077; cat > /root/.homeops-staging/config.yaml'
     scp -q {{ forge_dir }}/apply-runner.sh root@$ip:/root/.homeops-staging/
     ssh root@$ip "FORGEJO_RUNNER_TOKEN='${FORGEJO_RUNNER_TOKEN:-}' bash /root/.homeops-staging/apply-runner.sh; rc=\$?; rm -rf /root/.homeops-staging; exit \$rc"
-
-[doc('Apply WireGuard + stream config to the npmplus LXC')]
-apply-npmplus:
-    ssh -p {{ npmplus_ssh_port }} root@{{ npmplus_ip }} 'mkdir -p -m 700 /root/.homeops-staging'
-    sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli {{ forge_dir }}/config/wg0-npmplus.conf.j2 --format yaml - | ssh -p {{ npmplus_ssh_port }} root@{{ npmplus_ip }} 'umask 077; cat > /root/.homeops-staging/wg0.conf'
-    scp -P {{ npmplus_ssh_port }} -q {{ forge_dir }}/apply-npmplus.sh root@{{ npmplus_ip }}:/root/.homeops-staging/
-    ssh -p {{ npmplus_ssh_port }} root@{{ npmplus_ip }} 'sh /root/.homeops-staging/apply-npmplus.sh; rc=$?; rm -rf /root/.homeops-staging; exit $rc'
 
 [doc('Apply Traefik + lego config to the edge LXC')]
 apply-edge:
