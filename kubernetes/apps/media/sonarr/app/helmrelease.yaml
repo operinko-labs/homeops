@@ -49,8 +49,12 @@ spec:
           app:
             image:
               repository: ghcr.io/home-operations/sonarr
-              tag: 5.0.0.2569@sha256:b699df6b4b10e71ce23fb6fd8944653171f49164f79020cb0ea09e46b51b0517
+              tag: 5.0.0.2997@sha256:05acf764e72fa458b5edf236771d7a08d1f120fce509d4fb8a4e799fae29fda7
             env:
+              # Host headers Sonarr answers besides localhost and the pod name
+              # (probes send Host: localhost). In-cluster clients (Seerr,
+              # Bazarr, autoposter, Prowlarr) use the service FQDN.
+              SONARR__SERVER__ALLOWEDHOSTS: sonarr.vaderrp.com,sonarr.media.svc.cluster.local
               SONARR__APP__INSTANCENAME: Sonarr
               SONARR__APP__THEME: dark
               SONARR__AUTH__METHOD: External
