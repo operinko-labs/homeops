@@ -23,7 +23,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/raydak-labs/configarr
-          tag: 1.34.1
+          tag: 1.39.2
         env:
           TZ: Europe/Helsinki
           LOG_LEVEL: info
