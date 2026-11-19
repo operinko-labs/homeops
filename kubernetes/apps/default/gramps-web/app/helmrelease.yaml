@@ -27,7 +27,7 @@ spec:
           app:
             image: &image
               repository: ghcr.io/gramps-project/grampsweb
-              tag: 26.10.0@sha256:27017b77784ebc8fe9b4b84e3baab8fa529f1f715f4691bc5d1979b874c216ec
+              tag: 26.11.3@sha256:bf672745c0428ec37f398f51a89e07a0dabe4f2abc1038fd0952e358ae0228a3
             env: &env
               TZ: Europe/Helsinki
               GRAMPSWEB_TREE: Gramps Web
