@@ -24,7 +24,7 @@ spec:
           app:
             image:
               repository: ghcr.io/tphakala/birdnet-go
-              tag: nightly@sha256:233b94f1d3b27b261ec8d997364db0cb953f3e3b3362a89e9e22ad4a589143d6
+              tag: nightly@sha256:5eebc826c137a78aa7f91f0a4f3a02d9775f1a19d720f63b309ec5ae608b8698
             env:
               TZ: Europe/Helsinki
               # Per upstream docker docs the image starts as root and gosu-drops
