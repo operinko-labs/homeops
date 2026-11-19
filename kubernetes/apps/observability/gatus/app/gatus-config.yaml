@@ -198,6 +198,23 @@ endpoints:
       timeout: 15s
     conditions:
       - "[STATUS] == 200"
+  - name: edge crowdsec LAPI
+    group: Network
+    # CrowdSec's local API on the edge LXC (forge/). The bouncer fails open, so
+    # a dead CrowdSec stops banning silently; this is where it shows.
+    url: "https://edge.vaderrp.com/crowdsec-health"
+    interval: 5m
+    client:
+      dns-resolver: tcp://192.168.5.8:53
+      timeout: 15s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == up"
+    alerts:
+      - type: ntfy
+        send-on-resolved: true
+        failure-threshold: 3
+        success-threshold: 2
   - name: edge proxy certificate
     group: Network
     # The *.vaderrp.com wildcard the edge Traefik LXC (forge/) serves to every

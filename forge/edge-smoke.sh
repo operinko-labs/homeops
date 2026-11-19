@@ -43,6 +43,9 @@ check wan-only-forgejo "${wan_routes:-none}" forgejo
 
 dash=$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "edge.vaderrp.com:443:$ip" https://edge.vaderrp.com/dashboard/ 2>/dev/null || true)
 check dashboard "$dash" 401
+# CrowdSec LAPI's /health, published LAN-only for Gatus ("edge crowdsec LAPI").
+cs=$(curl -sk -m 15 --resolve "edge.vaderrp.com:443:$ip" https://edge.vaderrp.com/crowdsec-health 2>/dev/null || true)
+check crowdsec-health "${cs:-none}" '{"status":"up"}'
 
 want_key=$(ssh-keyscan -T 8 -p 22 -t ed25519 "$forgejo_ip" 2>/dev/null | awk '{print $3}')
 got_key=$(ssh-keyscan -T 8 -p 22 -t ed25519 "$ip" 2>/dev/null | awk '{print $3}')

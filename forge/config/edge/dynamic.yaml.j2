@@ -30,7 +30,18 @@ http:
       entryPoints: [websecure]
       service: api@internal
       middlewares: [lan-only, dashboard-auth]
+    # CrowdSec LAPI's /health for Gatus (LAN only; every other LAPI path stays
+    # on 127.0.0.1). The longer rule outranks the dashboard router.
+    crowdsec-health:
+      rule: "Host(`edge.vaderrp.com`) && Path(`/crowdsec-health`)"
+      entryPoints: [websecure]
+      service: crowdsec-lapi
+      middlewares: [lan-only, crowdsec-health-path]
   services:
+    crowdsec-lapi:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8080"
 {% for r in edge_routes %}
     {{ r.name }}:
       loadBalancer:
@@ -85,6 +96,9 @@ http:
             ClientSecret: {{ edge_oidc_client_secret | tojson }}
           Scopes: ["openid", "profile", "email"]
           CallbackUri: "/oidc/callback"
+    crowdsec-health-path:
+      replacePath:
+        path: /health
     lan-only:
       ipAllowList:
         sourceRange: ["192.168.0.0/16"]
