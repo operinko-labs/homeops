@@ -8,7 +8,7 @@ controllers:
       init-db:
         image:
           repository: ghcr.io/home-operations/postgres-init
-          tag: 18.6
+          tag: 18.7@sha256:6d4cfa4b8d343eb6fa0de8dd9ec416a2007f346bb631fc8e246e1f39eee6c4aa
         env:
           INIT_POSTGRES_DBNAME: bazarr
           INIT_POSTGRES_HOST: postgres17.database.svc.cluster.local.
