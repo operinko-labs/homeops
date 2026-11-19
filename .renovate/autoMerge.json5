@@ -85,6 +85,37 @@
       // no ignoreTests here: lint/kubeconform on the PR must be green before
       // Renovate merges (unlike the older tiers, which predate Forgejo CI)
     },
+    // registryAliases send every docker lookup through Harbor, which gives
+    // Renovate no release timestamps. With the default "timestamp-required"
+    // the 3-day minimumReleaseAge above can then never pass, and patch/minor
+    // updates sat in "Pending Status Checks" for weeks. "timestamp-optional"
+    // treats an undated release as stable. Rolled out in batches (2026-11-19);
+    // this list goes away once every docker package is covered.
+    {
+      description: "Undated (Harbor-proxied) docker releases count as stable",
+      matchDatasources: ["docker"],
+      matchPackageNames: [
+        // batch 1: apps
+        "/home-operations/(sonarr|radarr|prowlarr|bazarr|tautulli)$/",
+        "/maintainerr/",
+        "/spot+arr/",
+        "/seerr-team/seerr$/",
+        "/wizarrrr/wizarr$/",
+        "/raydak-labs/configarr$/",
+        "/gethomepage/homepage$/",
+        "/twin/gatus$/",
+        "/binwiederhier/ntfy$/",
+        "/unpoller/unpoller$/",
+        "/advplyr/audiobookshelf$/",
+        "/hargata/lubelogger$/",
+        "/tphakala/birdnet-go$/",
+        "/bulwarkmail/webmail$/",
+        "/gramps-project/grampsweb$/",
+        "/caddy$/",
+        "/nginx-unprivileged$/",
+      ],
+      minimumReleaseAgeBehaviour: "timestamp-optional",
+    },
     // --- Tier 3: Majors stay as manual-review PRs (Renovate default) ---------
 
     // --- Never auto-merge, whatever the tiers above say ----------------------
