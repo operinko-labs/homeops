@@ -36,7 +36,7 @@ spec:
           app:
             image:
               repository: n8nio/n8n
-              tag: 3.0.0
+              tag: 3.3.0@sha256:e06707c78ef5adb302b47909f8fee5caf8d389a7e5f3f0e03165214f6178565e
             env:
               TZ: Europe/Helsinki
               GENERIC_TIMEZONE: Europe/Helsinki
@@ -159,7 +159,7 @@ spec:
           runner:
             image:
               repository: n8nio/runners
-              tag: 3.0.0
+              tag: 3.3.0@sha256:7d6bf76088a08962b812a39dcb8c5ef7b038253a21f69fc4a2bfc1b6e9e486b9
             env:
               TZ: Europe/Helsinki
               # Connect to n8n task broker
