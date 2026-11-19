@@ -1,3 +1,9 @@
 #!/bin/sh
-# /etc/periodic/daily/cf-unifi-sync: run the sync, keep its line in syslog.
-/usr/local/bin/cf-unifi-sync 2>&1 | logger -t cf-unifi-sync
+# /etc/periodic/daily/cf-unifi-sync: run the sync, keep its line in syslog, and
+# record the outcome for edge-selfcheck (which reports it to Gatus).
+out="$(/usr/local/bin/cf-unifi-sync 2>&1)"
+rc=$?
+logger -t cf-unifi-sync "$out"
+mkdir -p /var/lib/edge
+if [ "$rc" = 0 ]; then state=ok; else state=fail; fi
+printf '%s %s %s\n' "$state" "$(date +%s)" "$out" > /var/lib/edge/cf-unifi-sync.status

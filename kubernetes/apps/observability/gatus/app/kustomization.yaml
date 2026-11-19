@@ -5,6 +5,7 @@ namespace: observability
 resources:
   - ocirepository.yaml
   - external-secret.yaml
+  - secret.sops.yaml
   - helmrelease.yaml
   - httproute.yaml
   - rbac.yaml

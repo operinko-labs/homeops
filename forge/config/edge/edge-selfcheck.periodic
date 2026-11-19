@@ -1,0 +1,3 @@
+#!/bin/sh
+# /etc/periodic/hourly/edge-selfcheck: push the self-check to Gatus, log it.
+/usr/local/bin/edge-selfcheck 2>&1 | logger -t edge-selfcheck

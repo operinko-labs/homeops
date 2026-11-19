@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Hourly self-check of the edge parts that fail silently; reports to Gatus.
+
+Installed as /usr/local/bin/edge-selfcheck, run from /etc/periodic/hourly.
+Each run pushes success or the list of failures to the Gatus external
+endpoint "edge self-check" (Network group). Gatus alerts on a failure and,
+via its heartbeat, when the pushes stop. Checks:
+  - the Traefik bouncer pulled decisions from LAPI within the last 5 minutes
+    (it fails open, so a rejected key or dead LAPI would otherwise just stop bans);
+  - CrowdSec still acts on X-Real-Ip and still whitelists the LAN, using the
+    repo's fixture lines (a hub upgrade of traefik-logs could undo either);
+  - cf-unifi-sync's last daily run succeeded, once it is switched on.
+`edge-selfcheck --dry-run` prints the result without pushing.
+"""
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+GATUS = "https://gatus.vaderrp.com/api/v1/endpoints/network_edge-self-check/external"
+FIXTURES = "/etc/crowdsec/homeops-tests"
+SYNC_STATUS = "/var/lib/edge/cf-unifi-sync.status"
+SYNC_ENABLED = "/etc/periodic/daily/cf-unifi-sync"
+
+
+def run(*cmd):
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=120).stdout
+
+
+def check_bouncer():
+    bouncers = json.loads(run("cscli", "bouncers", "list", "-o", "json") or "[]")
+    b = next((b for b in bouncers or [] if b.get("name") == "traefik"), None)
+    if not b or not b.get("last_pull"):
+        return "bouncer 'traefik' is not registered or never pulled"
+    pulled = datetime.datetime.fromisoformat(re.sub(r"\.\d+", "", b["last_pull"]).replace("Z", "+00:00"))
+    age = time.time() - pulled.timestamp()
+    if age > 300:
+        return f"bouncer last pulled {int(age)}s ago (key rejected or LAPI down?)"
+    return None
+
+
+def explain(fixture):
+    return run("cscli", "explain", "--file", f"{FIXTURES}/{fixture}", "--type", "traefik", "--verbose")
+
+
+def check_parsers():
+    errs = []
+    out = explain("cf.log")
+    ips = re.findall(r"evt\.Meta\.source_ip : (?:\S+ -> )?([0-9a-f.:]+)", out)
+    if not ips or ips[-1] != "203.0.113.50":
+        errs.append(f"Cloudflare-path source_ip is {ips[-1] if ips else 'missing'}, not the X-Real-Ip")
+    if re.search(r"whitelisted|ignored by whitelist", out, re.I):
+        errs.append("Cloudflare-path visitor is whitelisted")
+    if not re.search(r"whitelisted|ignored by whitelist", explain("lan.log"), re.I):
+        errs.append("LAN line is no longer whitelisted")
+    return errs
+
+
+def check_sync():
+    if not os.path.exists(SYNC_ENABLED):
+        return None  # off until edge_unifi_api_key is in SOPS
+    try:
+        state, ts, msg = open(SYNC_STATUS).read().strip().split(" ", 2)
+    except (OSError, ValueError):
+        return None if time.time() - os.path.getmtime(SYNC_ENABLED) < 26 * 3600 else "cf-unifi-sync has no recorded run"
+    if state != "ok":
+        return f"cf-unifi-sync failed: {msg}"
+    if time.time() - int(ts) > 26 * 3600:
+        return "cf-unifi-sync has not run for over 26h"
+    return None
+
+
+def token():
+    with open("/etc/edge/selfcheck.env") as f:
+        for line in f:
+            k, _, v = line.strip().partition("=")
+            if k == "GATUS_TOKEN":
+                return v
+    raise SystemExit("edge-selfcheck: no GATUS_TOKEN in /etc/edge/selfcheck.env")
+
+
+def main():
+    errs = []
+    for check in (check_bouncer, check_parsers, check_sync):
+        try:
+            r = check()
+        except Exception as e:  # a broken check is itself a failure
+            r = f"{check.__name__}: {type(e).__name__}: {e}"
+        errs += r if isinstance(r, list) else [r] if r else []
+    print("edge-selfcheck: " + ("ok" if not errs else "; ".join(errs)))
+    if "--dry-run" in sys.argv[1:]:
+        return 1 if errs else 0
+    q = {"success": "false" if errs else "true"}
+    if errs:
+        q["error"] = "; ".join(errs)[:500]
+    req = urllib.request.Request(
+        f"{GATUS}?{urllib.parse.urlencode(q)}",
+        method="POST",
+        headers={"Authorization": f"Bearer {token()}", "User-Agent": "edge-selfcheck"},
+    )
+    with urllib.request.urlopen(req, timeout=20) as r:
+        if r.status != 200:
+            raise SystemExit(f"edge-selfcheck: Gatus answered {r.status}")
+    return 1 if errs else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

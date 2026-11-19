@@ -95,8 +95,10 @@ if [[ "${2:-}" == "--live" ]]; then
   sleep 70
   check home-wan-never-blocked "$(curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve "photos.vaderrp.com:443:$cf_ip" https://photos.vaderrp.com/)" 200
   edge "cscli decisions delete -i ${wan_ip:-0.0.0.0}" >/dev/null
-  check self-ban-lan "$(edge "cscli decisions list -i ${lan_ip:-192.168.0.84} -o raw" | grep -c ban)" 0
-  check self-ban-wan "$(edge "cscli decisions list -i ${wan_ip:-0.0.0.0} -o raw" | grep -c ban)" 0
+  # cscli prints [] for "no decisions"; an ssh or cscli failure prints nothing
+  # and fails the check instead of passing it.
+  check self-ban-lan "$(edge "cscli decisions list -i ${lan_ip:-192.168.0.84} -o json" | tr -d ' \n')" '[]'
+  check self-ban-wan "$(edge "cscli decisions list -i ${wan_ip:-0.0.0.0} -o json" | tr -d ' \n')" '[]'
 fi
 
 echo "---- $fails failure(s)"

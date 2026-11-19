@@ -58,6 +58,20 @@ alerting:
       send-on-resolved: true
       failure-threshold: 2
       success-threshold: 3
+external-endpoints:
+  # Pushed hourly by edge-selfcheck on the edge LXC (forge/): the bouncer's
+  # LAPI pulls, CrowdSec's real-IP parsing and cf-unifi-sync. All of them fail
+  # silently otherwise. No push for 3h means the check itself is dead.
+  - name: edge self-check
+    group: Network
+    token: $${GATUS_EDGE_TOKEN}
+    heartbeat:
+      interval: 3h
+    alerts:
+      - type: ntfy
+        send-on-resolved: true
+        failure-threshold: 1
+        success-threshold: 1
 endpoints:
   - name: vaderrp.com domain and expiration
     group: Domains

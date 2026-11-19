@@ -3,10 +3,11 @@
 
 The UDM's WAN :443 forward to edge only accepts sources in that group, so a
 range Cloudflare adds would otherwise be dropped at home. Installed as
-/usr/local/bin/cf-unifi-sync and linked from /etc/periodic/daily; reads
+/usr/local/bin/cf-unifi-sync and run daily by /etc/periodic/daily/cf-unifi-sync
+(which records the outcome for edge-selfcheck); reads
 UNIFI_API_KEY and UNIFI_GROUP_ID from /etc/edge/unifi-sync.env (or the
 environment). Prints what it did; exits non-zero on any failure, leaving the
-group untouched.
+group untouched. Suspicious changes (see check_change) need --force.
 """
 import ipaddress
 import json
@@ -44,6 +45,25 @@ def cloudflare_ranges():
     return nets
 
 
+def check_change(have, want, force=False):
+    """Refuse changes that look like a bad answer rather than Cloudflare's list.
+
+    Dropped ranges fail silently at the UDM (visitors routed through them get no
+    connection), so losing more than two, or ending below 80% of the current
+    size, needs --force. A prefix wider than /12 would open the forward to a
+    large slice of the internet and is never accepted.
+    """
+    for n in want:
+        if ipaddress.IPv4Network(n).prefixlen < 12:
+            raise SystemExit(f"cf-unifi-sync: refusing {n}: wider than /12")
+    removed = set(have) - set(want)
+    if not force and have and (len(removed) > 2 or len(want) < 0.8 * len(have)):
+        raise SystemExit(
+            f"cf-unifi-sync: would drop {sorted(removed)} ({len(have)} -> {len(want)} ranges); "
+            "check https://www.cloudflare.com/ips-v4 and rerun with --force"
+        )
+
+
 def unifi(method, path, key, body=None):
     ctx = ssl.create_default_context()
     ctx.check_hostname = False  # UDM's self-signed console cert, LAN only
@@ -69,6 +89,7 @@ def main():
     if have == want:
         print(f"cf-unifi-sync: unchanged ({len(want)} ranges)")
         return
+    check_change(have, want, force="--force" in sys.argv[1:])
     group["group_members"] = want
     got = sorted(unifi("PUT", gid, key, group).get("group_members", []))
     if got != want:

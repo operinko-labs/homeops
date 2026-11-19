@@ -2,7 +2,8 @@
 # over the release's stock config.yaml (LAPI 127.0.0.1:8080, SQLite under
 # /var/lib/crowdsec/data, metrics 127.0.0.1:6060).
 common:
-  # OpenRC's supervise-daemon keeps it in the foreground and restarts it.
+  # CrowdSec no longer forks and ignores this; it stays false so the stock
+  # file's `true` could never fight supervise-daemon, which runs it.
   daemonize: false
 db_config:
   use_wal: true

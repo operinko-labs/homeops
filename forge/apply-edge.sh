@@ -203,16 +203,20 @@ if ! /usr/local/bin/crowdsec -version 2>/dev/null | grep -q "^version: $CROWDSEC
 		exit 1
 	}
 	tar -xzf "$d/cs.tgz" -C "$d" --strip-components=1
-	install -m 0755 "$d/cmd/crowdsec/crowdsec" /usr/local/bin/crowdsec
-	install -m 0755 "$d/cmd/crowdsec-cli/cscli" /usr/local/bin/cscli
 	mkdir -p /etc/crowdsec/hub /var/lib/crowdsec/data
 	# The release's stock files, first install only: config.yaml.local carries
 	# our changes, and the credential files fill in on registration below.
 	for f in config.yaml profiles.yaml simulation.yaml console.yaml local_api_credentials.yaml online_api_credentials.yaml; do
 		[ -e "/etc/crowdsec/$f" ] || install -m 0600 "$d/config/$f" "/etc/crowdsec/$f"
 	done
+	rm -rf /etc/crowdsec/patterns.new
+	cp -r "$d/config/patterns" /etc/crowdsec/patterns.new
 	rm -rf /etc/crowdsec/patterns
-	cp -r "$d/config/patterns" /etc/crowdsec/patterns
+	mv /etc/crowdsec/patterns.new /etc/crowdsec/patterns
+	# Binaries last: the version check above keys on them, so an interrupted
+	# run leaves the old version in place and the next run starts over.
+	install -m 0755 "$d/cmd/crowdsec-cli/cscli" /usr/local/bin/cscli
+	install -m 0755 "$d/cmd/crowdsec/crowdsec" /usr/local/bin/crowdsec
 	rm -rf "$d"
 	CHANGED="$CHANGED crowdsec-$CROWDSEC_VERSION"
 fi
@@ -237,9 +241,11 @@ for item in collections:crowdsecurity/traefik collections:crowdsecurity/http-cve
 done
 # This machine's LAPI login, and the Central API (community blocklist; sends
 # attacker IPs + scenario names back). Once each; console enrolment stays off.
-grep -q '^login:' /etc/crowdsec/local_api_credentials.yaml ||
+grep -q '^login: *[^ ]' /etc/crowdsec/local_api_credentials.yaml || {
 	cscli --error machines add edge --auto --force -f /etc/crowdsec/local_api_credentials.yaml
-grep -q '^login:' /etc/crowdsec/online_api_credentials.yaml || {
+	CHANGED="$CHANGED machine-register"
+}
+grep -q '^login: *[^ ]' /etc/crowdsec/online_api_credentials.yaml || {
 	cscli --error capi register
 	CHANGED="$CHANGED capi-register"
 }
@@ -254,7 +260,7 @@ fi
 # probe is a live-mode lookup, so it never consumes the bouncer's stream delta.
 key="$(cat "$S/bouncer.key")"
 for i in $(seq 1 30); do
-	code="$(curl -s -o /dev/null -w '%{http_code}' -H "X-Api-Key: $key" 'http://127.0.0.1:8080/v1/decisions?ip=127.0.0.1')" || true
+	code="$(curl -s -m 3 -o /dev/null -w '%{http_code}' -H "X-Api-Key: $key" 'http://127.0.0.1:8080/v1/decisions?ip=127.0.0.1')" || true
 	[ "$code" != 000 ] && break
 	sleep 1
 done
@@ -264,6 +270,16 @@ if [ "$code" != 200 ]; then
 	CHANGED="$CHANGED bouncer-key"
 fi
 unset key
+
+# Hourly self-check of what fails silently (bouncer pulls, real-IP parsing,
+# cf-unifi-sync), pushed to Gatus "edge self-check"; it explains the repo's
+# fixture lines, so they live on the box too.
+for f in cf.log vps.log lan.log; do
+	install_file "$S/crowdsec/tests/$f" "/etc/crowdsec/homeops-tests/$f" 0644 root:root
+done
+install_file "$S/edge-selfcheck" /usr/local/bin/edge-selfcheck 0755 root:root
+install_file "$S/selfcheck.env" /etc/edge/selfcheck.env 0600 root:root
+install_file "$S/edge-selfcheck.periodic" /etc/periodic/hourly/edge-selfcheck 0755 root:root
 
 # One plugin that fails to compile disables them all, and with them the
 # entrypoint middlewares every route hangs off, while the process stays up.

@@ -7,7 +7,7 @@
 # traefik-warp sets it (the visitor for Cloudflare's ranges, else the socket
 # IP), and on wan Traefik replaces it with the PROXY-protocol client.
 name: homeops/edge-real-ip
-description: "Act on the X-Real-Ip that traefik-warp set, not the socket IP"
+description: "Act on the logged X-Real-Ip (warp's or Traefik's), not the socket IP"
 filter: |
   evt.Meta.log_type == 'http_access-log' &&
   evt.Unmarshaled.traefik != nil &&

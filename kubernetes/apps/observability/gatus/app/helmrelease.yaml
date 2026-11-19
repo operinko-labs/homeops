@@ -40,6 +40,8 @@ spec:
             envFrom:
               - secretRef:
                   name: gatus-secret
+              - secretRef:
+                  name: gatus-edge-secret
             probes:
               liveness: &probes
                 enabled: true
