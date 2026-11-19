@@ -20,6 +20,45 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: tracearr-values
+  values:
+    # Overrides for the upstream Tracearr chart (docker/helm/tracearr).
+    # The chart auto-generates JWT/COOKIE secrets on first install and preserves
+    # them across upgrades via helm lookup; DB is the bundled TimescaleDB
+    # (tracearr needs timescaledb/timescaledb_toolkit extensions, which the
+    # shared CNPG clusters do not ship), Redis is the bundled one (BullMQ needs
+    # maxmemory-policy noeviction, which rules out sharing Dragonfly).
+    tracearr:
+      image:
+        tag: "2.1.0"
+      env:
+        NODE_ENV: production
+        HOST: "0.0.0.0"
+        PORT: "3000"
+        LOG_LEVEL: info
+        CORS_ORIGIN: https://tracearr.vaderrp.com
+        TZ: Europe/Helsinki
+      backups:
+        enabled: true
+        size: 10Gi
+        storageClass: local-path
+      imageCache:
+        enabled: true
+        size: 5Gi
+        storageClass: local-path
+
+    timescale:
+      persistence:
+        size: 20Gi
+        storageClass: tns-iscsi
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: "4"
+          memory: 4Gi
+
+    redis:
+      persistence:
+        size: 2Gi
+        storageClass: local-path

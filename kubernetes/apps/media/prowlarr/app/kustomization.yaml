@@ -7,16 +7,12 @@ resources:
   - external-secret.yaml
   - httproute.yaml
 configMapGenerator:
-  - name: prowlarr-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true # Optional, keeps name clean
   - name: prowlarr-loki-rules
     files:
       - prowlarr.yaml=./lokirule.yaml
     options:
       labels:
-        loki_rule: "true"
+        loki_rule: 'true'
+
 generatorOptions:
   disableNameSuffixHash: true

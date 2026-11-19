@@ -11,13 +11,6 @@ resources:
   - prometheusrule.yaml
 
 configMapGenerator:
-  - name: site-overview-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true
-  # The sites the collector watches (format: the site-overview repo's
-  # config.py). Reloader restarts the pod when it changes.
   - name: site-overview-sites
     files:
       - sites.yaml

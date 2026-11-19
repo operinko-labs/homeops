@@ -9,11 +9,6 @@ resources:
   - secret.sops.yaml
 
 configMapGenerator:
-  - name: forgejo-runner-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true
   - name: forgejo-runner-config
     files:
       - config.yaml

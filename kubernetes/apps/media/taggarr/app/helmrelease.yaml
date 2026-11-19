@@ -17,7 +17,66 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: taggarr-values
-
+  values:
+    # Helm values for taggarr app-template deployment
+    controllers:
+      taggarr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: basshous3/taggarr
+              tag: latest
+            env:
+              TZ: Europe/Helsinki
+              TARGET_LANGUAGES: "en, fi"
+              DRY_RUN: "false"
+              LOG_LEVEL: "info"
+            envFrom:
+              - secretRef:
+                  name: taggarr-secret
+            probes:
+              liveness:
+                enabled: false
+              readiness:
+                enabled: false
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: false
+            resources:
+              requests:
+                cpu: 10m
+                memory: 128Mi
+              limits:
+                memory: 512Mi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: use-vc
+          - name: single-request-reopen
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        existingClaim: taggarr
+        globalMounts:
+          - path: /config
+          - path: /logs
+            subPath: logs
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
+      media:
+        existingClaim: taggarr-media-nfs
+        globalMounts:
+          - path: /tv

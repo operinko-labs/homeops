@@ -12,11 +12,6 @@ resources:
   - ./rbac.yaml
   - ./vpa.yaml
 configMapGenerator:
-  - name: homepage-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true # Optional, keeps name clean
   - name: homepage-config
     files:
       - bookmarks.yaml=./resources/bookmarks.yaml.txt
@@ -24,5 +19,6 @@ configMapGenerator:
       - services.yaml=./resources/services.yaml.txt
       - settings.yaml=./resources/settings.yaml
       - widgets.yaml=./resources/widgets.yaml.txt
+
 generatorOptions:
   disableNameSuffixHash: true

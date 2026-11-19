@@ -17,7 +17,74 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: homepage-values
+  values:
+    # Helm values for homepage app-template deployment
+    controllers:
+      homepage:
+        replicas: 1
+        strategy: RollingUpdate
+        annotations:
+          reloader.stakater.com/auto: "true"
+        serviceAccount:
+          name: homepage
+        containers:
+          app:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v2.8.0
+            env:
+              TZ: Europe/Helsinki
+              HOMEPAGE_ALLOWED_HOSTS: home.vaderrp.com
+              HOMEPAGE_AUTHENTIK_URL: https://auth.vaderrp.com
+              HOMEPAGE_AUTHENTIK_REDIRECT_URI: http://home.vaderrp.com/auth/callback
+              HOMEPAGE_AUTHENTIK_LOGOUT_URL: https://auth.vaderrp.com/application/o/homepage/end-session/?next=http://home.vaderrp.com/auth/logout
+            envFrom:
+              - secretRef:
+                  name: homepage-secret
+              - secretRef:
+                  name: homepage-external-secret
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+            resources:
+              requests:
+                cpu: 15m
+                memory: 373Mi
+              limits:
+                memory: 512Mi
+    service:
+      app:
+        controller: homepage
+        ipFamilyPolicy: PreferDualStack
+        ports:
+          http:
+            port: 3000
+    ingress:
+      app:
+        enabled: false
+    defaultPodOptions:
+      automountServiceAccountToken: true
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: use-vc
+          - name: single-request-reopen
 
+    persistence:
+      config:
+        type: configMap
+        name: homepage-config
+        globalMounts:
+          - subPath: bookmarks.yaml
+            path: /app/config/bookmarks.yaml
+          - subPath: kubernetes.yaml
+            path: /app/config/kubernetes.yaml
+          - subPath: services.yaml
+            path: /app/config/services.yaml
+          - subPath: settings.yaml
+            path: /app/config/settings.yaml
+          - subPath: widgets.yaml
+            path: /app/config/widgets.yaml

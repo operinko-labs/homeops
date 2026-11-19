@@ -17,7 +17,130 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: readarr-values
-
+  values:
+    # Helm values for readarr app-template deployment
+    controllers:
+      readarr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        pod:
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchExpressions:
+                        - key: cnpg.io/podRole
+                          operator: In
+                          values: ["primary"]
+                    topologyKey: kubernetes.io/hostname
+        initContainers:
+          init-db:
+            image:
+              repository: ghcr.io/home-operations/postgres-init
+              tag: 18.7@sha256:6d4cfa4b8d343eb6fa0de8dd9ec416a2007f346bb631fc8e246e1f39eee6c4aa
+            env:
+              INIT_POSTGRES_DBNAME: readarr-main readarr-logs readarr-cache
+              INIT_POSTGRES_HOST: postgres17.database.svc.cluster.local.
+            envFrom:
+              - secretRef:
+                  name: readarr-secret
+        containers:
+          app:
+            image:
+              repository: ghcr.io/faustvii/readarr
+              tag: 0.10.0@sha256:23b3dfeac0a60d3395bee862e6b954dc14bc6bd13411a89e36f92e9bbaf7bdfa
+            env:
+              READARR__APP__INSTANCENAME: Readarr
+              READARR__APP__THEME: dark
+              READARR__AUTH__METHOD: External
+              READARR__AUTH__REQUIRED: DisabledForLocalAddresses
+              READARR__LOG__DBENABLED: "True"
+              READARR__LOG__LEVEL: info
+              READARR__SERVER__PORT: &port 80
+              READARR__UPDATE__BRANCH: develop
+              TZ: Europe/Helsinki
+              # PostgreSQL configuration
+              READARR__POSTGRES__PORT: "5432"
+              READARR__POSTGRES__MAINDB: readarr-main
+              READARR__POSTGRES__LOGDB: readarr-logs
+              READARR__POSTGRES__CACHEDB: readarr-cache
+            envFrom:
+              - secretRef:
+                  name: readarr-secret
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: *port
+                  initialDelaySeconds: 120 # Give Readarr 2 minutes to start
+                  periodSeconds: 10
+                  timeoutSeconds: 10
+                  failureThreshold: 6 # Allow 6 failures (60s) before restart
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: *port
+                  initialDelaySeconds: 30 # Wait 30s before first readiness check
+                  periodSeconds: 10
+                  timeoutSeconds: 10
+                  failureThreshold: 3 # Allow 3 failures (30s) before marking unready
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 10m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: false # Allow init container to run as root
+        runAsUser: 568
+        runAsGroup: 568
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+        supplementalGroups: [10000]
+        seccompProfile: {type: RuntimeDefault}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: use-vc
+          - name: single-request-reopen
+    service:
+      app:
+        controller: readarr
+        ports:
+          http:
+            port: *port
+    persistence:
+      config:
+        existingClaim: readarr
+      config-cache:
+        existingClaim: readarr-cache
+        globalMounts:
+          - path: /config/MediaCover
+      media:
+        type: nfs
+        server: 192.168.7.198
+        path: /mnt/Nakkiallas/Media
+        globalMounts:
+          - path: /mnt/media
+      download:
+        type: nfs
+        server: 192.168.7.198
+        path: /mnt/Nakkiallas/Download
+        globalMounts:
+          - path: /mnt/download
+      tmp:
+        type: emptyDir

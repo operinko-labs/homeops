@@ -17,7 +17,134 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: bazarr-values
-
+  values:
+    # Helm values for bazarr app-template deployment
+    controllers:
+      bazarr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init-db:
+            image:
+              repository: ghcr.io/home-operations/postgres-init
+              tag: 18.7@sha256:6d4cfa4b8d343eb6fa0de8dd9ec416a2007f346bb631fc8e246e1f39eee6c4aa
+            env:
+              INIT_POSTGRES_DBNAME: bazarr
+              INIT_POSTGRES_HOST: postgres17.database.svc.cluster.local.
+            envFrom:
+              - secretRef:
+                  name: bazarr-secret
+        containers:
+          app:
+            image:
+              repository: ghcr.io/home-operations/bazarr
+              tag: 1.6.2@sha256:6c40dfa683f767d28d1dc502837ed0a5a57682a84231f03e704e2b3f61b25a46
+            env:
+              TZ: Europe/Helsinki
+              # PostgreSQL configuration
+              POSTGRES_ENABLED: "true"
+              POSTGRES_PORT: "5432"
+              POSTGRES_DATABASE: bazarr
+            envFrom:
+              - secretRef:
+                  name: bazarr-secret
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 6767
+                  initialDelaySeconds: 120
+                  periodSeconds: 10
+                  timeoutSeconds: 10
+                  failureThreshold: 6
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: *port
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 10
+                  failureThreshold: 3
+            securityContext: &securityContext
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 100m
+                memory: 428Mi
+              limits:
+                memory: 1Gi
+          subcleaner:
+            image:
+              repository: registry.k8s.io/git-sync/git-sync
+              tag: v4.8.0@sha256:a20644562fba94773e594885cb001aadb5a3172175f13ac1215e5b2033c9200e
+            env:
+              GITSYNC_REPO: https://github.com/KBlixt/subcleaner
+              GITSYNC_REF: master
+              GITSYNC_PERIOD: 24h
+              GITSYNC_ROOT: /subcleaner
+              # git-sync 4.8 no longer trusts every directory, and the volume is root-owned.
+              GITSYNC_GIT_CONFIG: safe.directory:/subcleaner
+            resources:
+              requests:
+                cpu: 10m
+              limits:
+                memory: 128Mi
+            securityContext: *securityContext
+    defaultPodOptions:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: use-vc
+          - name: single-request-reopen
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      app:
+        controller: bazarr
+        ports:
+          http:
+            port: *port
+    persistence:
+      config:
+        existingClaim: bazarr
+      config-cache:
+        type: emptyDir
+        globalMounts:
+          - path: /config/cache
+      config-log:
+        type: emptyDir
+        globalMounts:
+          - path: /config/log
+      media:
+        existingClaim: bazarr-media-nfs
+        globalMounts:
+          - path: /media
+      backup:
+        existingClaim: bazarr-backup-nfs
+        globalMounts:
+          - path: /config/backup
+      scripts:
+        type: configMap
+        name: bazarr-scripts
+        defaultMode: 0775
+        globalMounts:
+          - path: /scripts/subcleaner.sh
+            subPath: subcleaner.sh
+            readOnly: true
+      subcleaner:
+        type: emptyDir
+      tmp:
+        type: emptyDir

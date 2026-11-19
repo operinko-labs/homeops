@@ -17,7 +17,109 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: loki-values
-
+  values:
+    # Helm values for loki deployment
+    deploymentMode: SingleBinary
+    loki:
+      containers:
+        - name: loki
+          resources:
+            requests:
+              cpu: 57m
+              memory: 854Mi
+            limits:
+              memory: 854Mi
+        - name: loki-sc-rules
+          resources:
+            requests:
+              cpu: 10m
+              memory: 111Mi
+            limits:
+              memory: 111Mi
+      auth_enabled: false
+      analytics:
+        reporting_enabled: false
+      server:
+        log_level: info
+      commonConfig:
+        replication_factor: 1
+      compactor:
+        working_directory: /var/loki/compactor/retention
+        delete_request_store: filesystem
+        retention_enabled: true
+      ingester:
+        chunk_encoding: snappy
+      limits_config:
+        volume_enabled: true
+        retention_period: 14d
+      storage:
+        type: filesystem
+        bucketNames:
+          chunks: chunks
+          ruler: ruler
+          admin: admin
+      schemaConfig:
+        configs:
+          - from: "2024-04-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: loki_index_
+              period: 24h
+      structuredConfig:
+        limits_config:
+          allow_deletes: true
+        ruler:
+          enable_api: true
+          enable_alertmanager_v2: true
+          alertmanager_url: http://alertmanager-operated.observability.svc.cluster.local:9093
+          storage:
+            type: local
+            local:
+              directory: /rules
+          # scratch dir for rule evaluation; must not overlap the sidecar target
+          rule_path: /var/loki/rules-scratch
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        size: 32Gi
+        storageClass: local-path
+      podSecurityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+    gateway:
+      containers:
+        - name: nginx
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
+            limits:
+              memory: 100Mi
+      replicas: 1
+      ingress:
+        enabled: false
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+    lokiCanary:
+      enabled: false
+    test:
+      enabled: false
+    sidecar:
+      image:
+        repository: ghcr.io/kiwigrid/k8s-sidecar
+      rules:
+        searchNamespace: ALL
+        # ruler local storage reads <directory>/<tenant>/*.yaml; with auth
+        # disabled the tenant is "fake", so rules must land in /rules/fake
+        folder: /rules/fake

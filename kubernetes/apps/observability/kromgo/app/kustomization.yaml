@@ -7,14 +7,9 @@ resources:
   - helmrelease.yaml
   - httproute.yaml
 configMapGenerator:
-  - name: kromgo-values
-    files:
-      - values.yaml
-    options:
-      disableNameSuffixHash: true # Optional, keeps name clean
   - name: kromgo-configmap
     files:
       - config.yaml
+
 generatorOptions:
   disableNameSuffixHash: true
-

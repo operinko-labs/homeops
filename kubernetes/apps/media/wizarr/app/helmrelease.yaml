@@ -17,6 +17,56 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: wizarr-values
+  values:
+    # Helm values for wizarr app-template deployment
+    controllers:
+      wizarr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/wizarrrr/wizarr
+              tag: v2026.10.1
+            env:
+              - name: TZ
+                value: "Europe/Helsinki"
+            resources:
+              requests:
+                cpu: 15m
+                memory: 512Mi
+              limits:
+                memory: 1Gi
+    defaultPodOptions:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+          - name: use-vc
+          - name: single-request-reopen
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+    service:
+      app:
+        controller: wizarr
+        ports:
+          http:
+            port: 5690
+    persistence:
+      configurations:
+        existingClaim: wizarr
+        globalMounts:
+          - path: /data/database
+      cache:
+        type: emptyDir
+        globalMounts:
+          - path: /.cache
+      etc:
+        type: emptyDir
+        globalMounts:
+          - path: /etc/wizarr

@@ -22,6 +22,24 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  valuesFrom:
-    - kind: ConfigMap
-      name: headlamp-values
+  values:
+    # Helm values for headlamp deployment
+    config:
+      pluginsDir: /build/plugins
+    fullnameOverride: headlamp
+    serviceAccount:
+      create: false
+      name: headlamp-admin
+    clusterRoleBinding:
+      create: false
+    persistentVolumeClaim:
+      existingClaim: headlamp
+    podAnnotations:
+      reloader.stakater.com/auto: "true"
+    volumeMounts:
+      - mountPath: /build/plugins
+        name: headlamp-plugins
+    volumes:
+      - name: headlamp-plugins
+        persistentVolumeClaim:
+          claimName: headlamp
