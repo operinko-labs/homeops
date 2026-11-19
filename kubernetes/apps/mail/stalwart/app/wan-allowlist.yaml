@@ -110,7 +110,7 @@ spec:
             seccompProfile: {type: RuntimeDefault}
           containers:
             - name: sync
-              image: docker.io/library/python:3.14-alpine
+              image: docker.io/library/python:3.15-alpine@sha256:0f9552bb28711333da16915ec146f5e6bb44a7fdac9ced15dc17c2e0206346dd
               command: ["python", "/scripts/sync-wan-allowlist.py"]
               env:
                 - name: STALWART_URL
