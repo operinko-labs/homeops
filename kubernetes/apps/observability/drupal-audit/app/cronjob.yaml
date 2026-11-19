@@ -26,7 +26,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: audit
-              image: docker.io/library/composer:2.10.3
+              image: docker.io/library/composer:2.11.2@sha256:919efe8e62179c71dfd31fad035fd671fe7454211c6b2aa30a10af0ab4acedba
               command: ["php", "/scripts/audit.php"]
               env:
                 - name: REPOS
