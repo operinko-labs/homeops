@@ -28,7 +28,7 @@ spec:
           app:
             image:
               repository: ghcr.io/goauthentik/server
-              tag: 2026.8.3
+              tag: 2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
             args: ["server"]
             env:
               AUTHENTIK_POSTGRESQL__HOST: "postgres17.database.svc.cluster.local."
@@ -99,7 +99,7 @@ spec:
           app:
             image:
               repository: ghcr.io/goauthentik/server
-              tag: 2026.8.3
+              tag: 2026.8.5@sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5
             args: ["worker"]
             env:
               AUTHENTIK_POSTGRESQL__HOST: "postgres17.database.svc.cluster.local."
