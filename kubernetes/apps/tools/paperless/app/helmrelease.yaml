@@ -58,15 +58,20 @@ spec:
                   httpGet:
                     path: /
                     port: &port 8000
+                    # 3.5 enforces ALLOWED_HOSTS (from PAPERLESS_URL); a probe
+                    # by pod IP gets 400 DisallowedHost.
+                    httpHeaders: &host
+                      - name: Host
+                        value: paperless.vaderrp.com
                   initialDelaySeconds: 60
                   periodSeconds: 15
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness: *probes
               # Version upgrades run Django migrations before the web server
-              # answers; the 3.3 -> 3.5 ones outlasted liveness (~135 s), the
-              # pod was killed mid-migration and the rollback could not start
-              # 3.3 on the half-new schema. Up to 20 min to come up.
+              # answers. A failed upgrade rolls back to a version that can't
+              # read the migrated schema (2026-11-19, 3.3 -> 3.5), so allow up
+              # to 20 min to come up.
               startup:
                 enabled: true
                 custom: true
@@ -74,6 +79,7 @@ spec:
                   httpGet:
                     path: /
                     port: *port
+                    httpHeaders: *host
                   periodSeconds: 10
                   timeoutSeconds: 5
                   failureThreshold: 120
