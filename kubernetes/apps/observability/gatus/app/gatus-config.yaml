@@ -79,11 +79,14 @@ endpoints:
     interval: 1h
     client:
       dns-resolver: tcp://127.0.0.1:5353
+      # The apex is DNS-only (the home WAN IP), and since 2026-11-19 the UDM
+      # forwards WAN :443 to edge only from Cloudflare, so from here the UDM's
+      # own console answers (cert unifi.vaderrp.com). Only the domain's expiry
+      # is checked; public certs are Cloudflare's, edge's is "edge proxy
+      # certificate" below.
+      insecure: true
     conditions:
       - "[DOMAIN_EXPIRATION] > 720h"
-      # Public view (resolved via DoH), so this is not the edge LXC's cert;
-      # "edge proxy certificate" below watches that one
-      - "[CERTIFICATE_EXPIRATION] > 240h"
     alerts:
       - type: ntfy
         send-on-resolved: true
