@@ -41,7 +41,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: migrate
-          image: ghcr.io/stalwartlabs/stalwart-migrate:1.0.0@sha256:d722a11e081882152c85da629f37ff2bc33a2063fa2c7a262c71052add17d44f
+          image: ghcr.io/stalwartlabs/stalwart-migrate:1.0.8@sha256:fa4ed9864bd9c1ee2da858c3db556d713d2c964b92a743f952f7a71da54d80e7
           command: ["sleep", "infinity"]
           env:
             - name: STALWART_MIGRATE_STATE
