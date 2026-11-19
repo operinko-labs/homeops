@@ -6,6 +6,9 @@ metadata:
   namespace: tools
 spec:
   interval: 15m
+  # Matches the startup probe below: a migrating upgrade must not time out
+  # and roll back to a version that can't read the migrated schema.
+  timeout: 20m
   chartRef:
     kind: OCIRepository
     name: paperless
@@ -60,6 +63,20 @@ spec:
                   timeoutSeconds: 5
                   failureThreshold: 5
               readiness: *probes
+              # Version upgrades run Django migrations before the web server
+              # answers; the 3.3 -> 3.5 ones outlasted liveness (~135 s), the
+              # pod was killed mid-migration and the rollback could not start
+              # 3.3 on the half-new schema. Up to 20 min to come up.
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 120
             resources:
               requests:
                 cpu: 100m
