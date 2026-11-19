@@ -6,3 +6,13 @@ resources:
   - httproute.yaml
   - helmrelease.yaml
   - vpa.yaml
+
+# values.yaml is the only copy of the values (Renovate bumps it). Until
+# 2026-11-19 an inline ConfigMap in helmrelease.yaml shadowed it and pinned
+# v2025.12.0.
+configMapGenerator:
+  - name: wizarr-values
+    files:
+      - values.yaml
+    options:
+      disableNameSuffixHash: true
