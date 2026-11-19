@@ -17,7 +17,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: rclone
-              image: rclone/rclone:1.75.1
+              image: rclone/rclone:1.76.0@sha256:7cbeec24a44f206067597c0368be4de90ae19a64d5113c7d1938bd737a81e466
               command: ["/bin/sh", "/scripts/sync.sh"]
               env:
                 - name: BUCKETS
