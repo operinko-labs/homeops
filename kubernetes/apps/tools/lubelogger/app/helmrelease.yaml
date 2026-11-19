@@ -25,7 +25,7 @@ spec:
           app:
             image:
               repository: ghcr.io/hargata/lubelogger
-              tag: v1.7.3@sha256:c9d2bbb48c7f84d90e54496e2cd60422e56a5f2345c8a539ebe09f77e629d321
+              tag: v1.7.5@sha256:cdfd841eea84b652cca5401dc7edfca9f400970ab472025246f92323b2ce36e1
             env:
               TZ: Europe/Helsinki
               ASPNETCORE_HTTP_PORTS: &port 8080
