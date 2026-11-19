@@ -22,6 +22,11 @@ jobs:
           RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
           GITHUB_COM_TOKEN: ${{ secrets.GH_COM_TOKEN }}
           RENOVATE_AUTODISCOVER: "true"
+          # Every repo starts from operinko-labs/renovate-config's
+          # org-inherited-config.json (config:best-practices) and layers its own
+          # config on top. Missing file = silently skipped; an unparsable one
+          # aborts every repo's run, so validate it before pushing.
+          RENOVATE_INHERIT_CONFIG: "true"
           RENOVATE_GIT_AUTHOR: "Renovate Bot <renovate@vaderrp.com>"
           RENOVATE_SECRETS: '{"HARBOR_ROBOT_PASSWORD":"${{ secrets.HARBOR_ROBOT_PASSWORD }}"}'
           # Harbor resolves to RFC1918 addresses. Only admin-level hostRules can
