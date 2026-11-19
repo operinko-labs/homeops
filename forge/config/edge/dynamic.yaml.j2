@@ -50,6 +50,25 @@ http:
           provider: cloudflare
           autoRefresh: true
           refreshInterval: 24h
+    # CrowdSec bouncer, after real-ip on both public entrypoints (traefik.yaml).
+    # Stream mode: bans are pulled from the local API every 60s and checked in
+    # memory; updateMaxFailure -1 lets traffic through while CrowdSec is down.
+    # X-Real-Ip is warp's on websecure and Traefik's own (socket IP) on wan, so
+    # it may be read from any peer; LAN clients skip the check entirely.
+    crowdsec:
+      plugin:
+        crowdsec-bouncer:
+          Enabled: true
+          LogLevel: INFO
+          CrowdsecMode: stream
+          CrowdsecLapiScheme: http
+          CrowdsecLapiHost: "127.0.0.1:8080"
+          CrowdsecLapiKey: {{ edge_crowdsec_bouncer_key | tojson }}
+          UpdateIntervalSeconds: 60
+          UpdateMaxFailure: -1
+          ForwardedHeadersCustomName: X-Real-Ip
+          ClientTrustedIPs: ["192.168.0.0/16"]
+          RemediationStatusCode: 403
     # Authentik login for routes marked auth: oidc, reached only by non-LAN
     # clients (LAN traffic takes the <name>-lan router instead). Reuses the
     # cluster's "traefik" application (its redirect URIs allow any

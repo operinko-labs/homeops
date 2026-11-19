@@ -19,8 +19,9 @@ entryPoints:
     address: ":443"
     http:
       # traefik-warp: X-Real-IP from CF-Connecting-IP, but only when the socket
-      # is in Cloudflare's ranges; everyone else keeps their socket IP.
-      middlewares: [real-ip@file]
+      # is in Cloudflare's ranges; everyone else keeps their socket IP. Then
+      # the CrowdSec bouncer checks that IP.
+      middlewares: [real-ip@file, crowdsec@file]
       tls: {}
     # warp writes X-Forwarded-For itself on every request here; without this,
     # Traefik appends the socket IP (a Cloudflare node) and apps that take the
@@ -43,8 +44,9 @@ entryPoints:
       trustedIPs: ["172.16.8.2/32"]
     # No warp here: Traefik itself replaces a client-sent X-Real-Ip with the
     # (PROXY-protocol) client IP, which CrowdSec reads from the access log
-    # (edge-smoke.sh real-ip-vps-spoof).
+    # (edge-smoke.sh real-ip-vps-spoof), and the bouncer checks.
     http:
+      middlewares: [crowdsec@file]
       tls: {}
     transport:
       respondingTimeouts:
@@ -65,6 +67,8 @@ experimental:
       moduleName: github.com/l4rm4nd/traefik-warp
     traefik-oidc-auth:
       moduleName: github.com/sevensolutions/traefik-oidc-auth
+    crowdsec-bouncer:
+      moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
 
 api:
   dashboard: true

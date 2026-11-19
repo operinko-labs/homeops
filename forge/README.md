@@ -69,6 +69,27 @@ Operational facts learned while building this module that aren't obvious from th
   `https://www.cloudflare.com/ips-v4`; it runs only once `edge_unifi_api_key` (a
   dedicated UniFi local API key) is in `forge/secrets.sops.yaml`. Undo: disable
   the source limit on that forward in UniFi.
+- **CrowdSec on edge** (since 2026-11-19). The engine and local API run on the LXC
+  itself (`rc-service crowdsec`, LAPI `127.0.0.1:8080`, SQLite under
+  `/var/lib/crowdsec/data`), reading Traefik's access log. The
+  `crowdsec@file` bouncer plugin sits on `websecure` (after warp) and `wan`.
+  - **IPs:** the `homeops/edge-real-ip` parser acts on the logged `X-Real-Ip`, never a
+    Cloudflare node.
+  - **Never banned:** LAN, VPS, home WAN IP and Cloudflare (`homeops/edge-whitelist`).
+  - **Bouncer:** stream mode with a 60s pull. It fails open (`UpdateMaxFailure: -1`),
+    and LAN clients skip it.
+  - **Central API:** registered for the community blocklist; it gets attacker
+    IPs and scenario names back. Not enrolled in the console.
+  - **Day to day:** `cscli metrics`, `cscli decisions list` (add `--origin CAPI`
+    for the blocklist), `cscli alerts list`. Unban with `cscli decisions delete -i <ip>`;
+    a lasting exception goes in `crowdsec/parsers/s02-enrich/homeops-whitelist.yaml`.
+  - **Tests:** `bash forge/edge-crowdsec-test.sh` checks the parsers;
+    `... 192.168.0.5 --live` bans the VPS IP for a moment and stops CrowdSec to
+    prove the ban, fail-open and no-self-ban paths.
+  - **Upgrades:** hub items upgrade daily (`/etc/periodic/daily/crowdsec-hub-upgrade`);
+    the binaries and the bouncer follow `versions.env`.
+  - **Bouncer key:** `edge_crowdsec_bouncer_key` in SOPS; `apply-edge` re-registers it
+    whenever LAPI rejects it. LXC 120 has 1 GiB for this.
 - **Forgejo's `robots.txt`** (`forge/config/forgejo-robots.txt`, applied by
   `apply-forgejo`) shuts out AI-training crawlers and otherwise repeats Forgejo's
   built-in rules.

@@ -108,6 +108,7 @@ install_plugin() {
 # booting before WAN is up), which lets LAN clients forge their IP.
 install_plugin l4rm4nd/traefik-warp "$TRAEFIK_WARP_VERSION" "$S/traefik-warp-failclosed.patch"
 install_plugin sevensolutions/traefik-oidc-auth "$TRAEFIK_OIDC_AUTH_VERSION"
+install_plugin maxlerebourg/crowdsec-bouncer-traefik-plugin "$TRAEFIK_CROWDSEC_BOUNCER_VERSION"
 chown traefik:traefik /var/lib/traefik
 
 mkdir -p /etc/edge/certs /var/lib/lego
@@ -238,6 +239,21 @@ if [ "$CHANGED" != "$CS_BEFORE" ]; then
 else
 	rc-service -q crowdsec status >/dev/null 2>&1 || rc-service crowdsec start
 fi
+# The Traefik bouncer's LAPI key (edge_crowdsec_bouncer_key in SOPS), registered
+# again whenever LAPI stops accepting it (first run, or after a rotation). The
+# probe is a live-mode lookup, so it never consumes the bouncer's stream delta.
+key="$(cat "$S/bouncer.key")"
+for i in $(seq 1 30); do
+	code="$(curl -s -o /dev/null -w '%{http_code}' -H "X-Api-Key: $key" 'http://127.0.0.1:8080/v1/decisions?ip=127.0.0.1')" || true
+	[ "$code" != 000 ] && break
+	sleep 1
+done
+if [ "$code" != 200 ]; then
+	cscli --error bouncers delete traefik >/dev/null 2>&1 || true
+	cscli --error bouncers add traefik -k "$key" >/dev/null
+	CHANGED="$CHANGED bouncer-key"
+fi
+unset key
 
 rc-update -q add traefik default 2>/dev/null || true
 if [ -n "$RESTART" ]; then
