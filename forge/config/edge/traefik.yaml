@@ -41,6 +41,9 @@ entryPoints:
     # WireGuard address may assert it.
     proxyProtocol:
       trustedIPs: ["172.16.8.2/32"]
+    # No warp here: Traefik itself replaces a client-sent X-Real-Ip with the
+    # (PROXY-protocol) client IP, which CrowdSec reads from the access log
+    # (edge-smoke.sh real-ip-vps-spoof).
     http:
       tls: {}
     transport:
@@ -79,3 +82,5 @@ accessLog:
       names:
         X-Real-Ip: keep
         CF-Connecting-IP: keep
+        # CrowdSec's bad-user-agent and crawler scenarios need it.
+        User-Agent: keep

@@ -1,0 +1,17 @@
+# Installed as /etc/crowdsec/parsers/s02-enrich/00-homeops-real-ip.yaml; the
+# 00- prefix runs it before the whitelists in the same stage.
+#
+# The stock traefik-logs parser takes source_ip from ClientHost, which on the
+# Cloudflare path is a Cloudflare node: acting on it would ban Cloudflare and
+# with it every visitor. X-Real-Ip is never what a client sent: on websecure
+# traefik-warp sets it (the visitor for Cloudflare's ranges, else the socket
+# IP), and on wan Traefik replaces it with the PROXY-protocol client.
+name: homeops/edge-real-ip
+description: "Act on the X-Real-Ip that traefik-warp set, not the socket IP"
+filter: |
+  evt.Meta.log_type == 'http_access-log' &&
+  evt.Unmarshaled.traefik != nil &&
+  (evt.Unmarshaled.traefik["request_X-Real-Ip"] ?? '') != ''
+statics:
+  - meta: source_ip
+    expression: evt.Unmarshaled.traefik["request_X-Real-Ip"]

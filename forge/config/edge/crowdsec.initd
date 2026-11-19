@@ -1,0 +1,27 @@
+#!/sbin/openrc-run
+# Installed by forge/apply-edge.sh as /etc/init.d/crowdsec.
+name="crowdsec"
+description="CrowdSec engine + local API (127.0.0.1:8080)"
+command="/usr/local/bin/crowdsec"
+command_args="-c /etc/crowdsec/config.yaml"
+supervisor="supervise-daemon"
+respawn_delay=10
+respawn_max=0
+output_log="/var/log/crowdsec.out"
+error_log="/var/log/crowdsec.out"
+extra_started_commands="reload"
+
+depend() {
+	need net
+	after traefik
+}
+
+start_pre() {
+	/usr/local/bin/crowdsec -c /etc/crowdsec/config.yaml -t -error
+}
+
+reload() {
+	ebegin "Reloading ${RC_SVCNAME}"
+	supervise-daemon "${RC_SVCNAME}" --signal HUP
+	eend $?
+}

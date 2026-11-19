@@ -1,0 +1,6 @@
+# Installed by forge/apply-edge.sh as /etc/crowdsec/acquis.yaml.
+# Traefik's JSON access log (copytruncate-rotated, which CrowdSec follows).
+filenames:
+  - /var/log/traefik/access.log
+labels:
+  type: traefik

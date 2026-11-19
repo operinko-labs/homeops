@@ -177,6 +177,68 @@ else
 	echo "wg0: skipped (not on 192.168.0.5 yet)"
 fi
 
+# --- CrowdSec engine + local API (127.0.0.1:8080) ------------------------------
+# Pinned release binaries. The tarball ships no checksums file, so it is checked
+# against the sha256 that GitHub's API publishes for the asset.
+CS_BEFORE="$CHANGED"
+if ! /usr/local/bin/crowdsec -version 2>/dev/null | grep -q "^version: $CROWDSEC_VERSION-"; then
+	d="$(mktemp -d)"
+	want="$(curl -fsSL "https://api.github.com/repos/crowdsecurity/crowdsec/releases/tags/$CROWDSEC_VERSION" |
+		python3 -c 'import json,sys; print(next(a["digest"] for a in json.load(sys.stdin)["assets"] if a["name"] == "crowdsec-release.tgz"))')"
+	curl -fsSL -o "$d/cs.tgz" "https://github.com/crowdsecurity/crowdsec/releases/download/$CROWDSEC_VERSION/crowdsec-release.tgz"
+	[ "sha256:$(sha256sum "$d/cs.tgz" | cut -d' ' -f1)" = "$want" ] || {
+		echo "checksum mismatch for crowdsec-release.tgz $CROWDSEC_VERSION" >&2
+		rm -rf "$d"
+		exit 1
+	}
+	tar -xzf "$d/cs.tgz" -C "$d" --strip-components=1
+	install -m 0755 "$d/cmd/crowdsec/crowdsec" /usr/local/bin/crowdsec
+	install -m 0755 "$d/cmd/crowdsec-cli/cscli" /usr/local/bin/cscli
+	mkdir -p /etc/crowdsec/hub /var/lib/crowdsec/data
+	# The release's stock files, first install only: config.yaml.local carries
+	# our changes, and the credential files fill in on registration below.
+	for f in config.yaml profiles.yaml simulation.yaml console.yaml local_api_credentials.yaml online_api_credentials.yaml; do
+		[ -e "/etc/crowdsec/$f" ] || install -m 0600 "$d/config/$f" "/etc/crowdsec/$f"
+	done
+	rm -rf /etc/crowdsec/patterns
+	cp -r "$d/config/patterns" /etc/crowdsec/patterns
+	rm -rf "$d"
+	CHANGED="$CHANGED crowdsec-$CROWDSEC_VERSION"
+fi
+install_file "$S/crowdsec/config.yaml.local" /etc/crowdsec/config.yaml.local 0600 root:root
+install_file "$S/crowdsec/acquis.yaml" /etc/crowdsec/acquis.yaml 0644 root:root
+install_file "$S/crowdsec/parsers/s02-enrich/00-homeops-real-ip.yaml" /etc/crowdsec/parsers/s02-enrich/00-homeops-real-ip.yaml 0644 root:root
+install_file "$S/crowdsec/parsers/s02-enrich/homeops-whitelist.yaml" /etc/crowdsec/parsers/s02-enrich/homeops-whitelist.yaml 0644 root:root
+install_file "$S/crowdsec.initd" /etc/init.d/crowdsec 0755 root:root
+install_file "$S/crowdsec-hub-upgrade" /etc/periodic/daily/crowdsec-hub-upgrade 0755 root:root
+# Hub items: traefik (with base-http-scenarios), CVE probes, and the
+# good-actors whitelist (search engines etc.), syslog-logs (whose second
+# document, the old crowdsecurity/non-syslog, sets `program` from acquis.yaml's
+# type label for plain files) and dateparse-enrich for the log's timestamps.
+[ -s /etc/crowdsec/hub/.index.json ] || cscli --error hub update >/dev/null
+for item in collections:crowdsecurity/traefik collections:crowdsecurity/http-cve \
+	collections:crowdsecurity/whitelist-good-actors parsers:crowdsecurity/syslog-logs \
+	parsers:crowdsecurity/dateparse-enrich; do
+	kind="${item%%:*}" name="${item#*:}"
+	[ -e "/etc/crowdsec/$kind" ] && find "/etc/crowdsec/$kind" -name "$(basename "$name").yaml" | grep -q . && continue
+	cscli --error "$kind" install "$name" >/dev/null
+	CHANGED="$CHANGED $name"
+done
+# This machine's LAPI login, and the Central API (community blocklist; sends
+# attacker IPs + scenario names back). Once each; console enrolment stays off.
+grep -q '^login:' /etc/crowdsec/local_api_credentials.yaml ||
+	cscli --error machines add edge --auto --force -f /etc/crowdsec/local_api_credentials.yaml
+grep -q '^login:' /etc/crowdsec/online_api_credentials.yaml || {
+	cscli --error capi register
+	CHANGED="$CHANGED capi-register"
+}
+rc-update -q add crowdsec default 2>/dev/null || true
+if [ "$CHANGED" != "$CS_BEFORE" ]; then
+	rc-service crowdsec restart 2>/dev/null || rc-service crowdsec start
+else
+	rc-service -q crowdsec status >/dev/null 2>&1 || rc-service crowdsec start
+fi
+
 rc-update -q add traefik default 2>/dev/null || true
 if [ -n "$RESTART" ]; then
 	rc-service traefik restart 2>/dev/null || rc-service traefik start

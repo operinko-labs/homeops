@@ -1,0 +1,8 @@
+#!/bin/sh
+# /etc/periodic/daily/crowdsec-hub-upgrade: keep parsers and scenarios current
+# (the binaries are pinned in versions.env and follow Renovate).
+cscli --error hub update >/dev/null || exit 1
+if [ -n "$(cscli --error hub upgrade)" ]; then
+	rc-service crowdsec reload >/dev/null
+	logger -t crowdsec-hub-upgrade "hub items upgraded; crowdsec reloaded"
+fi

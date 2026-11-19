@@ -110,6 +110,12 @@ if [[ "$wan" == "--wan" ]]; then
   t=$(token)
   curl -sk -o /dev/null -m 15 --resolve "forgejo.vaderrp.com:443:$vps_ip" "https://forgejo.vaderrp.com/?smoke=$t" || true
   check real-ip-vps "$(logged "$t" ClientHost)" "${wan_ip:-unknown}"
+  # CrowdSec acts on the logged X-Real-Ip, so on this path too it must be warp's
+  # (the PROXY-protocol client), never what the client sent.
+  t=$(token)
+  curl -sk -o /dev/null -m 15 --resolve "forgejo.vaderrp.com:443:$vps_ip" -H 'X-Real-Ip: 192.0.2.99' \
+    "https://forgejo.vaderrp.com/?smoke=$t" || true
+  check real-ip-vps-spoof "$(logged "$t" request_X-Real-Ip)" "${wan_ip:-unknown}"
 fi
 
 if [[ "$wan" == "--wan" ]]; then
