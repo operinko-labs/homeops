@@ -86,6 +86,11 @@ if [[ "$wan" == "--wan" ]]; then
   curl -sk -o /dev/null -m 15 --resolve "photos.vaderrp.com:443:$cf_ip" "https://photos.vaderrp.com/?smoke=$t" || true
   check real-ip-cloudflare "$(logged "$t" request_X-Real-Ip)" "${wan_ip:-unknown}"
   check cf-allowlist-nodered "$(curl -sk -o /dev/null -w '%{http_code}' -m 15 --resolve "nodered.vaderrp.com:443:$cf_ip" https://nodered.vaderrp.com/)" 403
+  # The UDM's :443 forward only accepts Cloudflare (address group "Cloudflare
+  # IPv4"): the VPS going straight at the home WAN IP must not connect at all.
+  got=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 -p "$vps_ssh_port" "root@$vps_ip" \
+    "curl -sk -o /dev/null -w '%{http_code}' -m 8 --resolve photos.vaderrp.com:443:${wan_ip:-0.0.0.0} https://photos.vaderrp.com/" 2>/dev/null || true)
+  check direct-wan-ip-refused "${got:-none}" 000
   # auth: oidc routes: a browser outside the LAN is sent to Authentik first,
   # even when it forges headers claiming a LAN address (warp rewrites them);
   # their LAN answer is the per-route check at the top.
@@ -109,6 +114,11 @@ fi
 
 if [[ "$wan" == "--wan" ]]; then
   check wan-forgejo "$(code forgejo.vaderrp.com "$vps_ip")" 303
+  # forge/config/forgejo-robots.txt shuts out AI-training crawlers (Meta's alone
+  # was most of Forgejo's traffic); Meta's group must say Disallow: /.
+  robots=$(curl -s -m 15 --resolve "forgejo.vaderrp.com:443:$vps_ip" https://forgejo.vaderrp.com/robots.txt \
+    | awk 'tolower($0) ~ /^user-agent: *meta-externalagent/ {f=1} f && /^Disallow:/ {print $2; exit}')
+  check forgejo-robots-meta "${robots:-none}" /
   for h in pbs.vaderrp.com vaultwarden.vaderrp.com hass.vaderrp.com; do
     # The wan entrypoint has no router for these hosts: Traefik's own 404.
     check "wan-spoof-$h" "$(code forgejo.vaderrp.com "$vps_ip" -H "Host: $h")" 404

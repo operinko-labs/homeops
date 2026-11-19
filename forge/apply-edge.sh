@@ -127,6 +127,16 @@ install_file "$S/cert-export" /usr/local/bin/cert-export 0755 root:root
 	ln -sf /usr/local/bin/edge-cert-renew /etc/periodic/daily/edge-cert-renew
 	CHANGED="$CHANGED periodic:edge-cert-renew"
 }
+# Keeps the UDM's "Cloudflare IPv4" group (the WAN :443 forward's source limit)
+# in step with Cloudflare's list; needs edge_unifi_api_key in SOPS.
+install_file "$S/cf-unifi-sync" /usr/local/bin/cf-unifi-sync 0755 root:root
+install_file "$S/unifi-sync.env" /etc/edge/unifi-sync.env 0600 root:root
+if grep -q '^UNIFI_API_KEY=.' /etc/edge/unifi-sync.env; then
+	install_file "$S/cf-unifi-sync.periodic" /etc/periodic/daily/cf-unifi-sync 0755 root:root
+else
+	rm -f /etc/periodic/daily/cf-unifi-sync
+	echo "cf-unifi-sync: no edge_unifi_api_key in forge/secrets.sops.yaml; daily sync off"
+fi
 chown root:traefik /etc/traefik /etc/traefik/dynamic
 chmod 0750 /etc/traefik/dynamic
 

@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Keep the UDM's "Cloudflare IPv4" address group equal to Cloudflare's list.
+
+The UDM's WAN :443 forward to edge only accepts sources in that group, so a
+range Cloudflare adds would otherwise be dropped at home. Installed as
+/usr/local/bin/cf-unifi-sync and linked from /etc/periodic/daily; reads
+UNIFI_API_KEY and UNIFI_GROUP_ID from /etc/edge/unifi-sync.env (or the
+environment). Prints what it did; exits non-zero on any failure, leaving the
+group untouched.
+"""
+import ipaddress
+import json
+import os
+import ssl
+import sys
+import urllib.request
+
+CF_URL = "https://www.cloudflare.com/ips-v4"
+UNIFI = os.environ.get("UNIFI_URL", "https://192.168.0.1")
+
+
+def env():
+    vals = dict(os.environ)
+    try:
+        with open("/etc/edge/unifi-sync.env") as f:
+            for line in f:
+                k, _, v = line.strip().partition("=")
+                if k and not k.startswith("#"):
+                    vals.setdefault(k, v)
+    except FileNotFoundError:
+        pass
+    return vals["UNIFI_API_KEY"], vals["UNIFI_GROUP_ID"]
+
+
+def cloudflare_ranges():
+    # Cloudflare answers 403 to urllib's default User-Agent.
+    req = urllib.request.Request(CF_URL, headers={"User-Agent": "cf-unifi-sync"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        lines = [l.strip() for l in r.read().decode().splitlines() if l.strip()]
+    nets = sorted({str(ipaddress.IPv4Network(l)) for l in lines})
+    # A truncated or error-page answer must never shrink the allow-list.
+    if not 5 <= len(nets) <= 100:
+        raise SystemExit(f"cf-unifi-sync: implausible Cloudflare list ({len(nets)} ranges); not syncing")
+    return nets
+
+
+def unifi(method, path, key, body=None):
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False  # UDM's self-signed console cert, LAN only
+    ctx.verify_mode = ssl.CERT_NONE
+    req = urllib.request.Request(
+        f"{UNIFI}/proxy/network/api/s/default/rest/firewallgroup/{path}",
+        method=method,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={"X-API-KEY": key, "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=20, context=ctx) as r:
+        d = json.load(r)
+    if d.get("meta", {}).get("rc") != "ok" or not d.get("data"):
+        raise SystemExit(f"cf-unifi-sync: UniFi {method} failed: {d.get('meta')}")
+    return d["data"][0]
+
+
+def main():
+    key, gid = env()
+    want = cloudflare_ranges()
+    group = unifi("GET", gid, key)
+    have = sorted(group.get("group_members", []))
+    if have == want:
+        print(f"cf-unifi-sync: unchanged ({len(want)} ranges)")
+        return
+    group["group_members"] = want
+    got = sorted(unifi("PUT", gid, key, group).get("group_members", []))
+    if got != want:
+        raise SystemExit("cf-unifi-sync: UniFi did not store the new list")
+    added, removed = sorted(set(want) - set(have)), sorted(set(have) - set(want))
+    print(f"cf-unifi-sync: updated ({len(want)} ranges) added={added} removed={removed}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:  # network/API errors: report, keep the old group
+        raise SystemExit(f"cf-unifi-sync: {type(e).__name__}: {e}")

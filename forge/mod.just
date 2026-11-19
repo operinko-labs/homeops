@@ -19,7 +19,7 @@ apply-forgejo:
     ssh root@{{ forge_ip }} 'mkdir -p -m 700 /root/.homeops-staging'
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli {{ forge_dir }}/config/app.ini.j2 --format yaml - | ssh root@{{ forge_ip }} 'umask 077; cat > /root/.homeops-staging/app.ini'
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli {{ forge_dir }}/config/signing.key.j2 --format yaml - | ssh root@{{ forge_ip }} 'umask 077; cat > /root/.homeops-staging/signing.key'
-    scp -q {{ forge_dir }}/config/sshd-forgejo.conf {{ forge_dir }}/apply-forgejo.sh root@{{ forge_ip }}:/root/.homeops-staging/
+    scp -q {{ forge_dir }}/config/sshd-forgejo.conf {{ forge_dir }}/config/forgejo-robots.txt {{ forge_dir }}/apply-forgejo.sh root@{{ forge_ip }}:/root/.homeops-staging/
     ssh root@{{ forge_ip }} 'bash /root/.homeops-staging/apply-forgejo.sh; rc=$?; rm -rf /root/.homeops-staging; exit $rc'
 
 [doc('Apply runner config: just forge apply-runner 1|2 (set FORGEJO_RUNNER_TOKEN to (re)register)')]
@@ -37,8 +37,9 @@ apply-edge:
     ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'mkdir -p -m 700 /root/.homeops-staging'
     { sops -d {{ forge_dir }}/secrets.sops.yaml; sed '/^---$/d' {{ forge_dir }}/config/edge/routes.yaml; } | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/edge/dynamic.yaml.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/edge.yaml'
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/edge/lego.env.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/lego.env'
+    sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/edge/unifi-sync.env.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/unifi-sync.env'
     sops -d {{ forge_dir }}/secrets.sops.yaml | minijinja-cli --config-file {{ forge_dir }}/../.minijinja.toml {{ forge_dir }}/config/wg0-npmplus.conf.j2 --format yaml - | ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'umask 077; cat > /root/.homeops-staging/wg0.conf'
-    cd {{ forge_dir }} && scp -P {{ edge_ssh_port }} -q config/edge/versions.env config/edge/traefik.yaml config/edge/traefik.initd config/edge/edge-cert-hook.sh config/edge/edge-cert-renew.sh config/edge/logrotate-traefik config/edge/cert-export config/edge/traefik-warp-failclosed.patch apply-edge.sh root@{{ edge_ip }}:/root/.homeops-staging/
+    cd {{ forge_dir }} && scp -P {{ edge_ssh_port }} -q config/edge/versions.env config/edge/traefik.yaml config/edge/traefik.initd config/edge/edge-cert-hook.sh config/edge/edge-cert-renew.sh config/edge/logrotate-traefik config/edge/cert-export config/edge/traefik-warp-failclosed.patch config/edge/cf-unifi-sync config/edge/cf-unifi-sync.periodic apply-edge.sh root@{{ edge_ip }}:/root/.homeops-staging/
     ssh -p {{ edge_ssh_port }} root@{{ edge_ip }} 'sh /root/.homeops-staging/apply-edge.sh; rc=$?; rm -rf /root/.homeops-staging; exit $rc'
 
 [doc('One-time/idempotent Forgejo API-level state (org, mirrors, secrets)')]

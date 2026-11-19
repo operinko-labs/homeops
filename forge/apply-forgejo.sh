@@ -51,6 +51,13 @@ if ! cmp -s <(ssh-keygen -y -f /etc/forgejo/signing.key) /etc/forgejo/signing.ke
   RESTART_FORGEJO=1
 fi
 
+# --- robots.txt (served from CUSTOM_PATH/public, read per request) -----------
+ROBOTS=/var/lib/forgejo/custom/public/robots.txt
+if ! cmp -s "$STAGING/forgejo-robots.txt" "$ROBOTS"; then
+  install -D -m 644 "$STAGING/forgejo-robots.txt" "$ROBOTS"
+  CHANGED+=("$ROBOTS")
+fi
+
 chown -R git:git /var/lib/forgejo
 
 # Settle Forgejo before the sshd work below, so a failure there can never strand

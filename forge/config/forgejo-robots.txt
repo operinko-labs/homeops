@@ -1,0 +1,93 @@
+# Installed by `just forge apply-forgejo` as /var/lib/forgejo/custom/public/robots.txt,
+# which replaces Forgejo's built-in one. The `User-agent: *` group below is that
+# built-in file as of Forgejo 17.0 (https://forgejo.vaderrp.com/robots.txt before
+# this existed); recheck it on major upgrades.
+
+# AI-training crawlers: nothing here is for them. Meta's alone (57.141.20.0/24)
+# was most of Forgejo's traffic in Nov 2026, too slow per IP for CrowdSec.
+User-agent: meta-externalagent
+User-agent: FacebookBot
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: CCBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: Amazonbot
+User-agent: PerplexityBot
+User-agent: cohere-ai
+User-agent: Diffbot
+User-agent: ImagesiftBot
+User-agent: Omgilibot
+User-agent: Timpibot
+Disallow: /
+
+User-agent: *
+Disallow: /api/
+Disallow: /avatars/
+Disallow: /user/
+Disallow: /swagger.*.json
+Disallow: /explore/*?*
+
+Disallow: /repo/create
+Disallow: /repo/migrate
+Disallow: /org/create
+Disallow: /*/*/fork
+
+Disallow: /*/*/watchers
+Disallow: /*/*/stargazers
+Disallow: /*/*/forks
+
+Disallow: /*/*/src/
+Disallow: /*/*/blame/
+Disallow: /*/*/commit/
+Disallow: /*/*/commits/
+Disallow: /*/*/raw/
+Disallow: /*/*/media/
+Disallow: /*/*/tags
+Disallow: /*/*/graph
+Disallow: /*/*/branches
+Disallow: /*/*/compare
+Disallow: /*/*/lastcommit/
+Disallow: /*/*/rss/branch/
+Disallow: /*/*/atom/branch/
+
+Disallow: /*/*/activity
+Disallow: /*/*/activity_author_data
+
+Disallow: /*/*/actions
+Disallow: /*/*/projects
+Disallow: /*/*/labels
+Disallow: /*/*/milestones
+
+Disallow: /*/*/find/
+Disallow: /*/*/tree-list/
+Disallow: /*/*/search/
+Disallow: /*/-/code
+
+Disallow: /*/*/issues/new
+Disallow: /*/*/pulls/*/files
+Disallow: /*/*/pulls/*/commits
+
+Disallow: /attachments/
+Disallow: /*/*/attachments/
+Disallow: /*/*/issues/*/attachments/
+Disallow: /*/*/pulls/*/attachments/
+Disallow: /*/*/releases/attachments
+Disallow: /*/*/releases/download
+
+Disallow: /*/*/archive/
+Disallow: /*.bundle$
+Disallow: /*.patch$
+Disallow: /*.diff$
+Disallow: /*.atom$
+Disallow: /*.rss$
+
+Disallow: /*lang=*
+Disallow: /*redirect_to=*
+Disallow: /*tab=*
+Disallow: /*q=*
+Disallow: /*sort=*
+Disallow: /*repo-search-archived=*

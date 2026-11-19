@@ -1,0 +1,3 @@
+#!/bin/sh
+# /etc/periodic/daily/cf-unifi-sync: run the sync, keep its line in syslog.
+/usr/local/bin/cf-unifi-sync 2>&1 | logger -t cf-unifi-sync

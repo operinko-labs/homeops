@@ -59,6 +59,19 @@ Operational facts learned while building this module that aren't obvious from th
   `X-Real-IP` from `CF-Connecting-IP` only for Cloudflare's ranges; `lan-only` still
   judges the socket IP. On `:8443` haproxy sends PROXY v2, and Forgejo trusts
   192.168.0.5 (`REVERSE_PROXY_TRUSTED_PROXIES`). git-over-SSH still shows edge.
+- **The UDM's WAN `:443` forward accepts Cloudflare only** (forward "HTTPS to
+  edge (Cloudflare only)", source limit = UniFi address group "Cloudflare IPv4"
+  `a89e561c`, set 2026-11-19). Direct-to-IP scanners never reach edge. No DNS
+  record sends real clients to the WAN IP on `:443`: the apex and `storj` are
+  DNS-only but nothing is routed on them, and Teleport/WireGuard VPN clients reach
+  edge on `192.168.0.5` or through Cloudflare. `cf-unifi-sync`
+  (`/etc/periodic/daily`) keeps the group equal to
+  `https://www.cloudflare.com/ips-v4`; it runs only once `edge_unifi_api_key` (a
+  dedicated UniFi local API key) is in `forge/secrets.sops.yaml`. Undo: disable
+  the source limit on that forward in UniFi.
+- **Forgejo's `robots.txt`** (`forge/config/forgejo-robots.txt`, applied by
+  `apply-forgejo`) shuts out AI-training crawlers and otherwise repeats Forgejo's
+  built-in rules.
 - **lego's zone lookups use Quad9 on port 9953.** LAN `:53` is DNAT'd to
   Technitium, whose internal `dns.vaderrp.com` zone would make lego look for a
   Cloudflare zone that does not exist; propagation is a fixed 90s wait for the same
