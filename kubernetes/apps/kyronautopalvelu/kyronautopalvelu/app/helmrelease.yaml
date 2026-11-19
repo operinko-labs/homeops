@@ -33,7 +33,7 @@ spec:
       repository: harbor.vaderrp.com/operinko-labs/kyronautopalvelu
       # Updated by Flux image automation (ImagePolicy flux-system/kyronautopalvelu).
       # The placeholder is replaced by the first main-* build CI pushes.
-      tag: main-1795024291-sha-6b82f7f # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
+      tag: main-1795123193-sha-6b82f7f # {"$imagepolicy": "flux-system:kyronautopalvelu:tag"}
     hostname: kyronautopalvelu.fi
     wwwHostname: www.kyronautopalvelu.fi
     # The old demo host 301s everything, robots.txt included, to the apex
