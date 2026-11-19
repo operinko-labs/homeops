@@ -89,6 +89,12 @@ if [[ "${2:-}" == "--live" ]]; then
   sleep 10
   lan_ip=$(edge "grep -F '.env-lan-30' /var/log/traefik/access.log | tail -1" \
     | python3 -c "import sys,json; l=sys.stdin.read().strip(); print(json.loads(l)['ClientHost'] if l else '')")
+  # Decisions that skip the parsers (community blocklist, cscli) must not cut
+  # home off the Cloudflare path either: the bouncer itself trusts the WAN IP.
+  edge "cscli decisions add -i ${wan_ip:-0.0.0.0} -d 3m -R homeops-smoke-test" >/dev/null
+  sleep 70
+  check home-wan-never-blocked "$(curl -sk -o /dev/null -w '%{http_code}' -m 10 --resolve "photos.vaderrp.com:443:$cf_ip" https://photos.vaderrp.com/)" 200
+  edge "cscli decisions delete -i ${wan_ip:-0.0.0.0}" >/dev/null
   check self-ban-lan "$(edge "cscli decisions list -i ${lan_ip:-192.168.0.84} -o raw" | grep -c ban)" 0
   check self-ban-wan "$(edge "cscli decisions list -i ${wan_ip:-0.0.0.0} -o raw" | grep -c ban)" 0
 fi

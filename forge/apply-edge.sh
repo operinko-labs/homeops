@@ -178,7 +178,17 @@ else
 	echo "wg0: skipped (not on 192.168.0.5 yet)"
 fi
 
+rc-update -q add traefik default 2>/dev/null || true
+if [ -n "$RESTART" ]; then
+	rc-service traefik restart 2>/dev/null || rc-service traefik start
+else
+	rc-service -q traefik status >/dev/null 2>&1 || rc-service traefik start
+fi
+
 # --- CrowdSec engine + local API (127.0.0.1:8080) ------------------------------
+# After Traefik's restart on purpose: RESTART lives only in this run, so a
+# CrowdSec step failing first would leave a changed traefik.yaml or plugin
+# unapplied for good. The bouncer fails open until CrowdSec is up.
 # Pinned release binaries. The tarball ships no checksums file, so it is checked
 # against the sha256 that GitHub's API publishes for the asset.
 CS_BEFORE="$CHANGED"
@@ -255,12 +265,20 @@ if [ "$code" != 200 ]; then
 fi
 unset key
 
-rc-update -q add traefik default 2>/dev/null || true
-if [ -n "$RESTART" ]; then
-	rc-service traefik restart 2>/dev/null || rc-service traefik start
-else
-	rc-service -q traefik status >/dev/null 2>&1 || rc-service traefik start
-fi
+# One plugin that fails to compile disables them all, and with them the
+# entrypoint middlewares every route hangs off, while the process stays up.
+# /crowdsec-health passes through websecure's whole chain (warp, bouncer) to
+# CrowdSec, so its answer proves Traefik, the plugins and LAPI together.
+self="$(ip -4 -o addr show eth0 | awk '{print $4}' | cut -d/ -f1)"
+for i in $(seq 1 20); do
+	health="$(curl -sk -m 3 --resolve "edge.vaderrp.com:443:$self" https://edge.vaderrp.com/crowdsec-health)" || true
+	[ "$health" = '{"status":"up"}' ] && break
+	sleep 1
+done
+[ "$health" = '{"status":"up"}' ] || {
+	echo "apply-edge: https://edge.vaderrp.com/crowdsec-health is not answering (got: ${health:-nothing}); check /var/log/traefik/traefik.log for plugin errors and rc-service crowdsec status" >&2
+	exit 1
+}
 
 if [ -n "$CHANGED" ]; then echo "changed:$CHANGED"; else echo "no changes"; fi
 rc-service traefik status

@@ -65,7 +65,9 @@ http:
     # Stream mode: bans are pulled from the local API every 60s and checked in
     # memory; updateMaxFailure -1 lets traffic through while CrowdSec is down.
     # X-Real-Ip is warp's on websecure and Traefik's own (socket IP) on wan, so
-    # it may be read from any peer; LAN clients skip the check entirely.
+    # it may be read from any peer. LAN clients and home's WAN IP skip the check
+    # entirely: blocklist decisions bypass CrowdSec's own whitelist, and a ban on
+    # the WAN IP would cut every LAN device off the Cloudflare path.
     crowdsec:
       plugin:
         crowdsec-bouncer:
@@ -78,7 +80,7 @@ http:
           UpdateIntervalSeconds: 60
           UpdateMaxFailure: -1
           ForwardedHeadersCustomName: X-Real-Ip
-          ClientTrustedIPs: ["192.168.0.0/16"]
+          ClientTrustedIPs: ["192.168.0.0/16", "80.223.184.52/32"]
           RemediationStatusCode: 403
     # Authentik login for routes marked auth: oidc, reached only by non-LAN
     # clients (LAN traffic takes the <name>-lan router instead). Reuses the
