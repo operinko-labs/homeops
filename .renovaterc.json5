@@ -1,86 +1,83 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    "config:recommended",
-    ":configMigration",
-    "abandonments:recommended",
-    "docker:enableMajor",
-    "helpers:pinGitHubActionDigests",
-    "mergeConfidence:all-badges",
-    "local>operinko-labs/homeops//.renovate/autoMerge.json5",
-    "local>operinko-labs/homeops//.renovate/changelogs.json5",
-    "local>operinko-labs/homeops//.renovate/customManagers.json5",
-    "local>operinko-labs/homeops//.renovate/grafanaDashboards.json5",
-    "local>operinko-labs/homeops//.renovate/groups.json5",
-    "local>operinko-labs/homeops//.renovate/labels.json5",
-    "local>operinko-labs/homeops//.renovate/semanticCommits.json5",
-    ":automergePr",
-    ":disableRateLimiting",
-    ":dependencyDashboard",
-    ":semanticCommits",
-    ":timezone(Europe/Helsinki)",
+    'config:recommended',
+    ':configMigration',
+    'abandonments:recommended',
+    'docker:enableMajor',
+    'helpers:pinGitHubActionDigests',
+    'mergeConfidence:all-badges',
+    'local>operinko-labs/homeops//.renovate/autoMerge.json5',
+    'local>operinko-labs/homeops//.renovate/changelogs.json5',
+    'local>operinko-labs/homeops//.renovate/customManagers.json5',
+    'local>operinko-labs/homeops//.renovate/grafanaDashboards.json5',
+    'local>operinko-labs/homeops//.renovate/groups.json5',
+    'local>operinko-labs/homeops//.renovate/labels.json5',
+    'local>operinko-labs/homeops//.renovate/semanticCommits.json5',
+    ':automergePr',
+    ':disableRateLimiting',
+    ':dependencyDashboard',
+    ':semanticCommits',
+    ':timezone(Europe/Helsinki)',
   ],
-  dependencyDashboardTitle: "Renovate Dashboard 🤖",
-  // Forgejo merges auto-merge PRs once CI passes, so Renovate never merges
-  // itself (see .renovate/autoMerge.json5 for why that matters).
+  dependencyDashboard: {
+    title: 'Renovate Dashboard 🤖',
+  },
   platformAutomerge: true,
   suppressNotifications: [
-    "prEditedNotification",
-    "prIgnoreNotification",
+    'prEditedNotification',
+    'prIgnoreNotification',
   ],
   ignorePaths: [
-    "**/*.sealed.*",
-    "**/sealed-secret.yaml",
-    "**/sealed-secrets.yaml",
-    "**/resources/**",
-    "archive/**",
+    '**/*.sealed.*',
+    '**/sealed-secret.yaml',
+    '**/sealed-secrets.yaml',
+    '**/resources/**',
+    'archive/**',
   ],
   registryAliases: {
-    "docker.io": "harbor.vaderrp.com/dockerhub",
-    "ghcr.io": "harbor.vaderrp.com/ghcr",
-    "registry.k8s.io": "harbor.vaderrp.com/k8s",
-    "quay.io": "harbor.vaderrp.com/quay",
-    "cr.fluentbit.io": "harbor.vaderrp.com/fluentbit",
+    'docker.io': 'harbor.vaderrp.com/dockerhub',
+    'ghcr.io': 'harbor.vaderrp.com/ghcr',
+    'registry.k8s.io': 'harbor.vaderrp.com/k8s',
+    'quay.io': 'harbor.vaderrp.com/quay',
+    'cr.fluentbit.io': 'harbor.vaderrp.com/fluentbit',
   },
   packageRules: [
     {
-      // Renovate's own image is the one dep the ghcr.io alias cannot serve:
-      // upstream has ~24k tags and Harbor's proxy times out (~55s) aggregating
-      // the whole list on every /tags/list. There is no per-package escape from
-      // registryAliases — registryUrls, an identity alias and packageRules-scoped
-      // aliases all lose to it — so the docker dep is disabled here and the
-      // version is tracked via github-releases by the "Renovate self-update"
-      // custom manager. Note this matches the POST-alias name; the ghcr.io form
-      // does not match.
       description: "Renovate's own image is tracked via github-releases",
-      matchDatasources: ["docker"],
-      matchPackageNames: ["harbor.vaderrp.com/ghcr/renovatebot/renovate"],
+      matchDatasources: [
+        'docker',
+      ],
+      matchPackageNames: [
+        'harbor.vaderrp.com/ghcr/renovatebot/renovate',
+      ],
       enabled: false,
     },
     {
-      // The Synapse image tag is apps/synapse/VERSION and CI skips tags that
-      // already exist, so a FROM-only bump here would merge without building.
-      // These pins move by hand together with a VERSION bump.
-      description: "Synapse Dockerfile pins are bumped with VERSION",
-      matchFileNames: ["apps/synapse/Dockerfile"],
+      description: 'Synapse Dockerfile pins are bumped with VERSION',
+      matchFileNames: [
+        'apps/synapse/Dockerfile',
+      ],
       enabled: false,
     },
   ],
   hostRules: [
     {
-      matchHost: "harbor.vaderrp.com",
-      hostType: "docker",
-      username: "robot$cluster-puller",
-      password: "{{ secrets.HARBOR_ROBOT_PASSWORD }}",
-      // cold-cache proxy pulls (e.g. a large upstream tag list on first lookup)
-      // can take longer than the 60s default
+      matchHost: 'harbor.vaderrp.com',
+      hostType: 'docker',
+      username: 'robot$cluster-puller',
+      password: '{{ secrets.HARBOR_ROBOT_PASSWORD }}',
       timeout: 120000,
     },
   ],
-  "helm-values": {
-    managerFilePatterns: ["/(^|/)kubernetes/.+\\.ya?ml$/"]
+  'helm-values': {
+    managerFilePatterns: [
+      '/(^|/)kubernetes/.+\\.ya?ml$/',
+    ],
   },
   kubernetes: {
-    managerFilePatterns: ["/(^|/)kubernetes/.+\\.ya?ml$/"]
+    managerFilePatterns: [
+      '/(^|/)kubernetes/.+\\.ya?ml$/',
+    ],
   },
 }
