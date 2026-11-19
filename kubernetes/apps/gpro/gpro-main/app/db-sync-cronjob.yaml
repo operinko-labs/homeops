@@ -130,7 +130,7 @@ spec:
               volumeMounts: *pg-mounts
               resources: *pg-resources
             - name: scale-down
-              image: registry.k8s.io/kubectl:v1.37.0
+              image: registry.k8s.io/kubectl:v1.37.2@sha256:fe049faa65ae483ac200009a949a68fa4c9985daea12c9cb1195c9c7965301fc
               args:
                 - scale
                 - --namespace=gpro
@@ -144,7 +144,7 @@ spec:
                 limits:
                   memory: 128Mi
             - name: wait-pods-gone
-              image: registry.k8s.io/kubectl:v1.37.0
+              image: registry.k8s.io/kubectl:v1.37.2@sha256:fe049faa65ae483ac200009a949a68fa4c9985daea12c9cb1195c9c7965301fc
               args:
                 - wait
                 - --namespace=gpro
@@ -160,7 +160,7 @@ spec:
               volumeMounts: *pg-mounts
               resources: *pg-resources
             - name: scale-up
-              image: registry.k8s.io/kubectl:v1.37.0
+              image: registry.k8s.io/kubectl:v1.37.2@sha256:fe049faa65ae483ac200009a949a68fa4c9985daea12c9cb1195c9c7965301fc
               args:
                 - scale
                 - --namespace=gpro
@@ -170,7 +170,7 @@ spec:
               resources: *kubectl-resources
           containers:
             - name: rollout-backend
-              image: registry.k8s.io/kubectl:v1.37.0
+              image: registry.k8s.io/kubectl:v1.37.2@sha256:fe049faa65ae483ac200009a949a68fa4c9985daea12c9cb1195c9c7965301fc
               args:
                 - rollout
                 - status
@@ -179,7 +179,7 @@ spec:
                 - --timeout=600s
               resources: *kubectl-resources
             - name: rollout-worker
-              image: registry.k8s.io/kubectl:v1.37.0
+              image: registry.k8s.io/kubectl:v1.37.2@sha256:fe049faa65ae483ac200009a949a68fa4c9985daea12c9cb1195c9c7965301fc
               args:
                 - rollout
                 - status
