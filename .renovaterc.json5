@@ -54,6 +54,18 @@
       enabled: false,
     },
     {
+      // The kubernetes-api datasource knows API versions newer than the Flux
+      // release this cluster runs. On 2026-11-19 it moved Alert/Provider to
+      // notification.toolkit.fluxcd.io/v1, which Flux 2.9 doesn't serve, and
+      // cluster-apps stopped applying. Flux API versions follow Flux upgrades.
+      description: 'Flux API versions are bumped by hand with Flux',
+      matchDatasources: [
+        'kubernetes-api',
+      ],
+      matchCurrentValue: '/\\.fluxcd\\.io//',
+      enabled: false,
+    },
+    {
       description: 'Synapse Dockerfile pins are bumped with VERSION',
       matchFileNames: [
         'apps/synapse/Dockerfile',

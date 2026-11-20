@@ -4,6 +4,9 @@ kind: Job
 metadata:
   name: harbor-init-db
   namespace: storage
+  annotations:
+    # A Job's pod template is immutable: recreate it when the image changes.
+    kustomize.toolkit.fluxcd.io/force: enabled
 spec:
   template:
     spec:
