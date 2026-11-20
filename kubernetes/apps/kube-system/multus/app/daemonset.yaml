@@ -128,7 +128,7 @@ spec:
       initContainers:
         # Talos-specific: install CNI reference plugins (macvlan, ipvlan, etc.)
         - name: install-cni-plugins
-          image: ghcr.io/home-operations/cni-plugins:1.9.1
+          image: ghcr.io/home-operations/cni-plugins:1.10.0@sha256:42eac3f9ff0daa695cdb288afb4e52d73ef62346dcd3bef126b71cd84d6cee19
           command: ["/bin/sh", "-c", "cp -f /plugins/* /host/opt/cni/bin/"]
           securityContext:
             privileged: true
