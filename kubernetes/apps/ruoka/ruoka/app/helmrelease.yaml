@@ -68,7 +68,7 @@ spec:
           app:
             image:
               repository: harbor.vaderrp.com/operinko-labs/nginx-unprivileged
-              tag: 1.31-alpine@sha256:14de46fa6e30017e6d3dcccf850d75726ae131987790ffe356eafcbe0381bcd5
+              tag: 1.31-alpine@sha256:22a435c9ce992c55abec33f2855a2b7d51e44a9b2c7027c8202c7db586e0272b
             probes:
               liveness: &probe
                 enabled: true
