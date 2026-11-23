@@ -47,9 +47,12 @@ data:
             sys.exit(f"{method} failed: {json.dumps(result)}")
         return result
 
+    # Stalwart caps a get at maxObjectsInGet (500); BlockedIp passed that
+    # on 2026-11-23 with ~520 auto-bans
     def get_all(kind):
         ids = jmap(f"x:{kind}/query", {})["ids"]
-        return jmap(f"x:{kind}/get", {"ids": ids})["list"] if ids else []
+        return [obj for i in range(0, len(ids), 500)
+                for obj in jmap(f"x:{kind}/get", {"ids": ids[i:i + 500]})["list"]]
 
     # 1.1.1.1 forces IPv4; home has no IPv6 on the WAN
     with urllib.request.urlopen("https://1.1.1.1/cdn-cgi/trace", timeout=15) as resp:
