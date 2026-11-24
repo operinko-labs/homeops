@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.15-slim@sha256:2c879838405817bd51e53c75ab78f613f446c448070c2d70e2e99639705bd409 AS builder
+FROM python:3.15-slim@sha256:1c670c3568107e243bfd05457ad9ca0b11c35a855c985af73e4452db9a714e70 AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN uv pip install --no-cache .
 
 # Production image
-FROM python:3.15-slim@sha256:2c879838405817bd51e53c75ab78f613f446c448070c2d70e2e99639705bd409 AS runtime
+FROM python:3.15-slim@sha256:1c670c3568107e243bfd05457ad9ca0b11c35a855c985af73e4452db9a714e70 AS runtime
 
 WORKDIR /app
 
