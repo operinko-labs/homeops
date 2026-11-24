@@ -207,9 +207,10 @@ spec:
         containers:
           app:
             image:
-              # v8: the api's client speaks Gotenberg 8's Chromium route
+              # The api's print request (Chromium URL route, paper, margins,
+              # waitForExpression, extraHttpHeaders) is the same in v8 and v9
               repository: harbor.vaderrp.com/dockerhub/gotenberg/gotenberg
-              tag: 8.40.0
+              tag: 9.9.3
             args:
               - gotenberg
               # Above the api's 60 s abort, so the api gives up first
@@ -217,9 +218,11 @@ spec:
               - --chromium-allow-list=^http://torn-tracker\.torn-tracker\.svc:3000/r/
               - --chromium-deny-public-ips
               - --libreoffice-disable-routes
-              - --pdfengines-disable-routes
+              # Print only: no PDF routes, and no post-processing stages on
+              # the Chromium route. v9 has no metrics unless OTEL asks for them
+              - --pdf-disable-routes
+              - --pdf-disable-stages
               - --webhook-disable
-              - --prometheus-disable-collect
             probes:
               liveness: &gotenbergProbe
                 enabled: true
