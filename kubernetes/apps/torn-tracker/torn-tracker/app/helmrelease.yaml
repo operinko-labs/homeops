@@ -78,6 +78,12 @@ spec:
               # cloudflared -> Traefik (traefik-warp sets the visitor IP from
               # CF-Connecting-IP): the visitor is two hops in
               TRUST_PROXY_HOPS: "2"
+              # Sold war reports: the buyers' pages are served on this host
+              # only (httproute.yaml), and printed to PDF by the gotenberg
+              # controller below. REPORTS_PRINT_BASE keeps its default, this
+              # release's own Service (torn-tracker.torn-tracker.svc:3000)
+              REPORTS_HOST: war-reports.shadowmorph.info
+              GOTENBERG_URL: http://torn-tracker-gotenberg:3000
             envFrom: *envFrom
             # Keep serving while Traefik drops this endpoint, then SIGTERM
             # closes the server gracefully
@@ -183,6 +189,60 @@ spec:
               # Loads the whole observation history every pass: raise as it grows (with NODE_OPTIONS above)
               limits:
                 memory: 1536Mi
+      gotenberg:
+        # Prints a sold war report's page to PDF for the api, once per report.
+        # Reachable from the api only, and its Chromium may load only the
+        # api's /r/ pages (networkpolicy.yaml, --chromium-allow-list)
+        replicas: 1
+        strategy: RollingUpdate
+        pod:
+          # The image's own user, which owns /home/gotenberg. In full, as a
+          # pod's own securityContext replaces the default one
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile: {type: RuntimeDefault}
+            runAsUser: 1001
+            runAsGroup: 1001
+            fsGroup: 1001
+        containers:
+          app:
+            image:
+              # v8: the api's client speaks Gotenberg 8's Chromium route
+              repository: harbor.vaderrp.com/dockerhub/gotenberg/gotenberg
+              tag: 8.40.0
+            args:
+              - gotenberg
+              # Above the api's 60 s abort, so the api gives up first
+              - --api-timeout=90s
+              - --chromium-allow-list=^http://torn-tracker\.torn-tracker\.svc:3000/r/
+              - --chromium-deny-public-ips
+              - --libreoffice-disable-routes
+              - --pdfengines-disable-routes
+              - --webhook-disable
+              - --prometheus-disable-collect
+            probes:
+              liveness: &gotenbergProbe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &gotenbergPort 3000
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness: *gotenbergProbe
+            securityContext:
+              allowPrivilegeEscalation: false
+              # Chromium writes its profile and caches under /tmp and $HOME
+              readOnlyRootFilesystem: false
+              capabilities: {drop: ["ALL"]}
+            resources:
+              requests:
+                cpu: 50m
+                memory: 256Mi
+              limits:
+                memory: 1Gi
     defaultPodOptions:
       securityContext:
         runAsNonRoot: true
@@ -191,9 +251,17 @@ spec:
         seccompProfile: {type: RuntimeDefault}
     service:
       app:
+        # With two services app-template suffixes both names; keep this one's
+        # (the HTTPRoutes, site-overview and REPORTS_PRINT_BASE all use it)
+        forceRename: torn-tracker
         controller: api
         ports:
           http:
             port: *port
           status:
             port: 9095
+      gotenberg:
+        controller: gotenberg
+        ports:
+          http:
+            port: *gotenbergPort
