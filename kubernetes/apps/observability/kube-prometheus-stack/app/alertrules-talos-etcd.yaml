@@ -46,9 +46,15 @@ spec:
             summary: "etcd member {{ $labels.instance }} has high fsync durations"
             description: "etcd instance {{ $labels.instance }} WAL fsync duration is {{ $value }}s (p99)"
 
+        # talos3's etcd disk sits on TrueNAS, so its commit p99 swings with NAS
+        # load (VolSync at :02, nightly backups): over 14 days to 2026-11-28 it
+        # peaked at 0.72s on a 30m window, with zero leader changes, while
+        # talos1/2 stayed near 0.05s. The stock 0.25s/5m rule fired ~40 min a
+        # day for that. 1s sustained over 30m is a real disk regression;
+        # leader changes and failed proposals have their own alerts.
         - alert: EtcdHighCommitDurations
-          expr: histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job="kube-etcd"}[5m])) > 0.25
-          for: 10m
+          expr: histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job="kube-etcd"}[30m])) > 1
+          for: 15m
           labels:
             severity: warning
           annotations:

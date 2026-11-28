@@ -30,6 +30,9 @@ spec:
         # Duplicate of the homeops-owned ContainerWaiting rule (same metric,
         # stricter 15m threshold, kometa queue exclusion) in alertrules-pod-health.yaml
         KubeContainerWaiting: true
+        # Duplicate of EtcdHighCommitDurations in alertrules-talos-etcd.yaml,
+        # which is tuned for talos3's TrueNAS-backed disk
+        etcdHighCommitDurations: true
     # Prometheus Operator config-reloader resources (applies to both alertmanager and prometheus sidecars)
     prometheusOperator:
       priorityClassName: system-cluster-critical
